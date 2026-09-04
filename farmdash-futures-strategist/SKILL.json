@@ -1,0 +1,127 @@
+{
+  "name": "FarmDash Futures Strategist",
+  "version": "3.2.1",
+  "description": "Research, size, and route user-signed Hyperliquid perpetual futures with funding analysis, drawdown guards, EIP-712, and zero custody.",
+  "tags": [
+    "defi",
+    "hyperliquid",
+    "hyperliquid-api",
+    "perpetual-futures",
+    "perps-trading",
+    "defi-trading",
+    "ai-trading-agent",
+    "funding-rates",
+    "funding-arbitrage",
+    "position-sizing",
+    "drawdown-control",
+    "liquidation-risk",
+    "eip-712",
+    "zero-custody",
+    "openclaw",
+    "mcp",
+    "risk-management",
+    "farmdash"
+  ],
+  "author": "FarmDash Pioneers (@Parmasanandgarlic)",
+  "homepage": "https://www.farmdash.one/agents",
+  "tools": [
+    {
+      "name": "scan_funding_rates",
+      "description": "Scan current and venue-published predicted funding snapshots. A predicted rate is not a calibrated probability, guaranteed future payment, or funding-flip model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "scan_market_conditions",
+      "description": "Read candle-derived EMA, RSI, MACD, ADX, ATR, Bollinger Bands, volume ratio, Z-score, market regime, and the response timestamp for one perp asset. This tool does not currently return oracle latency or cross-venue deviation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "get_futures_account",
+      "description": "Inspect equity, open positions, available margin, venue-reported liquidation prices, and guardrail pressure. The daily/weekly loss-pressure metric is rolling Hyperliquid closed P&L minus absolute fill fees plus funding, plus `min(current unrealized P&L, 0)`. Positive open gains cannot offset realized losses. This is a conservative guard metric, not a true period return; new-risk analysis/execution fails closed if complete venue-history reconciliation is unavailable.\r\n\r\nSend `agentAddress` plus optional `accountAddress`. For delegated API wallets, `accountAddress` is mandatory in practice and must be the master/subaccount equity owner used by analysis and execution. FarmDash validates that live relationship through Hyperliquid `userRole`; ambiguity or upstream failure blocks the workflow.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "analyze_futures_strategy",
+      "description": "Primary research tool. Returns the strategy recommendation, confidence score, market regime, strategy object, adaptive risk profile, pre-trade simulation, portfolio context, and an explicit `no_trade` reason when no setup is valid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "calculate_position_size",
+      "description": "Inspect sizing math separately when the user wants to validate risk and margin.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "execute_perp_order",
+      "description": "Execute only after fresh research, parameter binding, exact builder-fee disclosure, local signing, and explicit user confirmation. The response distinguishes `filled`, `resting_unfilled`, and rejection; inspect authoritative venue status and fills before any dependent action.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "execution"
+    },
+    {
+      "name": "cancel_perp_order",
+      "description": "Cancel stale or superseded open orders. Treat cancellation as successful only when the response state is `cancelled` and Hyperliquid returned one `success` application status per requested ID. `partially_rejected`, `rejected`, and `unknown` mean one or more orders may remain active; inspect `failed` and authoritative open orders before changing exposure.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "execution"
+    },
+    {
+      "name": "get_agent_performance",
+      "description": "Use only for FarmDash fee-event activity, fees, protocol diversity, and reputation. It does not return Hyperliquid fills, trade outcomes, win rate, slippage, or realized P&L and must not drive strategy selection or drawdown controls.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    }
+  ],
+  "operatingRules": [],
+  "requiredEnv": {
+    "FARMDASH_API_KEY": {
+      "description": "Optional Bearer token for Pioneer or Syndicate tier. Scout mode works with no key or with the public fd_scout_free token. Never share private keys, seed phrases, or mnemonics with this skill — perps execution uses EIP-712 local signing only via the user's Hyperliquid API wallet.",
+      "required": false
+    }
+  },
+  "links": {
+    "website": "https://www.farmdash.one/",
+    "agentHub": "https://www.farmdash.one/agents",
+    "canonicalSkill": "https://www.farmdash.one/openclaw-skills/farmdash-futures-strategist/SKILL.md",
+    "documentation": "https://www.farmdash.one/docs",
+    "status": "https://www.farmdash.one/api/v1/agent/status",
+    "openApi": "https://www.farmdash.one/agents/openapi.yaml",
+    "mcpDiscovery": "https://www.farmdash.one/.well-known/mcp.json",
+    "fees": "https://www.farmdash.one/fees",
+    "security": "https://www.farmdash.one/security"
+  }
+}

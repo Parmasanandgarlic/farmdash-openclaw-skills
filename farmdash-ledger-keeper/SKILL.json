@@ -1,0 +1,80 @@
+{
+  "name": "FarmDash Ledger Keeper",
+  "version": "1.1.1",
+  "description": "Reconcile FarmDash DeFi activity, transaction records, fees, and CSV exports without inventing fills, realized P&L, or tax treatment.",
+  "tags": [
+    "defi",
+    "defi-accounting",
+    "crypto-accounting",
+    "transaction-ledger",
+    "portfolio-reconciliation",
+    "trade-history",
+    "fee-tracking",
+    "pnl-tracking",
+    "csv-export",
+    "tax-records",
+    "onchain-accounting",
+    "post-trade-analysis",
+    "read-only",
+    "openclaw",
+    "ai-agent",
+    "mcp",
+    "farmdash"
+  ],
+  "author": "FarmDash Pioneers (@Parmasanandgarlic)",
+  "homepage": "https://www.farmdash.one/agents",
+  "icon": "ledger",
+  "tools": [
+    {
+      "name": "ledger_realized_pnl",
+      "description": "The tool name is retained for client compatibility. The current response is an activity-and-cost reconciliation and explicitly returns `realizedPnlUsd: null`; it is not realized P&L.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "agentAddress": {
+            "type": "string",
+            "description": ""
+          }
+        }
+      },
+      "outputHints": [
+        "spot event count.",
+        "confirmed spot event count.",
+        "spot volume.",
+        "recorded execution costs.",
+        "futures event count and estimated notional when event records exist.",
+        "recent rows for review.",
+        "`calculationScope: recorded_activity_and_costs_only` and completeness fields."
+      ],
+      "category": "read"
+    },
+    {
+      "name": "ledger_tax_export",
+      "description": "Exports recorded spot execution rows as CSV with:\r\n\r\n- agent address.\r\n- date.\r\n- protocol.\r\n- from token.\r\n- to token.\r\n- volume.\r\n- recorded cost.\r\n- tx hash.\r\n- chain id.\r\n\r\nFutures activity requires venue fills for tax-lot accounting and is not represented as tax-ready lots by this skill.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    }
+  ],
+  "operatingRules": [],
+  "requiredEnv": {
+    "FARMDASH_API_KEY": {
+      "description": "Bearer token for Pioneer or Syndicate tier.",
+      "required": false
+    }
+  },
+  "links": {
+    "website": "https://www.farmdash.one/",
+    "agentHub": "https://www.farmdash.one/agents",
+    "canonicalSkill": "https://www.farmdash.one/openclaw-skills/farmdash-ledger-keeper/SKILL.md",
+    "documentation": "https://www.farmdash.one/docs",
+    "status": "https://www.farmdash.one/api/v1/agent/status",
+    "openApi": "https://www.farmdash.one/agents/openapi.yaml",
+    "mcpDiscovery": "https://www.farmdash.one/.well-known/mcp.json",
+    "fees": "https://www.farmdash.one/fees",
+    "security": "https://www.farmdash.one/security"
+  }
+}

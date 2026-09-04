@@ -1,0 +1,81 @@
+{
+  "name": "FarmDash Hedge Warden",
+  "version": "1.1.1",
+  "description": "Plan delta hedges for DeFi spot and yield positions using beta-aware short-perp targets, funding costs, residual delta, and safety gates.",
+  "tags": [
+    "defi",
+    "delta-hedging",
+    "defi-hedging",
+    "crypto-hedging",
+    "portfolio-hedge",
+    "perpetual-futures",
+    "short-perp",
+    "delta-neutral",
+    "basis-risk",
+    "funding-cost",
+    "residual-delta",
+    "risk-management",
+    "yield-farming-risk",
+    "openclaw",
+    "ai-agent",
+    "mcp",
+    "farmdash"
+  ],
+  "author": "FarmDash Pioneers (@Parmasanandgarlic)",
+  "homepage": "https://www.farmdash.one/agents",
+  "icon": "hedge",
+  "tools": [
+    {
+      "name": "recommend_delta_hedge",
+      "description": "",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "spotExposure": {
+            "type": "array",
+            "description": "array of `{ asset, notionalUsd, beta?, confidence? }`."
+          },
+          "riskPreference": {
+            "type": "string",
+            "description": "`conservative`, `balanced`, or `aggressive`."
+          },
+          "volatilityRegime": {
+            "type": "string",
+            "description": "`low`, `normal`, or `high`."
+          },
+          "marketConditions": {
+            "type": "string",
+            "description": "optional external context from the agent."
+          }
+        }
+      },
+      "outputHints": [
+        "total spot notional.",
+        "recommended hedge notional.",
+        "per-asset short hedge legs.",
+        "handoff instructions for Futures Strategist.",
+        "invalidation rules.",
+        "`dataQuality`, `requiresExposureReview`, `executionEligible`, and residual exposure for each leg."
+      ],
+      "category": "read"
+    }
+  ],
+  "operatingRules": [],
+  "requiredEnv": {
+    "FARMDASH_API_KEY": {
+      "description": "Optional Bearer token for Pioneer or Syndicate tier.",
+      "required": false
+    }
+  },
+  "links": {
+    "website": "https://www.farmdash.one/",
+    "agentHub": "https://www.farmdash.one/agents",
+    "canonicalSkill": "https://www.farmdash.one/openclaw-skills/farmdash-hedge-warden/SKILL.md",
+    "documentation": "https://www.farmdash.one/docs",
+    "status": "https://www.farmdash.one/api/v1/agent/status",
+    "openApi": "https://www.farmdash.one/agents/openapi.yaml",
+    "mcpDiscovery": "https://www.farmdash.one/.well-known/mcp.json",
+    "fees": "https://www.farmdash.one/fees",
+    "security": "https://www.farmdash.one/security"
+  }
+}

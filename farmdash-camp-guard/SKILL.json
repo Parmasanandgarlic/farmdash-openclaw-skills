@@ -1,0 +1,121 @@
+{
+  "name": "FarmDash Camp Guard",
+  "version": "1.1.1",
+  "description": "Audit token allowances, unsigned DeFi transactions, route risk, and policy limits before signing with this read-only OpenClaw security skill.",
+  "tags": [
+    "defi",
+    "defi-security",
+    "smart-contract-risk",
+    "token-allowance",
+    "approval-risk",
+    "transaction-risk-analysis",
+    "transaction-policy",
+    "wallet-security",
+    "risk-sentinel",
+    "pre-transaction-check",
+    "scam-protection",
+    "openclaw",
+    "ai-agent",
+    "mcp",
+    "zero-custody",
+    "web3-security",
+    "farmdash"
+  ],
+  "author": "FarmDash Pioneers (@Parmasanandgarlic)",
+  "homepage": "https://www.farmdash.one/agents",
+  "icon": "shield",
+  "tools": [
+    {
+      "name": "audit_allowance_risk",
+      "description": "Use this when a wallet has existing or proposed ERC20 approvals.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "walletAddress": {
+            "type": "string",
+            "description": "optional EVM wallet."
+          },
+          "allowances": {
+            "type": "array",
+            "description": "array with `token`, `spender`, `allowance`, `requiredAmount`, optional `amountUsd`, and `spenderVerified`. Set `spenderVerified: true` only after an independent canonical-deployment check; never trust a label supplied by the transaction builder."
+          }
+        }
+      },
+      "outputHints": [
+        "`verdict`: `pass`, `review`, or `halt`.",
+        "`flags`: approval risks such as unlimited allowance, unknown spender, or large dollar exposure.",
+        "`requiresUserConfirmation`: true unless the verdict is clean."
+      ],
+      "category": "risk"
+    },
+    {
+      "name": "simulate_transaction_risk",
+      "description": "Applies transaction policy checks to an unsigned transaction.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "transaction.to": {
+            "type": "string",
+            "description": ""
+          },
+          "transaction.data": {
+            "type": "string",
+            "description": ""
+          },
+          "transaction.value": {
+            "type": "string",
+            "description": ""
+          },
+          "transaction.chainId": {
+            "type": "string",
+            "description": ""
+          },
+          "expectedTransaction": {
+            "type": "number",
+            "description": "captured independently before the unsigned payload is returned: exact `to`, `chainId`, `value`, and SHA-256 `dataHash`."
+          }
+        }
+      },
+      "outputHints": [],
+      "category": "risk"
+    },
+    {
+      "name": "run_risk_sentinel",
+      "description": "Analyze compatibility-swap risk using the released LI.FI and 0x quote boundary, allowance state, depeg checks, health factors, and positive-net-edge enforcement. x402 is payment/access infrastructure, not a swap provider. Risk analysis does not authorize, broadcast, confirm, or settle a transaction.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "risk"
+    }
+  ],
+  "operatingRules": [
+    "A critical flag means stop. Do not continue to signing.",
+    "A high flag means present the issue and require explicit user confirmation after remediation.",
+    "Never hide approval risk behind expected APY or point farming upside.",
+    "Never use referral links inside a risk warning.",
+    "Never claim a route is safe because it is popular. Use the returned flags.",
+    "A valid EVM address is not a verified spender. Unknown identity is a risk state, not a pass.",
+    "Prefer exact or narrowly buffered approvals. More than 20% above `requiredAmount` requires review; more than 10x is high risk.",
+    "Compare the final unsigned transaction with an independently captured expected envelope. Any target, chain, value, or calldata-hash mismatch is a halt.",
+    "A `pass` means only that these policy checks found no supplied-data violation. It is never a smart-contract audit or RPC simulation."
+  ],
+  "requiredEnv": {
+    "FARMDASH_API_KEY": {
+      "description": "Optional Bearer token for Pioneer or Syndicate tier. Scout mode can use limited security checks without a key.",
+      "required": false
+    }
+  },
+  "links": {
+    "website": "https://www.farmdash.one/",
+    "agentHub": "https://www.farmdash.one/agents",
+    "canonicalSkill": "https://www.farmdash.one/openclaw-skills/farmdash-camp-guard/SKILL.md",
+    "documentation": "https://www.farmdash.one/docs",
+    "status": "https://www.farmdash.one/api/v1/agent/status",
+    "openApi": "https://www.farmdash.one/agents/openapi.yaml",
+    "mcpDiscovery": "https://www.farmdash.one/.well-known/mcp.json",
+    "fees": "https://www.farmdash.one/fees",
+    "security": "https://www.farmdash.one/security"
+  }
+}

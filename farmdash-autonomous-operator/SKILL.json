@@ -1,0 +1,387 @@
+{
+  "name": "FarmDash Autonomous Operator",
+  "version": "2.1.1",
+  "description": "Orchestrate policy-bounded DeFi sessions, OODA plans, intent state, circuit breakers, and recovery; execution stays status-gated and separately authorized.",
+  "tags": [
+    "defi",
+    "autonomous-defi-agent",
+    "ai-agent",
+    "defi-automation",
+    "openclaw",
+    "agent-orchestration",
+    "session-key",
+    "delegated-execution",
+    "ooda-loop",
+    "intent-management",
+    "risk-controls",
+    "circuit-breaker",
+    "agent-recovery",
+    "zero-custody",
+    "mcp",
+    "web3",
+    "farmdash"
+  ],
+  "author": "FarmDash Pioneers (@Parmasanandgarlic)",
+  "homepage": "https://www.farmdash.one/agents",
+  "icon": "operator",
+  "tools": [
+    {
+      "name": "create_session",
+      "description": "Creates a persistent agent session and returns a one-time `sessionToken`. Store it securely in the agent runtime. FarmDash stores only a hash.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "session_heartbeat",
+      "description": "Extends the session expiry. Use it during active autonomous loops. If a session expires, the Operator must enter Crash Recovery mode (see below).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "get_farming_context",
+      "description": "Reads shared context for the session:\r\n* objective.\r\n* portfolio scope.\r\n* risk settings (including dynamically tuned `riskMultiplier`).\r\n* workflow state (ACTIVE, HALTED, RECOVERING).\r\n* ledger summary.\r\n* data freshness timestamps.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "patch_farming_context",
+      "description": "Patches shared context. The server controls `sessionId`, `agentAddress`, `revision`, and `updatedAt`; do not try to override them. Used for Dynamic Risk Autotuning and Circuit Breakers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "get_event_stream_snapshot",
+      "description": "Reads recent agent events as a JSON snapshot. Use this before planning and after execution.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "verify_delegation",
+      "description": "Checks whether the user's Hyperliquid API wallet delegation is in place for autonomous perps.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "configure_autopilot",
+      "description": "Configure bounded autonomous cycles. Respect user allowlists, risk limits, and execution confirmations. (Syndicate tier required for activation).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "autopilot_cycle",
+      "description": "Run bounded autonomous cycles. Respect user allowlists, risk limits, and execution confirmations. (Syndicate tier required).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "agent_onboard",
+      "description": "One-call setup guide and capability map for autonomous operation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "get_agent_activity",
+      "description": "Lists durable FarmDash receipts, optionally filtered by intent and status. Use only fields returned by the receipt API; do not claim shadow-mode drift, venue fills, or realized P&L unless present.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "resolve_defi_intent",
+      "description": "Resolves a high-level natural language DeFi intent into structured parameters for policy/simulation/approval. Supervised execution uses local EIP-191/EIP-712 signing; bounded autonomy requires the separate grant described above. Autonomous Operator never receives private keys.\r\n\r\n**Intent Lifecycle — Plan → Approve → Execute → Observe**\r\nThe FarmDashIntent lifecycle enforces a strict pipeline. Every state-changing action must pass through policy, simulation, and approval gates before execution is allowed. These tools never hold private keys or broadcast transactions directly.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "create_intent",
+      "description": "Create a durable FarmDashIntent. This records what an agent wants to do — it never prepares, signs, broadcasts, or executes. The intent must include actor, action, chain, protocol, wallet, params, constraints, evidence, and `research_evidence_hash` (passed from Trail Intelligence).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "policy_check_intent",
+      "description": "Readiness probe for the generic intent policy gate. Public OpenClaw callers cannot provide trusted policy decisions; until the server policy evaluator is configured this returns policy_evaluator_unconfigured. Tool discovery does not grant policy authority.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "simulate_intent",
+      "description": "Readiness probe for the generic intent simulation gate. Public OpenClaw callers cannot record trusted simulation evidence; until a server verifier is configured this returns simulation_verifier_unconfigured. Tool discovery does not grant simulation authority.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "request_approval_payload",
+      "description": "Build the EIP-712 IntentApproval payload that the human approver signs. This does not record approval or execute — it only constructs the typed data for the approver's wallet to sign.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "request_human_approval",
+      "description": "Compatibility wrapper for submitting a signed EIP-712 IntentApproval. Use `request_approval_payload` first to build the exact typed data, then submit the signature through this tool.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "execution"
+    },
+    {
+      "name": "submit_signed_approval",
+      "description": "Submit a signed EIP-712 IntentApproval payload to approve or reject an intent. This does not prepare or execute the intent — it only records the cryptographic approval decision.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "execution"
+    },
+    {
+      "name": "get_approval_status",
+      "description": "Inspect whether an intent is awaiting approval, has been approved, was rejected, or is already executed. Returns the current lifecycle status and approval metadata.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "prepare_intent",
+      "description": "Validate typed adapter support and prepare an intent after policy, simulation, and approval gates pass. Registered adapters provide allowlisted validation. This does not broadcast a transaction.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "execute_approved_intent",
+      "description": "Record the submitted, confirmed, failed, or rejected receipt for a prepared typed-adapter intent. Raw arbitrary calldata is rejected by the lifecycle API. Use this after the signing wallet has broadcast the transaction.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "execution"
+    },
+    {
+      "name": "confirm_execution",
+      "description": "Record a confirmed receipt for a prepared or signed intent with a transaction hash. Use `get_receipt` for follow-up observation after submission.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "execution"
+    },
+    {
+      "name": "get_receipt",
+      "description": "Fetch one durable FarmDash receipt by receipt ID (`fdrcpt_*`). Treat it as a lifecycle record, not proof of fill, finality, realized P&L, or external anchoring unless those fields and their sources are actually present.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "hire_virtuals_specialist",
+      "description": "Prepare a non-spendable, tenant-owned Virtuals ACP tender and return the exact EIP-712 approval payload. The customer's registered ACP wallet must sign that payload locally. Its local FarmDash ACP connector then creates and funds the three specialist jobs after explicit per-action approval. FarmDash is only the separately registered evaluator: it verifies the client, provider, evaluator, budget cap, deliverables, simulation, and Base receipts before completing or rejecting already customer-funded escrow jobs. Never provide a private key or RPC URL to this tool.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "pause_autopilot",
+      "description": "Pause an available bounded-autopilot session. Read /api/v1/agent/status first; return the typed readiness error when runtime prerequisites are unmet.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "resume_autopilot",
+      "description": "Resume an available bounded-autopilot session after rechecking policy, grant, and runtime readiness.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "grant_session_key",
+      "description": "Create a separately authorized, scoped, expiring session-key grant. A session token or chat instruction is never a substitute for this grant.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "execution"
+    },
+    {
+      "name": "revoke_session_key",
+      "description": "Revoke a session-key grant and verify the returned backend state before representing authority as removed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "execution"
+    },
+    {
+      "name": "session_key_status",
+      "description": "Read authoritative grant status, limits, expiry, and revocation state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "get_cycle_status",
+      "description": "Read one bounded-autopilot cycle and its evidence-backed status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "execute_cycle_actions",
+      "description": "Request execution of eligible cycle actions only when the live status contract and active grant permit it; never infer enablement from tool discovery.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "execution"
+    },
+    {
+      "name": "create_mee_intent",
+      "description": "Create a Biconomy MEE cross-chain intent record. Creation is not simulation, authorization, submission, or settlement.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "simulate_mee_intent",
+      "description": "Simulate a created MEE intent and stop when costs, risk, or net edge fail policy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "submit_mee_intent",
+      "description": "Submit a separately signed, successfully simulated MEE intent only when the live capability gate is available.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "execution"
+    },
+    {
+      "name": "get_mee_intent_status",
+      "description": "Read authoritative MEE intent status; pending or submitted is not settled.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    }
+  ],
+  "operatingRules": [],
+  "requiredEnv": {
+    "FARMDASH_API_KEY": {
+      "description": "Optional Bearer token for Pioneer or Syndicate tier. Scout session status checks work without any key or with the public fd_scout_free token. Syndicate is $199/mo for teams, serious agents, 50k req/day, webhooks, unrestricted CORS, and advanced session/control tooling (including autonomous autopilot cycles).",
+      "required": false
+    }
+  },
+  "links": {
+    "website": "https://www.farmdash.one/",
+    "agentHub": "https://www.farmdash.one/agents",
+    "canonicalSkill": "https://www.farmdash.one/openclaw-skills/farmdash-autonomous-operator/SKILL.md",
+    "documentation": "https://www.farmdash.one/docs",
+    "status": "https://www.farmdash.one/api/v1/agent/status",
+    "openApi": "https://www.farmdash.one/agents/openapi.yaml",
+    "mcpDiscovery": "https://www.farmdash.one/.well-known/mcp.json",
+    "fees": "https://www.farmdash.one/fees",
+    "security": "https://www.farmdash.one/security"
+  }
+}

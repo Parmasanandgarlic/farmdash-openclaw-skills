@@ -1,0 +1,78 @@
+{
+  "name": "FarmDash Wagon Steward",
+  "version": "0.7.1",
+  "description": "Analyze read-only multichain EVM portfolios, wallet balances, idle stablecoins, capital efficiency, allocation drift, and rebalance proposals.",
+  "tags": [
+    "defi",
+    "defi-portfolio",
+    "crypto-portfolio-tracker",
+    "wallet-analytics",
+    "multichain-portfolio",
+    "evm-wallet",
+    "portfolio-analysis",
+    "asset-allocation",
+    "portfolio-rebalancing",
+    "capital-efficiency",
+    "idle-stablecoins",
+    "position-tracking",
+    "onchain-portfolio",
+    "read-only",
+    "openclaw",
+    "ai-agent",
+    "mcp",
+    "farmdash"
+  ],
+  "author": "FarmDash Pioneers (@Parmasanandgarlic)",
+  "homepage": "https://www.farmdash.one/agents",
+  "icon": "🪵",
+  "tools": [
+    {
+      "name": "get_portfolio_summary",
+      "description": "(Pioneer)\r\n\r\nTop-level snapshot. Use this first — it grounds every other recommendation.\r\n\r\n**",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "get_position_health",
+      "description": "(compatibility alias; Pioneer)\r\n\r\nDespite its legacy name, the current MCP mapping calls `/api/v1/agent/performance`. It returns FarmDash activity metrics (swap count, volume, fees, average size, protocol diversity, active days), Trail Cred/ranking data, daily activity, and a timestamp.\r\n\r\nIt does **not** return farming positions, APR, unrealized or realized P&L, impermanent loss, collateral health, liquidation distance, or rebalance hints. Never use it to claim a DeFi position is healthy. For a real position review, obtain protocol-native position/debt data and authoritative prices; if those tools are unavailable, say position health is unavailable.\r\n\r\n---",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "get_idle_capital",
+      "description": "(Pioneer)\r\n\r\nSurfaces stablecoins or unstaked native assets sitting unused.\r\n\r\n**",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    }
+  ],
+  "operatingRules": [],
+  "requiredEnv": {
+    "FARMDASH_API_KEY": {
+      "description": "Optional Bearer token used for Pioneer-tier rate limits and full position depth. Scout tier (5 req / 24h, summary only) requires no key or can use the public fd_scout_free token. The token is sent only as an Authorization header to https://www.farmdash.one for tier identification.",
+      "required": false
+    }
+  },
+  "links": {
+    "website": "https://www.farmdash.one/",
+    "agentHub": "https://www.farmdash.one/agents",
+    "canonicalSkill": "https://www.farmdash.one/openclaw-skills/farmdash-wagon-steward/SKILL.md",
+    "documentation": "https://www.farmdash.one/docs",
+    "status": "https://www.farmdash.one/api/v1/agent/status",
+    "openApi": "https://www.farmdash.one/agents/openapi.yaml",
+    "mcpDiscovery": "https://www.farmdash.one/.well-known/mcp.json",
+    "fees": "https://www.farmdash.one/fees",
+    "security": "https://www.farmdash.one/security"
+  }
+}

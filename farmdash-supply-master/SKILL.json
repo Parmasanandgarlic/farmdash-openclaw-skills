@@ -1,0 +1,86 @@
+{
+  "name": "FarmDash Supply Master",
+  "version": "1.1.1",
+  "description": "Compare DeFi yield pools by base and reward APY, TVL, history, stablecoin and impermanent-loss risk, data quality, and net expected yield.",
+  "tags": [
+    "defi",
+    "defi-yield",
+    "yield-farming",
+    "yield-aggregator",
+    "apy-comparison",
+    "stablecoin-yield",
+    "liquidity-pools",
+    "defi-analytics",
+    "yield-optimization",
+    "impermanent-loss",
+    "tvl-analysis",
+    "reward-token-risk",
+    "crypto-yield-analysis",
+    "openclaw",
+    "ai-agent",
+    "mcp",
+    "farmdash"
+  ],
+  "author": "FarmDash Pioneers (@Parmasanandgarlic)",
+  "homepage": "https://www.farmdash.one/agents",
+  "icon": "vault",
+  "tools": [
+    {
+      "name": "compare_yields",
+      "description": "",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chains": {
+            "type": "string",
+            "description": "optional chain filter."
+          },
+          "assets": {
+            "type": "string",
+            "description": "optional symbols such as `USDC`, `ETH`, `SOL`."
+          },
+          "projects": {
+            "type": "string",
+            "description": "optional protocol filter."
+          },
+          "riskPreference": {
+            "type": "string",
+            "description": "`conservative`, `balanced`, or `aggressive`."
+          },
+          "minTvlUsd": {
+            "type": "string",
+            "description": "minimum pool depth."
+          },
+          "stableOnly": {
+            "type": "string",
+            "description": "restrict to stablecoin pools."
+          },
+          "limit": {
+            "type": "string",
+            "description": "max results."
+          }
+        }
+      },
+      "outputHints": [],
+      "category": "read"
+    }
+  ],
+  "operatingRules": [],
+  "requiredEnv": {
+    "FARMDASH_API_KEY": {
+      "description": "Optional Bearer token for higher FarmDash limits.",
+      "required": false
+    }
+  },
+  "links": {
+    "website": "https://www.farmdash.one/",
+    "agentHub": "https://www.farmdash.one/agents",
+    "canonicalSkill": "https://www.farmdash.one/openclaw-skills/farmdash-supply-master/SKILL.md",
+    "documentation": "https://www.farmdash.one/docs",
+    "status": "https://www.farmdash.one/api/v1/agent/status",
+    "openApi": "https://www.farmdash.one/agents/openapi.yaml",
+    "mcpDiscovery": "https://www.farmdash.one/.well-known/mcp.json",
+    "fees": "https://www.farmdash.one/fees",
+    "security": "https://www.farmdash.one/security"
+  }
+}

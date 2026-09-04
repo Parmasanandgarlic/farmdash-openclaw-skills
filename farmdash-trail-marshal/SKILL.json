@@ -1,0 +1,87 @@
+{
+  "name": "FarmDash Trail Marshal",
+  "version": "1.1.1",
+  "description": "Orchestrate guarded multi-skill DeFi workflows with named recipes, quality gates, session-scoped runs, status tracking, and no key custody.",
+  "tags": [
+    "defi",
+    "defi-workflows",
+    "agent-orchestration",
+    "workflow-automation",
+    "multi-agent-system",
+    "ai-agent-workflows",
+    "defi-automation",
+    "quality-gates",
+    "workflow-status",
+    "session-management",
+    "risk-management",
+    "yield-farming-workflow",
+    "airdrop-workflow",
+    "zero-custody",
+    "openclaw",
+    "mcp",
+    "farmdash"
+  ],
+  "author": "FarmDash Pioneers (@Parmasanandgarlic)",
+  "homepage": "https://www.farmdash.one/agents",
+  "icon": "🪪",
+  "tools": [
+    {
+      "name": "list_workflows",
+      "description": "Returns the canonical workflow catalog. Each entry includes a name, goal, required tier, the number of explicit user confirmations the recipe requires, and the sub-skills it composes.\r\n\r\n**",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "plan_workflow",
+      "description": "Builds the Workflow Quality Gate for a named recipe. Inputs are `workflowId`, optional `installedSkills`, and optional `agentAddress`. The output classifies:\r\n\r\n- available steps.\r\n- missing steps.\r\n- state-changing steps.\r\n- confirmation count.\r\n- fallback mode: `ready`, `research_only`, or `analysis_only`.\r\n\r\nUse this before telling the user a workflow is executable.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "run_workflow",
+      "description": "Creates a guarded workflow run record for a live session. Inputs are `workflowId`, `sessionId`, `agentAddress`, `sessionToken`, and optional `installedSkills`.\r\n\r\nImportant: `run_workflow` does not run execution tools. If a workflow includes `execute_swap`, `resolve_defi_intent`, or `execute_perp_order`, the run status becomes `awaiting_confirmation` and the owning execution skill must still present fresh data and obtain explicit user approval.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    },
+    {
+      "name": "get_workflow_status",
+      "description": "Reads a workflow run by `runId`. Use this after a long-running loop, after a context restore, or before resuming a paused autonomous session.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputHints": [],
+      "category": "read"
+    }
+  ],
+  "operatingRules": [],
+  "requiredEnv": {
+    "FARMDASH_API_KEY": {
+      "description": "Optional Bearer token for Pioneer or Syndicate workflow features. Scout workflow catalog works without any key or with the public fd_scout_free token.",
+      "required": false
+    }
+  },
+  "links": {
+    "website": "https://www.farmdash.one/",
+    "agentHub": "https://www.farmdash.one/agents",
+    "canonicalSkill": "https://www.farmdash.one/openclaw-skills/farmdash-trail-marshal/SKILL.md",
+    "documentation": "https://www.farmdash.one/docs",
+    "status": "https://www.farmdash.one/api/v1/agent/status",
+    "openApi": "https://www.farmdash.one/agents/openapi.yaml",
+    "mcpDiscovery": "https://www.farmdash.one/.well-known/mcp.json",
+    "fees": "https://www.farmdash.one/fees",
+    "security": "https://www.farmdash.one/security"
+  }
+}
