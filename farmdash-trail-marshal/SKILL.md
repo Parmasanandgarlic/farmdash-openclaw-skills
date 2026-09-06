@@ -15,6 +15,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Trail Marshal
 
+> Use this skill when running a multi-step DeFi goal: pick a named, confirmation-gated recipe instead of improvising the sequence at runtime.
+
 > **Security Posture.** Guarded orchestration only. Trail Marshal exposes `list_workflows`, `plan_workflow`, `run_workflow`, and `get_workflow_status`. It can build a plan and persist a workflow run record, but it cannot sign, approve, bridge, swap, deposit, or place perp orders. Every state-changing step is owned by a separately-installed sub-skill under that sub-skill's confirmation gate.
 
 ## What this skill does
@@ -81,6 +83,9 @@ Reads a workflow run by `runId`. Use this after a long-running loop, after a con
 
 ## Workflow catalog (high level)
 
+### Which Recipe for Which Goal
+Idle stables or ladder intent: `stablecoin_yield_ladder`, then `idle_capital_deploy`. Existing-book review: `rebalance_portfolio`, `rotate_quarterly`, or `yield_optimization`. Risk or exit: `protect_portfolio` for scans, `emergency_exit` for unwinds. Post-trade: `post_trade_ledger_review` then `post_execution_quality_review`. Pre-trade validation: `pre_trade_edge_audit`, `funding_carry_break_even_audit`, `perps_liquidation_buffer_check`. Continuous sessions: `session_command_center`. Never use `sybil_dilution` for transactions.
+
 Eighteen recipes are published. Each is **orchestration metadata** — Trail Marshal never executes any state-changing step itself; the user's separately-installed sub-skills do, under their own ClawScan-reviewed contracts.
 
 | ID | Goal | Tier | User confirmations |
@@ -128,6 +133,9 @@ If the runtime catalog references a skill that is not installed in the user's en
 
 ### Workflow Quality Gate (v0.2)
 
+### Gate Before You Present
+Run `plan_workflow` with `workflowId`, `installedSkills`, and `agentAddress` before calling any recipe executable. Executable requires every state-changing step's owning skill installed; a missing execution step forces `analysis_only`, a missing read-only step lowers confidence. Quote the confirmation count up front as per execution step unless the live catalog is stricter.
+
 Before presenting a recipe as executable, classify every step:
 
 ```json
@@ -167,6 +175,9 @@ If a recipe skips SENSE, it is unsafe. If it skips VERIFY, the agent never impro
 
 ### Confirmation gate
 
+### Multi-Leg Execution Disclosure
+Tell the user multi-leg execution is non-atomic unless the adapter proves otherwise, and state leg order, maximum unhedged time, partial-fill handling, abort conditions, and unwind before the first signature. Trail Marshal cannot pre-confirm anything; each confirmation happens in the owning sub-skill's quote path, and `delta_neutral_setup` stays research-only until a paired adapter exists.
+
 Trail Marshal cannot pre-confirm anything. Each user confirmation in a recipe happens at the moment the user's *separate* sub-skill presents its quote — not in Trail Marshal's call path. If asked to run a recipe without intermediate review, the agent should refuse and explain the contract.
 
 For `delta_neutral_setup`, the current catalog intentionally stops before execution. Neither `execute_swap` nor `execute_perp_order` can atomically bind both legs, and standalone `funding_arb` execution is analysis-only. A future paired adapter must bind both legs, maximum basis/slippage, timeout, partial-fill policy, and unwind before this workflow becomes executable.
@@ -186,6 +197,9 @@ A recipe's required tier is the **maximum** of its sub-skill tiers. When a user 
 - **Speak in workflows, not tool soup.** Quote a recipe's name and goal when presenting a plan.
 - **Quote the `confirms` count up front** so the user knows how many user-confirmation steps the recipe involves.
 - **Re-fetch and re-present** if more than ~5 minutes pass between catalog read and the user's review.
+
+### Catalog Freshness Discipline
+Cache `list_workflows` for no longer than one hour, or five minutes once the user is actively approving. If more than five minutes pass after the user reviews a plan, re-fetch the catalog, re-run the read-only Sense steps, and re-present before any handoff to an execution sub-skill.
 - **No new analysis.** Trail Marshal returns recipe metadata; it does not editorialize or override what other skills produce.
 
 ## Risk warnings the agent should surface

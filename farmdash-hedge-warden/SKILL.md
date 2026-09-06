@@ -15,6 +15,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Hedge Warden
 
+> Use this skill when protecting spot exposure: sizing a delta hedge before volatility, funding, or basis risk eats the yield.
+
 Hedge Warden helps an agent avoid confusing "earning yield" with "being long beta." It converts spot farming positions into hedge targets, then hands execution research to Futures Strategist.
 
 It never signs or submits perp orders.
@@ -43,6 +45,9 @@ Sizing formula: `spotNotionalUsd × beta × targetHedgeRatio`. Confidence never 
 
 ## Agent Rules
 
+### Hedge Pre-Trade Profit Checklist (Additive)
+Before handoff, record: total spot notional, per-asset beta, targetHedgeRatio, sizing formula spotNotional x beta x targetHedgeRatio, expected funding plus execution drag over the stated hedge horizon, and portfolio concentration across asset, stablecoin, protocol, chain, venue, and correlated factor. Label negative-carry hedges as insurance cost, not positive edge. Require confidence at or above 0.60 or block execution handoff until mapping, delta, and notional are independently verified; confidence never shrinks hedge notional. Hand only executionEligible legs to Futures Strategist.
+
 - Treat this as a hedge plan, not a trade signal.
 - Re-run if spot exposure changes by more than 10%.
 - Re-run if volatility regime changes.
@@ -57,6 +62,9 @@ Sizing formula: `spotNotionalUsd × beta × targetHedgeRatio`. Confidence never 
 
 ## Standard Flow
 
+### Hedge Invalidation and Unwind Rules (Additive)
+Re-run recommend_delta_hedge when spot exposure moves over 10% or volatility regime changes. Net existing spot and perp exposure before sizing; the endpoint does not subtract existing hedges. Verify the perp is a valid hedge instrument (symbols alone do not prove correlation, redemption parity, or basis stability). If Futures Strategist returns no_trade, the hedge is not executable. After both non-atomic legs settle, re-read spot/perp state and report residual delta; delta-neutral is measured, not assumed. If one leg fails, stop dependents and present the predefined unwind.
+
 1. Use Wagon Steward to measure spot exposure.
 2. Use Trail Intelligence and Supply Master to understand why the spot leg exists.
 3. Call `recommend_delta_hedge`.
@@ -66,6 +74,9 @@ Sizing formula: `spotNotionalUsd × beta × targetHedgeRatio`. Confidence never 
 7. After both non-atomic legs settle, re-read spot/perp state and report residual delta; if one leg fails, stop dependent actions and present the predefined unwind.
 
 ## Disclaimers
+
+### Hedge Report-Back Template (Additive)
+Report: spot legs with asset, notionalUsd, beta; recommended hedge notional and per-asset short legs; handoff instructions; invalidation rules; dataQuality, requiresExposureReview, executionEligible, and residual exposure per leg; fresh Futures Strategist research (scan_market_conditions, get_futures_account, analyze_futures_strategy, calculate_position_size) with timestamps; explicit user confirmation; post-settle spot/perp re-read with residual delta and funding drag vs horizon. Mark absent evidence unavailable. Never present Hedge Warden output alone as execution authority.
 
 Hedges can lose money, over-hedge, under-hedge, or fail during volatile markets. Funding, liquidation risk, basis, and venue risk can erase yield. This skill is not financial advice.
 

@@ -15,6 +15,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Ledger Keeper
 
+> Use this skill after trading: reconciling what happened, what it cost, and exporting clean records — without invented fills.
+
 Ledger Keeper is the post-trade review skill. Use it after swaps, hedges, rotations, or autonomous sessions to reconcile recorded activity and export clean records.
 
 It does not execute trades. It does not produce tax advice.
@@ -43,6 +45,9 @@ Outputs:
 
 A transaction hash counts as broadcast, not confirmation. Only `settlement_status: confirmed` counts as a confirmed spot event. Futures notional includes submitted `order_submitted` events only and is not a fill, exposure, or P&L measure.
 
+### Confirmation Gate Before Counting Results
+Count only `settlement_status: confirmed` rows as confirmed spot events; treat hashes without confirmation as broadcast-only; treat futures `order_submitted` rows as submission counts with estimated notional only; do not mix ledger review with execution confirmation; never infer fills, confirmation, tax treatment, or venue tax lots from protocol labels or unconfirmed rows.
+
 ### `ledger_tax_export`
 
 Exports recorded spot execution rows as CSV with:
@@ -63,6 +68,9 @@ Futures activity requires venue fills for tax-lot accounting and is not represen
 
 1. After execution, call `ledger_realized_pnl` for the active date range.
 2. Compare the ledger summary to Wagon Steward's current portfolio view.
+
+### Post-Session Profit Review
+After `ledger_realized_pnl` for the active date range: list spot event count vs confirmed spot event count, spot volume, recorded execution costs, and futures event count with estimated notional when records exist; reconcile opening inventory + transfers + trades + income minus fees against Wagon Steward closing inventory; report unexplained residuals and missing-table or degraded-source warnings before any performance discussion.
 3. If the user asks for records, call `ledger_tax_export`.
 4. Tell the user the export is informational and should be reviewed by a qualified professional.
 
@@ -72,6 +80,9 @@ Futures activity requires venue fills for tax-lot accounting and is not represen
 - Never call estimated notional a realized gain or loss.
 - Never infer fills from submitted orders, or confirmation from a transaction hash.
 - Realized P&L requires authoritative fills, closed P&L, funding, venue fees, gas, transfers, and cost-basis methodology. If any are absent, return unavailable rather than zero.
+
+### Cost-Drag Ledger Checklist
+For each review period, tabulate recorded execution costs separately from volume; list absent inputs (authoritative fills, closed P&L, funding, venue fees, gas, transfers, cost-basis methodology); return unavailable rather than zero when any are missing; never present estimated notional, submitted orders, or broadcast hashes as gains, fills, or confirmations; keep `calculationScope: recorded_activity_and_costs_only` visible.
 - Reconcile opening inventory + transfers + trades + income - fees against closing inventory. Report unexplained residuals before discussing performance.
 - Never hide missing-table or degraded-source warnings.
 - Do not mix ledger review with execution confirmation.
@@ -79,6 +90,9 @@ Futures activity requires venue fills for tax-lot accounting and is not represen
 ## Disclaimers
 
 Ledger Keeper provides informational records only. It is not tax, legal, accounting, or investment advice.
+
+### Report-Back Template — Activity / Costs / Invalidation / Records
+Report: agentAddress + start / end; confirmed vs broadcast spot counts with `realizedPnlUsd: null` stated plainly; recorded costs; futures `order_submitted` notional labeled not-a-fill; invalidation (any missing fill, fee, funding, or basis input means no realized P&L claim); reconciliation residual vs Wagon Steward view; and CSV availability via `ledger_tax_export` (agent address, date, protocol, from/to tokens, volume, recorded cost, tx hash, chain id) for professional review.
 
 **Install:** Copy this file into your OpenClaw workspace, or fetch `https://www.farmdash.one/openclaw-skills/farmdash-ledger-keeper/SKILL.md`.
 

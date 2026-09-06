@@ -15,6 +15,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Autonomous Operator
 
+> Use this skill when running supervised sessions: persistent multi-skill context, bounded autopilot loops, circuit breakers, and recovery — never key custody.
+
 > [!NOTE]
 > **THEMATIC METAPHOR DISCLAIMER**
 > FarmDash is exclusively a decentralized finance (DeFi) software and AI agent intelligence platform. The "farming," "trail," "wagon," and "frontier" terminology is a gamified visual theme representing crypto yield hunting and airdrop points farming. It does not relate to physical agriculture or agrifood industries.
@@ -69,6 +71,9 @@ The Autonomous Operator is no longer a simple linear state machine. It now opera
 Creates a persistent agent session and returns a one-time `sessionToken`. Store it securely in the agent runtime. FarmDash stores only a hash.
 
 ### `session_heartbeat`
+
+### Heartbeat and Freshness Discipline
+Call `session_heartbeat` during every active autonomous loop to extend expiry; on expiry enter Crash Recovery. Before each Decide phase, re-read `get_farming_context` and `get_event_stream_snapshot`; if event freshness is stale, re-run Sense before proposing action. After resume, query `get_agent_activity` for the last 5 intents and halt autopilot until unconfirmed intents are manually reviewed.
 Extends the session expiry. Use it during active autonomous loops. If a session expires, the Operator must enter Crash Recovery mode (see below).
 
 ### `get_farming_context`
@@ -146,12 +151,18 @@ Record a confirmed receipt for a prepared or signed intent with a transaction ha
 ### Observe Phase
 
 ### `get_receipt`
+
+### Receipt-Grade Profit Reporting
+Report profit only from fields actually present in `get_receipt` or the reconciled ledger summary in `get_farming_context`. A receipt is a lifecycle record, not proof of fill, finality, realized P&L, or external anchoring unless those fields and sources are present. Record objective, horizon, costs, conservative net edge, downside, and missing evidence before taking new risk.
 Fetch one durable FarmDash receipt by receipt ID (`fdrcpt_*`). Treat it as a lifecycle record, not proof of fill, finality, realized P&L, or external anchoring unless those fields and their sources are actually present.
 
 ### `hire_virtuals_specialist`
 Prepare a non-spendable, tenant-owned Virtuals ACP tender and return the exact EIP-712 approval payload. The customer's registered ACP wallet must sign that payload locally. Its local FarmDash ACP connector then creates and funds the three specialist jobs after explicit per-action approval. FarmDash is only the separately registered evaluator: it verifies the client, provider, evaluator, budget cap, deliverables, simulation, and Base receipts before completing or rejecting already customer-funded escrow jobs. Never provide a private key or RPC URL to this tool.
 
 ## Global Circuit Breakers & Crash Recovery (v2.0 Upgrade)
+
+### Profit Never Overrides a Halt
+When context is patched to `HALTED`, stop all new-risk actions and preserve only reduce/revoke/reconcile paths. Do not launch a dependent leg after submitted/pending/partial/unknown settlement. Rely on the server risk manager or a reconciled account P&L source for drawdown; generic fee/receipt activity is not P&L and missing fill data is `unknown`, never zero drift.
 
 ### Circuit Breakers
 The Operator monitors returned context, event, grant, receipt, and authoritative account state. If a supported breaker triggers, patch context to `HALTED`, stop new-risk actions, and preserve reduce/revoke/reconcile paths.
@@ -180,6 +191,9 @@ If the Operator resumes a session (`create_session` or `session_heartbeat`) and 
 * Record objective/horizon, data provenance/freshness, full costs, conservative net edge, downside/invalidation, portfolio impact, and missing evidence before new risk.
 * Observe authoritative settlement before dependent actions. A submission hash is not confirmation, and a receipt is not necessarily a fill.
 * Use the smallest authority and budget required. Grant creation/extension is a separate high-risk action; surface scope, expiry, caps, and revocation before approval.
+
+### Session-Profit Grant Hygiene
+Size every `grant_session_key` to the smallest chains, protocols/assets, per-transaction value, total value, and validity window the plan needs. Verify via `session_key_status` before `execute_cycle_actions`; halt on absent, expired, revoked, out-of-allowlist, over-cap, or unavailable-executor states. Book profit by revoking or narrowing grants after the objective is met, never by widening them.
 
 ## Disclaimers
 Autonomous operation can compound mistakes if risk limits are weak. Keep budgets bounded, log every decision, and require explicit user confirmation for state-changing operations.

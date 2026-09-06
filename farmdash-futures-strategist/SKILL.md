@@ -14,6 +14,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Futures Strategist
 
+> Use this skill when trading perps: researching Hyperliquid markets, sizing positions with drawdown guards, or preparing a user-signed perp order.
+
 ## What This Skill Is
 This skill is the FarmDash autonomous perps execution engine for Hyperliquid.
 
@@ -406,6 +408,9 @@ Perps action thresholds:
 ```
 
 ### W3: "Funding-rate pair scout"
+
+### Funding-Arbitrage Screening Checklist (Additive)
+Screen: 1) scan_funding_rates shortlist of current + predicted snapshots; 2) scan_market_conditions for regime, ATR volatility, and liquidity proxy (halt leveraged families if top-of-book depth below $250k or ATR above 1.5x 30d average unless funding strongly compensates); 3) analyze_futures_strategy with coin, agentAddress, optional accountAddress, optional riskMultiplier 0.1-1.0; 4) calculate_position_size with equity, entryPrice, stopPrice for per-leg margin. Present long venue, short venue, expected daily carry gross/net of both-leg fees, slippage, borrow, and bridge, basis stress, flip-to-zero scenario, and invalidation. Stop at analysis; compatibility executor cannot atomically bind both legs.
 ```text
 1. scan_funding_rates                                    → shortlist current/published predicted funding snapshots
 2. scan_market_conditions on the underlying asset        → confirm directional risk is acceptable
@@ -416,6 +421,9 @@ Perps action thresholds:
 ```
 
 ### W4: "Drawdown response"
+
+### Perps Report-Back Template (Additive)
+Report: family quoted verbatim, confidence N/100 (not probability), regime with one-line explanation, entry band exact, stop with rationale, target or trailing note, simulation est-liq (non-authoritative), plus/minus 1 ATR PnL, 24h carry, adaptiveRisk reason verbatim, noTradeReason verbatim when present, expiresAt, predictedRate as snapshot only. Join authoritative fills to decision-time mid, fill-weighted price, side, fees, funding; compute side-adjusted shortfall or mark unknown. Flag shortfall over 50 bps on more than 2 fill-backed trades, daily loss near -3%, weekly near -7%, or circuit -15% for human review and reduced riskMultiplier.
 ```text
 1. get_futures_account                  → current drawdown vs guardrails
 2. REVIEW authoritative Hyperliquid order statuses and fills when available; get_agent_performance is not a fill feed
@@ -457,6 +465,9 @@ Perps action thresholds:
 ```
 
 ### W8: "Funding Carry Break-Even Audit"
+
+### Pre-Trade Profit Checklist for Perps (Additive)
+Before any non-reduce-only order, record: coin, direction, analyzed entry band, stop, target, leverage metadata, margin impact, regime, confidence N/100 with scale note (heuristic, not win probability), data timestamp, order type/TIF, reduce-only status, exact limit/trigger, builder f=1 (0.1 bp = 0.001% of filled notional) with recipient, plus 24h and 72h funding carry. Compute breakEvenHours = totalFeesAndSlippageUsd / expectedHourlyFundingUsd. Require confidence >= 60, stop present, account state fresh, and breakEvenHours <= 24 with positive carry under funding-to-zero/flip; else no_trade or monitor.
 ```text
 1. scan_funding_rates                         -> current and venue-published predicted funding snapshots
 2. scan_market_conditions                     -> volatility and directional risk
@@ -512,6 +523,9 @@ Futures Strategist is the execution arm for risk and hedging. It composes cleanl
 *Important:* Futures Strategist never invokes another skill on its own. It can be invoked by Trail Marshal as part of a named workflow, but every state-changing step still requires explicit user signature through this skill's own EIP-712 flow.
 
 ## Failure Mode Playbook (v2.2)
+
+### Perps Invalidation and Unwind Addendum (Additive)
+Stop before signature when: analysis older than 30s (server gate 60s); entry drift over 50 bps from analyzed band; size, side, price, order type, leverage, or reduce-only changed after signing (rebuild intentHash and re-sign); family neutral, no_trade, or funding_arb standalone; confidence below 60; regime disagrees; stop or authoritative account state missing. On partial fill, do not auto-retry; ask top-up or accept. On funding flip, reconcile both legs and run the predefined unwind; canceling one resting order alone is insufficient if either leg filled. Batch cancel_perp_order up to 50 orderIds and verify per-ID success.
 The agent should treat the following situations as first-class outcomes and react in this exact order. Do not improvise around them.
 
 | Failure mode | Detection | Recommended response |

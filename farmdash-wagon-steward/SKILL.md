@@ -15,6 +15,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Wagon Steward
 
+> Use this skill when asking "what is happening in my wallet": balances, idle capital, allocation drift, and rebalance proposals — read-only, address alone.
+
 > [!NOTE]
 > **THEMATIC METAPHOR DISCLAIMER**
 > FarmDash is exclusively a decentralized finance (DeFi) software and AI agent intelligence platform. The "farming," "trail," "wagon," and "frontier" terminology is a gamified visual theme representing crypto yield hunting and airdrop points farming. It does not relate to physical agriculture or agrifood industries.
@@ -238,6 +240,9 @@ Trail Intelligence  →  Wagon Steward  →  Signal Architect / Futures Strategi
 
 **Important:** Wagon Steward never auto-calls another skill. It produces analysis; the user (or an orchestrator like Trail Marshal) decides what to do with it.
 
+### Report-Back Template — State / Risks / Invalidation / Costs
+Report: address + timestamp/asOf + queried networks; totalValueUsd as partial observable-wallet estimate; topConcentrationPct vs 40% gate; idleCapitalUsd as candidate reserves; priced/unpriced counts; overConcentrated / idleDrag / staleData / routeNeeded flags; invalidation (missing chains, unpriced assets, unavailable debt/perp data blocks net-exposure claims); costs; nextBestAction (hold / monitor / research / quote_swap / reduce / rebalance) + handoff (none / trail_intelligence / trail_marshal / signal_architect / futures_strategist).
+
 ---
 
 ## Output and Coverage Standards
@@ -262,6 +267,9 @@ For any portfolio recommendation the agent should restate that:
 - Balances are read at a moment in time; mempool activity may shift them within minutes
 - Cross-chain holdings may include unverified tokens — Wagon Steward only scores tokens it can price
 - Rebalance plans assume current liquidity; real execution may have higher slippage on volatile pairs
+
+### Rebalance Cost-Drag Checklist
+For every `get_rebalance_plan` discussion report: pre/post-trade weights using conservative executable prices; expectedFeeUSD + expectedSlippageUSD; maxSwaps and maxSlippagePct constraints; netDriftClosedPct; rebalance bands and minimum trade sizes to prevent churn; tax, impermanent loss, and gas notes; and coverage gaps (unpriced assets, missing chains, debt, LP look-through, locked balances). Hand off quotes and signatures to Signal Architect.
 - Capital efficiency is a heuristic, not financial advice
 - The user is solely responsible for the final decision
 
@@ -298,6 +306,9 @@ Decision rules:
 
 - If any chain or token data is missing, say what is missing and lower confidence; never zero missing balances.
 - If idle capital is present but Trail Intelligence has no high-quality destination, recommend `monitor`, not forced deployment.
+
+### Deploy-or-Hold Playbook for Candidate Reserves
+After `get_portfolio_summary` + `get_idle_capital`: confirm gas, collateral, withdrawal, tax, and emergency reserves; call idle funds candidate liquid reserves until confirmed; check Trail Intelligence Trail Heat + risk before any entry; apply the 40% top-concentration gate before adding to the same asset or chain; if no high-quality destination, return `monitor` with nextBestAction hold / monitor / research and handoff none / trail_intelligence.
 - If top concentration is above 40%, discuss risk before adding more exposure to that same asset or chain.
 - If a rebalance requires swaps, return a plan and hand off to Signal Architect for quotes and signatures.
 - If spot exposure needs a hedge, pass the asset, notional size, and risk concern to Futures Strategist; do not size perps from this skill alone.
@@ -316,6 +327,9 @@ Apply limits hierarchically:
 - never call a portfolio delta-neutral until actual spot and hedge fills are reconciled and residual delta is measured.
 
 Unknown balances or liabilities block claims about net exposure. A wallet-balance snapshot alone cannot establish solvency, P&L, or complete portfolio risk.
+
+### Watch Threshold Triage (Derived-Loop Only)
+In `watch_wagon` derived loops using repeated reads, triage concentrationTop1 at 0.50, idleCapitalUSD at 2000, and drawdown7dPct at 5 as review triggers, not execution triggers; on trigger, re-run `get_portfolio_summary`, derive coverage-aware capital efficiency only if inputs are complete, exclude unpriced/missing assets rather than assigning zero, lower confidence on missing data, and route hedge questions to Futures Strategist with asset, notional, and risk concern.
 
 ---
 

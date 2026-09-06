@@ -15,6 +15,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Trail Intelligence — Agent Research Manual
 
+> Use this skill when choosing where to farm: ranking protocols, airdrops, or points programs by Trail Heat, checking sybil risk, or asking "where should I deploy capital next?"
+
 > [!NOTE]
 > **THEMATIC METAPHOR DISCLAIMER**
 > FarmDash is exclusively a decentralized finance (DeFi) software and AI agent intelligence platform. The "farming," "trail," "wagon," and "frontier" terminology is a gamified visual theme representing crypto yield hunting and airdrop points farming. It does not relate to physical agriculture or agrifood industries.
@@ -98,6 +100,9 @@ For any DeFi recommendation the agent should restate, in plain language, that:
 * Smart contracts can be exploited; even high-Trail-Heat protocols carry technical risk.
 * Bridging and cross-chain swaps are irreversible if the wrong address or chain is selected.
 * Slippage, gas, MEV, and routing fees materially affect realized returns.
+
+### Cost-Drag Checklist Before Any Recommend
+Report: `find_capital_route` estimatedGasUsd, estimatedTimeSeconds, maxSlippageBps, and positiveNetEdge; bridge irreversibility note; `simulate_points` limits (no token value, APY, yield decay, gas, eligibility, or reward forecast); missing exit-liquidity and reward-value evidence per the Quant Research Contract; and whether Trail Heat evidence is fresh, stale, or masked. If best route has negative expected edge after gas, bridge fees, and slippage, choose `monitor`.
 * Liquid Staking Tokens (LSTs) can de-peg; leveraged loops amplify liquidation risk.
 * Past Trail Heat performance does not guarantee future scores; programs end and rules change.
 * The user is solely responsible for the final decision. This skill is research, not financial advice.
@@ -122,6 +127,9 @@ How the agent should interpret scores:
 
 The score is one input. Risk, fit, and user goals override it.
 
+### Profit Screening Playbook — Rank-Then-Filter
+When asked for the best farm: 1) `get_agent_events` to exclude ending/snapshot-risk programs; 2) `get_trail_heat` to rank candidates by Blazing (80-100) / Warm (60-79) / Cooling (40-59) / Cold (below 40); 3) `get_historical_trailheat` to keep only flat-or-rising trends; 4) `simulate_points` on 3+ candidates with identical inputs using the stated FarmScore formula; 5) `audit_sybil_risk` and `get_protocol_risk_factors` as veto gates; 6) `find_capital_route` to require positive_edge after gas, bridge fees, and slippage before any `recommend`.
+
 #### 2. get_chain_breakdown
 Protocol distribution across chains: count, percentage, confirmed airdrops, points programs, categories.
 
@@ -138,6 +146,9 @@ Event-to-information mapping (no mandatory close):
 | Snapshot in <48h | Surface the deadline and let the user weigh it. Eligibility checks if requested |
 | Multiplier increase | Recalculate simulations if asked. Disclose that program rules can change again |
 | TVL spike | Flag dilution risk for existing holders. No automatic "add more" suggestion |
+
+### Dilution and Event Guard
+On TVL spike, multiplier increase, snapshot in <48h, or program-ending-soon events: flag dilution and rule-change risk, recalculate `simulate_points` only if asked, surface deadlines without assuming entry, present holding / partial exit / full exit as user-weighed options, and set decision to `monitor` when valuation, exit liquidity, reward value, or data quality is unresolved. Never pair a FarmDash route with an `avoid` verdict.
 | Program ending soon | Inform the user. Exiting is a user decision, not a default close |
 
 ### Pioneer Tier (1,500 req/day, optional Bearer token)
@@ -433,6 +444,9 @@ Trail Intelligence is the eyes of the FarmDash agent stack. It produces analysis
 | **Futures Strategist** | When the user wants to hedge or run a perps strategy on the discovered protocol | The asset + thesis + horizon; FS handles regime, sizing, and execution |
 
 *Important:* Trail Intelligence never auto-invokes another skill. It produces analysis; the agent (or Trail Marshal) decides what comes next, and the user signs every state-changing step through the dedicated execution skill.
+
+### Report-Back Template — Entry / Risks / Invalidation / Costs
+For each ranked candidate report: asOf + sources + staleAfterMs; Trail Heat score, label, and 30-day trend; entry preconditions (token + chain + route feasibility: positive_edge / negative_edge / not_checked); risks (sybilRisk, risk factors, events: none / warning / opportunity); invalidation (sybil high, negative edge, Avoid verdict, or confidence < 0.6); costs (gas, slippage, routing fees); decision (recommend / monitor / avoid / needs_execution_skill) + handoff; commercial disclosure only on user-requested proceed paths.
 
 ## Output Format Standards (v2.2)
 Every Trail Intelligence response includes:

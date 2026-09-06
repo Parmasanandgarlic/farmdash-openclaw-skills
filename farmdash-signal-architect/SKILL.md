@@ -15,6 +15,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Signal Architect — Agent Execution Manual
 
+> Use this skill when moving money: getting a swap quote, simulating it, and preparing a user-signed swap across EVM chains.
+
 > [!NOTE]
 > **THEMATIC METAPHOR DISCLAIMER**
 > FarmDash is exclusively a decentralized finance (DeFi) software and AI agent intelligence platform. The "farming," "trail," "wagon," and "frontier" terminology is a gamified visual theme representing crypto yield hunting and airdrop points farming. It does not relate to physical agriculture or agrifood industries.
@@ -627,6 +629,9 @@ Before asking for a signature, classify the route:
 When route quality is **Yellow**, the correct default is "wait / monitor", not "execute".
 
 ### Two-Quote Drift Check
+
+### Funding-Arbitrage Screening With Spot Leg (Additive)
+For funding ideas: 1) scan_funding_rates for current + predicted snapshots (snapshot only, not guaranteed); 2) scan_market_conditions for regime, volatility, liquidity; 3) analyze_futures_strategy for family + confidence + invalidation; 4) get_swap_quote for the spot-leg gas, bridge, slippage, and FarmDash fee; 5) get_futures_account for equity, margin, and guardrail pressure. Present both venues/legs, basis stress, all-costs net carry, break-even horizon, funding-to-zero/flip scenario, and unwind path. Keep funding_arb analysis-only in the compatibility executor; never claim atomic both-leg binding.
 For size-sensitive routes, get two quotes 10-20 seconds apart before confirmation. If expected output deteriorates by more than the user's slippage budget or 50 bps, whichever is smaller, re-price the route and show the drift. Do not let the user sign the older quote.
 
 ### Post-Trade Reconciliation
@@ -689,6 +694,9 @@ Idle capital is optionality and liquidity, not automatically a defect. A capital
 4. Present findings: what happened, what it means, what the user can do
 
 ### Workflow F: "Pre-Trade Edge Audit"
+
+### Pre-Trade Profit Checklist (Additive)
+Before Workflow F step 7, record: objective + holding horizon; decision timestamp, source timestamps, freshness limit, missing sources; gross upside and whether market-derived, protocol-published, user-supplied, or speculative via simulate_points, optimize_portfolio, or Trail Heat rank; gas, bridge, expected slippage, FarmDash fee (45 bps default; 35 bps at $10k+ cumulative; 25 bps at $100k+), exit costs, plus separate riskBufferUsd. Compute netEdgeUsd = expectedUpside - all costs - buffer. Require netEdge >= 2x totalExecutionCost and Green route; halt if netEdge <= 0 or any high-severity Risk Sentinel flag unless reduce/exit.
 1. `get_agent_events` -> check for fresh risk or opportunity events
 2. `get_trail_heat` -> confirm protocol rank and current status
 3. `simulate_points` or `optimize_portfolio` -> estimate expected upside
@@ -699,6 +707,9 @@ Idle capital is optionality and liquidity, not automatically a defect. A capital
 8. **Green** -> ask for confirmation; **Yellow** -> recommend waiting unless user explicitly chooses speed; **Red** -> halt
 
 ### Workflow G: "Post-Execution Quality Review"
+
+### Invalidation and Unwind Rules (Additive)
+Halt before signing when: quote older than 30 seconds; simulation success is false; valid_until expired; net edge turned negative after gas, slippage, bridge, or FarmDash fee; chain/protocol outside allowlist; unknown spender, excessive allowance, or depeg risk; expected-output drift exceeds slippage budget or 50 bps between two quotes 10-20s apart; MEV medium/high undisclosed. After execute_swap, call confirm_swap when a tx hash or fee event exists; if realized miss exceeds 75 bps, evidence is unavailable, or settlement is pending/partial, label unavailable and start no dependent action until human review. Dust Storm: fresh quote after 30s; halt after 3 failures.
 1. `confirm_swap` -> settle fee event and transaction state
 2. `get_swap_history` -> pull FarmDash fee-event metadata; it is not a fill-quality ledger
 3. `get_agent_performance` -> add activity/reputation context only
@@ -707,6 +718,9 @@ Idle capital is optionality and liquidity, not automatically a defect. A capital
 6. If output miss > 75 bps, evidence is unavailable, or settlement is incomplete -> no chained action until user reviews
 
 ## Error Handling
+
+### Execution Report-Back Template (Additive)
+Report: objective + horizon; decision/source timestamps and missing sources; Trail Heat score band (80-100 / 60-79 / 40-59 / below 40) and trend; get_swap_quote IDs, expected vs realized output, gas, bridge, slippage, FarmDash fee tier; simulation_id, success, gas_cost_usd, mev_risk, revert_reason; confirm_swap and fee-event state (volume/fee metadata only, not fill proof); Green/Yellow/Red with reason for wait/halt; evidence provenance per field, unavailable where absent. Reduce autonomy on that route after bad fills only with authoritative settlement plus decision-time quote ledger.
 * **429 (Rate Limited):** Wait per `Retry-After` header.
 * **Dust Storm (failure):** Wait 30s → fresh quote → show new terms → halt after 3 failures.
 * **401/403 (Auth):** Check tier key. Scout tools need no key.

@@ -15,6 +15,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Supply Master
 
+> Use this skill when parking capital: comparing yield pools by net expected return, not headline APY — including stables, LP risk, and data quality.
+
 Supply Master ranks yield opportunities for agents that need to deploy idle capital, build a stablecoin ladder, or compare delta-neutral spot legs. It is intentionally read-only.
 
 ## Tool
@@ -54,9 +56,18 @@ Agent rules:
 - Treat stablecoin pools as credit/depeg exposure, not cash equivalents.
 - Do not infer protocol safety from TVL. Review contract, oracle, admin, bridge, redemption, liquidity, and incident risk separately.
 - Missing history, underlying-token identity, exit terms, or reward composition lowers confidence; it never becomes zero risk.
+
+### History Gate Before Ranking
+Before comparing base/reward APY, require 1-day, 7-day, and 30-day APY changes, historical sigma, and observation count. When history, token identity, exit terms, or reward composition is missing, lower confidence, apply the explicit data-quality penalty, and never promote the pool to the core rung.
 - When APY is high but TVL is thin, history is short, reward share is high, or IL risk is present, describe it as speculative rather than core deployment.
 
+### Ladder Position Sizing Rule
+Place only `conservative`-passing pools in the core rung. Pools flagged speculative by thin TVL, short history, high reward-token share, or IL risk go only in the outer rung at a reduced size, with the reward token marked-to-market separately and a downside case computed with reward APY at zero plus withdrawal friction.
+
 ## Standard Flow
+
+### Stablecoin Ladder Recipe
+For idle stables found via Wagon Steward: run `compare_yields` three times with `stableOnly: true` and `riskPreference` set to `conservative`, then `balanced`, then `aggressive`, holding `chains`, `assets`, and `minTvlUsd` constant. Assign one rung per preference; rank each rung by net expected yield after execution, bridge, withdrawal, hedging, and monitoring costs over the intended holding period. Treat every rung as credit/depeg exposure, never cash. Discard any rung with unresolved critical data before Camp Guard review.
 
 1. Use Wagon Steward to find idle assets.
 2. Call `compare_yields` with the user's chain, asset, TVL, and risk filters.
@@ -64,6 +75,9 @@ Agent rules:
 4. Filter out pools that conflict with the user's protocol, chain, asset, stablecoin, bridge, or jurisdiction limits.
 5. Compute holding-period net edge and a downside case (reward APY to zero, stablecoin depeg, and withdrawal friction where applicable).
 6. Use Camp Guard before any approval or deposit route.
+
+### Deposit Handoff Checklist
+Hand every selected pool to Camp Guard with its chain, protocol, asset, bridge, and jurisdiction limits already filtered, plus the holding-period net edge and downside case (reward APY to zero, stablecoin depeg, withdrawal friction). Proceed only to Signal Architect `resolve_defi_intent` when a supported adapter can produce real calldata.
 7. Use Signal Architect's `resolve_defi_intent` only when a supported adapter can produce real calldata.
 
 ## Disclaimers

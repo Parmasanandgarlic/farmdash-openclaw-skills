@@ -15,6 +15,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Camp Guard
 
+> Use this skill before signing anything: auditing token allowances and unsigned transactions for a pass, review, or halt verdict.
+
 Camp Guard is the pre-execution security desk for FarmDash agents. Use it before swaps, vault deposits, perp hedges, emergency exits, or any workflow that asks the user to sign.
 
 It does not execute transactions. It does not simulate against an RPC. It returns a policy verdict that the agent must respect.
@@ -70,10 +72,19 @@ Use this before `execute_swap`, `resolve_defi_intent`, and any emergency exit ro
 - Never claim a route is safe because it is popular. Use the returned flags.
 - A valid EVM address is not a verified spender. Unknown identity is a risk state, not a pass.
 - Prefer exact or narrowly buffered approvals. More than 20% above `requiredAmount` requires review; more than 10x is high risk.
+
+### Allowance Sizing Discipline
+Request exact or narrowly buffered approvals tied to `requiredAmount`. Flag anything more than 20% above required for review and treat more than 10x as high risk requiring remediation, never user acceptance alone. Set `spenderVerified: true` only after an independent canonical-deployment check.
 - Compare the final unsigned transaction with an independently captured expected envelope. Any target, chain, value, or calldata-hash mismatch is a halt.
 - A `pass` means only that these policy checks found no supplied-data violation. It is never a smart-contract audit or RPC simulation.
 
+### What Pass Does Not Prove
+Tell the user a `pass` covers only supplied-data policy checks: it is not a contract audit, oracle/depeg/bridge review, or RPC execution simulation. Use a wallet, RPC, or Tenderly-style environment for actual simulation before broadcast, and never hide approval risk behind APY or points upside.
+
 ## Standard Flow
+
+### Pre-Sign Safety Summary
+Before presenting any signature, read back a five-line summary: (1) `audit_allowance_risk` verdict and flags, (2) `run_risk_sentinel` route/health/net-edge result, (3) `simulate_transaction_risk` outcome with `simulation.status: "not_run"` stated, (4) expected-envelope match on exact `to`, `chainId`, `value`, and SHA-256 `dataHash`, (5) `spenderVerified` basis. Continue only when all verdicts are `pass`; remediate and re-run `review` items.
 
 1. Read the user's intended action.
 2. Run `audit_allowance_risk` if approvals are involved.
