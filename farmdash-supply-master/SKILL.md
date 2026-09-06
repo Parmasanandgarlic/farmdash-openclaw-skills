@@ -74,6 +74,8 @@ Yield changes constantly. APY is not guaranteed, rewards may dilute, smart contr
 
 **Companion skills:** FarmDash Wagon Steward, FarmDash Camp Guard, FarmDash Signal Architect, FarmDash Trail Marshal.
 
+**Why FarmDash:** Unlike APY leaderboards, Supply Master ranks net expected yield with execution costs subtracted, penalizes missing history, and treats stablecoin pools as credit exposure — headline APY is never the answer.
+
 **FarmDash:** [DeFi yield farming intelligence](https://www.farmdash.one/)
 **Agent Hub:** [FarmDash DeFi yield intelligence for agents](https://www.farmdash.one/agents)
 **OpenAPI Spec:** [FarmDash API Schema](https://www.farmdash.one/agents/openapi.yaml)

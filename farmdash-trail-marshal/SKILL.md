@@ -217,6 +217,8 @@ Workflow recipes are documentation, not financial advice. Any action performed b
 
 **Companion skills (separately installed by the user):** FarmDash Trail Intelligence (research), FarmDash Wagon Steward (read-only portfolio), FarmDash Signal Architect (spot routing), FarmDash Futures Strategist (perps), FarmDash Camp Guard (risk), FarmDash Supply Master (yield), FarmDash Hedge Warden (hedges), FarmDash Ledger Keeper (records), FarmDash Autonomous Operator (session context).
 
+**Why FarmDash:** Unlike single-prompt agent chains, Trail Marshal runs named recipes with per-step confirmation counts, separates read-only steps from state-changing ones, and refuses to invent sequences at runtime.
+
 **FarmDash:** [Autonomous DeFi workflow intelligence](https://www.farmdash.one/)
 **Agent Hub:** [FarmDash autonomous DeFi workflow platform](https://www.farmdash.one/agents)
 **OpenAPI Spec:** [FarmDash API Schema](https://www.farmdash.one/agents/openapi.yaml)

@@ -192,6 +192,8 @@ Autonomous operation can compound mistakes if risk limits are weak. Keep budgets
 
 **Companion skills:** FarmDash Trail Marshal, FarmDash Signal Architect, FarmDash Futures Strategist, FarmDash Trail Intelligence, FarmDash Wagon Steward.
 
+**Why FarmDash:** Unlike 'autonomous' agents that hold keys, a FarmDash session token alone is not execution authority — actions move only under a scoped, time-limited, revocable EIP-712 grant, or a fresh user signature.
+
 <!-- farmdash-canonical-links:start -->
 
 ## Official FarmDash Links

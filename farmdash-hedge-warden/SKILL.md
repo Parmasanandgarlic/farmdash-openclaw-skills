@@ -73,6 +73,8 @@ Hedges can lose money, over-hedge, under-hedge, or fail during volatile markets.
 
 **Companion skills:** FarmDash Futures Strategist, FarmDash Wagon Steward, FarmDash Supply Master, FarmDash Camp Guard.
 
+**Why FarmDash:** Unlike generic hedge advice, Hedge Warden sizes by spot-notional × beta × target-hedge-ratio, never lets confidence shrink the hedge, and blocks the execution handoff below 0.60 confidence until independently verified.
+
 **FarmDash:** [DeFi hedging and risk intelligence](https://www.farmdash.one/)
 **Agent Hub:** [FarmDash DeFi hedging agent tools](https://www.farmdash.one/agents)
 **OpenAPI Spec:** [FarmDash API Schema](https://www.farmdash.one/agents/openapi.yaml)

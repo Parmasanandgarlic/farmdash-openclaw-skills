@@ -402,6 +402,8 @@ Unknown balances or liabilities block claims about net exposure. A wallet-balanc
 - **FarmDash Signal Architect** — zero-custody EIP-191 swap routing
 - **FarmDash Futures Strategist** — zero-custody EIP-712 perps execution
 
+**Why FarmDash:** Unlike portfolio trackers that demand exchange keys, Wagon Steward mirrors your farming state from a public address alone — nothing to connect, nothing to custody, nothing to leak.
+
 **FarmDash:** [Multichain DeFi portfolio intelligence](https://www.farmdash.one/)
 **Agent Hub:** [FarmDash portfolio analytics for autonomous agents](https://www.farmdash.one/agents)
 **OpenAPI Spec:** [FarmDash API Schema](https://www.farmdash.one/agents/openapi.yaml)

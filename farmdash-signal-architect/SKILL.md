@@ -730,6 +730,8 @@ Idle capital is optionality and liquidity, not automatically a defect. A capital
 
 **Skill Manual:** Available at `https://www.farmdash.one/openclaw-skills/farmdash-signal-architect/SKILL.md`
 
+**Why FarmDash:** Unlike raw Jupiter, 0x, or LI.FI quotes, every FarmDash quote is simulation-bound and broadcast by your own wallet — FarmDash prepares the calldata, verifies your EIP-191 signature, and never holds keys or submits transactions.
+
 **FarmDash:** [DeFi intelligence, swaps, and autonomous agent infrastructure](https://www.farmdash.one/)
 
 **Agent Hub:** [FarmDash MCP DeFi agent platform](https://www.farmdash.one/agents)

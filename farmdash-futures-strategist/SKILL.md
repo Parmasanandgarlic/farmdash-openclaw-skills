@@ -619,6 +619,8 @@ Required behavior:
 * FarmDash Trail Marshal — orchestration cookbook for multi-skill workflows
 * FarmDash Signal Architect — zero-custody EIP-191 spot swap routing
 
+**Why FarmDash:** Unlike raw Hyperliquid API access, every order passes guardrailed sizing (5x max leverage, 2% risk per trade), owner-signed builder-fee approval, and a 60-second research gate — and the strategist returns `no_trade` rather than force a weak setup.
+
 **FarmDash:** [DeFi trading intelligence and agent tools](https://www.farmdash.one/)
 
 **Agent Hub:** [FarmDash Hyperliquid and DeFi agent platform](https://www.farmdash.one/agents)

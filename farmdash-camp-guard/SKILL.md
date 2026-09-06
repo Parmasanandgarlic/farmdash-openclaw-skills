@@ -89,6 +89,8 @@ Camp Guard is a risk gate, not insurance. It cannot detect every malicious contr
 
 **Companion skills:** FarmDash Signal Architect, FarmDash Trail Marshal, FarmDash Wagon Steward, FarmDash Futures Strategist.
 
+**Why FarmDash:** Unlike app-layer safety checklists, Camp Guard returns pass/review/halt verdicts that stop execution — and states its scope honestly (`simulation.status: not_run`) instead of pretending to simulate.
+
 **FarmDash:** [DeFi security tools for autonomous agents](https://www.farmdash.one/)
 **Agent Hub:** [FarmDash autonomous DeFi agent platform](https://www.farmdash.one/agents)
 **OpenAPI Spec:** [FarmDash API Schema](https://www.farmdash.one/agents/openapi.yaml)

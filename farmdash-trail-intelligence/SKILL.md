@@ -496,6 +496,8 @@ Some outputs are heuristic or calculated from user inputs. Label methodology and
 * FarmDash Signal Architect — zero-custody EIP-191 swap routing
 * FarmDash Futures Strategist — zero-custody EIP-712 perps execution
 
+**Why FarmDash:** Unlike raw TVL aggregators, Trail Heat blends TVL, 7-day momentum, chain diversification, and category baselines with per-number evidence states — and unresolved protocols score null, never a guessed zero. Live scores: `GET /api/v1/trail-heat`.
+
 **FarmDash:** [DeFi protocol, airdrop, and points intelligence](https://www.farmdash.one/)
 
 **Agent Hub:** [FarmDash DeFi research and airdrop intelligence](https://www.farmdash.one/agents)

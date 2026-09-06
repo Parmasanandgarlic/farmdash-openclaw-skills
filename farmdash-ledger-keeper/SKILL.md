@@ -84,6 +84,8 @@ Ledger Keeper provides informational records only. It is not tax, legal, account
 
 **Companion skills:** FarmDash Signal Architect, FarmDash Futures Strategist, FarmDash Wagon Steward, FarmDash Trail Marshal.
 
+**Why FarmDash:** Unlike exchange exports that invent fills, Ledger Keeper returns null instead of guessing — a tx hash counts as broadcast, never confirmation; only `settlement_status: confirmed` counts.
+
 **FarmDash:** [DeFi portfolio and transaction intelligence](https://www.farmdash.one/)
 **Agent Hub:** [FarmDash DeFi accounting agent tools](https://www.farmdash.one/agents)
 **OpenAPI Spec:** [FarmDash API Schema](https://www.farmdash.one/agents/openapi.yaml)
