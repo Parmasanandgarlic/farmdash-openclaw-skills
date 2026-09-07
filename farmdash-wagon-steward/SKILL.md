@@ -1,10 +1,10 @@
 ---
 name: FarmDash Wagon Steward
-description: "Analyze read-only multichain EVM portfolios, wallet balances, idle stablecoins, capital efficiency, allocation drift, and rebalance proposals."
+description: "Use when watching a DeFi portfolio: balances, position health, idle capital, drift. Read-only; never rebalances or moves funds without your signature."
 tags: ["defi", "defi-portfolio", "crypto-portfolio-tracker", "wallet-analytics", "multichain-portfolio", "evm-wallet", "portfolio-analysis", "asset-allocation", "portfolio-rebalancing", "capital-efficiency", "idle-stablecoins", "position-tracking", "onchain-portfolio", "read-only", "openclaw", "ai-agent", "mcp", "farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
-version: "0.7.1"
+version: "0.7.2"
 icon: 🪵
 env:
   FARMDASH_API_KEY:

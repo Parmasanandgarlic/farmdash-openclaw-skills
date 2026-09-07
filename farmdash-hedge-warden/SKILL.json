@@ -1,7 +1,7 @@
 {
   "name": "FarmDash Hedge Warden",
-  "version": "1.1.1",
-  "description": "Plan delta hedges for DeFi spot and yield positions using beta-aware short-perp targets, funding costs, residual delta, and safety gates.",
+  "version": "1.1.2",
+  "description": "Use when sizing a hedge for existing DeFi exposure: delta-neutral recommendations with explicit bounds and risk notes. Advisory only; never trades itself.",
   "tags": [
     "defi",
     "delta-hedging",
@@ -33,21 +33,57 @@
         "properties": {
           "spotExposure": {
             "type": "array",
-            "description": "array of `{ asset, notionalUsd, beta?, confidence? }`."
+            "items": {
+              "type": "object",
+              "properties": {
+                "asset": {
+                  "type": "string"
+                },
+                "notionalUsd": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "beta": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "asset",
+                "notionalUsd"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1
           },
           "riskPreference": {
             "type": "string",
-            "description": "`conservative`, `balanced`, or `aggressive`."
+            "enum": [
+              "conservative",
+              "balanced",
+              "aggressive"
+            ]
           },
           "volatilityRegime": {
             "type": "string",
-            "description": "`low`, `normal`, or `high`."
+            "enum": [
+              "low",
+              "normal",
+              "high"
+            ]
           },
-          "marketConditions": {
-            "type": "string",
-            "description": "optional external context from the agent."
-          }
-        }
+          "marketConditions": {}
+        },
+        "required": [
+          "spotExposure"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [
         "total spot notional.",

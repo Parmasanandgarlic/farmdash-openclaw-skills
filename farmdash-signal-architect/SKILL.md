@@ -1,10 +1,10 @@
 ---
 name: FarmDash Signal Architect
-description: "Use 84 FarmDash MCP tools for supervised DeFi research, swaps, simulations, perps, ACP commerce, portfolio intelligence, and MEV-aware execution."
+description: "Use when building DeFi trade strategy: 84 MCP tools for quotes, simulation, Trail Heat, receipts, agent hiring. Swaps need fresh quote, simulation, signing."
 tags: ["defi", "defi-agent", "defi-mcp-server", "mcp", "openclaw", "ai-agent", "crypto-swap", "swap-routing", "cross-chain-swap", "defi-automation", "onchain-agent", "mev-risk-analysis", "hyperliquid", "perpetual-futures", "virtuals-acp", "agent-commerce", "portfolio-management", "airdrop-research", "zero-custody", "farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
-version: "4.1.1"
+version: "4.1.2"
 icon: 🚜
 env:
   FARMDASH_API_KEY:

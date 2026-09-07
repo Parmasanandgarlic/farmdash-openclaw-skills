@@ -1,7 +1,7 @@
 {
   "name": "FarmDash Futures Strategist",
-  "version": "3.2.1",
-  "description": "Research, size, and route user-signed Hyperliquid perpetual futures with funding analysis, drawdown guards, EIP-712, and zero custody.",
+  "version": "3.2.2",
+  "description": "Use when analyzing perpetuals: funding rates, market scans, account state, strategy sizing. Orders are simulation-bound and preview-only; never self-executes.",
   "tags": [
     "defi",
     "hyperliquid",
@@ -27,10 +27,12 @@
   "tools": [
     {
       "name": "scan_funding_rates",
-      "description": "Scan current and venue-published predicted funding snapshots. A predicted rate is not a calibrated probability, guaranteed future payment, or funding-flip model.",
+      "description": "Scan current and venue-published predicted funding snapshots. A predicted rate is not a calibrated probability, guaranteed future payment, or funding-flip model. Takes no parameters.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {},
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -40,7 +42,16 @@
       "description": "Read candle-derived EMA, RSI, MACD, ADX, ATR, Bollinger Bands, volume ratio, Z-score, market regime, and the response timestamp for one perp asset. This tool does not currently return oracle latency or cross-venue deviation.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "coin": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "coin"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -50,7 +61,21 @@
       "description": "Inspect equity, open positions, available margin, venue-reported liquidation prices, and guardrail pressure. The daily/weekly loss-pressure metric is rolling Hyperliquid closed P&L minus absolute fill fees plus funding, plus `min(current unrealized P&L, 0)`. Positive open gains cannot offset realized losses. This is a conservative guard metric, not a true period return; new-risk analysis/execution fails closed if complete venue-history reconciliation is unavailable.\r\n\r\nSend `agentAddress` plus optional `accountAddress`. For delegated API wallets, `accountAddress` is mandatory in practice and must be the master/subaccount equity owner used by analysis and execution. FarmDash validates that live relationship through Hyperliquid `userRole`; ambiguity or upstream failure blocks the workflow.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "accountAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          }
+        },
+        "required": [
+          "agentAddress"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -60,7 +85,26 @@
       "description": "Primary research tool. Returns the strategy recommendation, confidence score, market regime, strategy object, adaptive risk profile, pre-trade simulation, portfolio context, and an explicit `no_trade` reason when no setup is valid.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "coin": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "riskMultiplier": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "coin",
+          "agentAddress"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -70,7 +114,40 @@
       "description": "Inspect sizing math separately when the user wants to validate risk and margin.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "equity": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "entryPrice": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "stopPrice": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "riskPercent": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "targetPrice": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "riskMultiplier": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "equity",
+          "entryPrice",
+          "stopPrice"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -80,7 +157,88 @@
       "description": "Execute only after fresh research, parameter binding, exact builder-fee disclosure, local signing, and explicit user confirmation. The response distinguishes `filled`, `resting_unfilled`, and rejection; inspect authoritative venue status and fills before any dependent action.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "accountAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "coin": {
+            "type": "string"
+          },
+          "isBuy": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "string"
+          },
+          "price": {
+            "type": "string"
+          },
+          "orderType": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "object",
+            "properties": {
+              "r": {
+                "type": "string",
+                "pattern": "^0x[a-fA-F0-9]{64}$"
+              },
+              "s": {
+                "type": "string",
+                "pattern": "^0x[a-fA-F0-9]{64}$"
+              },
+              "v": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "r",
+              "s",
+              "v"
+            ],
+            "additionalProperties": false
+          },
+          "reduceOnly": {
+            "type": "boolean"
+          },
+          "leverage": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "signedAction": {
+            "description": "If supplied, must include the signed FarmDash builder term { b: treasury, f: 1 }; f is tenths of a basis point."
+          },
+          "nonce": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "expiresAt": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "intentHash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agentAddress",
+          "coin",
+          "isBuy",
+          "size",
+          "price",
+          "orderType",
+          "signature",
+          "nonce",
+          "expiresAt",
+          "intentHash"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "execution"
@@ -90,7 +248,73 @@
       "description": "Cancel stale or superseded open orders. Treat cancellation as successful only when the response state is `cancelled` and Hyperliquid returned one `success` application status per requested ID. `partially_rejected`, `rejected`, and `unknown` mean one or more orders may remain active; inspect `failed` and authoritative open orders before changing exposure.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "accountAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "coin": {
+            "type": "string"
+          },
+          "orderIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "minItems": 1,
+            "maxItems": 50
+          },
+          "signature": {
+            "type": "object",
+            "properties": {
+              "r": {
+                "type": "string",
+                "pattern": "^0x[a-fA-F0-9]{64}$"
+              },
+              "s": {
+                "type": "string",
+                "pattern": "^0x[a-fA-F0-9]{64}$"
+              },
+              "v": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "r",
+              "s",
+              "v"
+            ],
+            "additionalProperties": false
+          },
+          "signedAction": {},
+          "nonce": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "expiresAt": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "intentHash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agentAddress",
+          "coin",
+          "orderIds",
+          "signature",
+          "nonce",
+          "expiresAt",
+          "intentHash"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "execution"
@@ -100,7 +324,17 @@
       "description": "Use only for FarmDash fee-event activity, fees, protocol diversity, and reputation. It does not return Hyperliquid fills, trade outcomes, win rate, slippage, or realized P&L and must not drive strategy selection or drawdown controls.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          }
+        },
+        "required": [
+          "agentAddress"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"

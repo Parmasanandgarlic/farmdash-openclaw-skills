@@ -1,10 +1,10 @@
 ---
 name: FarmDash Ledger Keeper
-description: "Reconcile FarmDash DeFi activity, transaction records, fees, and CSV exports without inventing fills, realized P&L, or tax treatment."
+description: "Use for accounting exports from on-chain activity: realized PnL, ledger CSV, history summaries. Derived read-only from public chains; reconcile before filing."
 tags: ["defi", "defi-accounting", "crypto-accounting", "transaction-ledger", "portfolio-reconciliation", "trade-history", "fee-tracking", "pnl-tracking", "csv-export", "tax-records", "onchain-accounting", "post-trade-analysis", "read-only", "openclaw", "ai-agent", "mcp", "farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
-version: "1.1.1"
+version: "1.1.2"
 icon: ledger
 env:
   FARMDASH_API_KEY:

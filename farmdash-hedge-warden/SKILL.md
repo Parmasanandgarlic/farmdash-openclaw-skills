@@ -1,10 +1,10 @@
 ---
 name: FarmDash Hedge Warden
-description: "Plan delta hedges for DeFi spot and yield positions using beta-aware short-perp targets, funding costs, residual delta, and safety gates."
+description: "Use when sizing a hedge for existing DeFi exposure: delta-neutral recommendations with explicit bounds and risk notes. Advisory only; never trades itself."
 tags: ["defi", "delta-hedging", "defi-hedging", "crypto-hedging", "portfolio-hedge", "perpetual-futures", "short-perp", "delta-neutral", "basis-risk", "funding-cost", "residual-delta", "risk-management", "yield-farming-risk", "openclaw", "ai-agent", "mcp", "farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
-version: "1.1.1"
+version: "1.1.2"
 icon: hedge
 env:
   FARMDASH_API_KEY:

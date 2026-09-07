@@ -1,10 +1,10 @@
 ---
 name: FarmDash Supply Master
-description: "Compare DeFi yield pools by base and reward APY, TVL, history, stablecoin and impermanent-loss risk, data quality, and net expected yield."
+description: "Use when comparing lending and yield pools by net expected APY, TVL depth, stablecoin and impermanent-loss risk. Read-only; deposits need user-signed approval."
 tags: ["defi", "defi-yield", "yield-farming", "yield-aggregator", "apy-comparison", "stablecoin-yield", "liquidity-pools", "defi-analytics", "yield-optimization", "impermanent-loss", "tvl-analysis", "reward-token-risk", "crypto-yield-analysis", "openclaw", "ai-agent", "mcp", "farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
-version: "1.1.1"
+version: "1.1.2"
 icon: vault
 env:
   FARMDASH_API_KEY:

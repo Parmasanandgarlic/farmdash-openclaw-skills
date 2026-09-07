@@ -1,7 +1,7 @@
 {
   "name": "FarmDash Camp Guard",
-  "version": "1.1.1",
-  "description": "Audit token allowances, unsigned DeFi transactions, route risk, and policy limits before signing with this read-only OpenClaw security skill.",
+  "version": "1.1.2",
+  "description": "Use for pre-sign safety: allowance audits, route/health sentinel checks, policy scan of unsigned transactions. Verdicts only; never signs or broadcasts.",
   "tags": [
     "defi",
     "defi-security",
@@ -33,13 +33,39 @@
         "properties": {
           "walletAddress": {
             "type": "string",
-            "description": "optional EVM wallet."
+            "pattern": "^0x[a-fA-F0-9]{40}$"
           },
           "allowances": {
             "type": "array",
-            "description": "array with `token`, `spender`, `allowance`, `requiredAmount`, optional `amountUsd`, and `spenderVerified`. Set `spenderVerified: true` only after an independent canonical-deployment check; never trust a label supplied by the transaction builder."
+            "items": {
+              "type": "object",
+              "properties": {
+                "token": {
+                  "type": "string"
+                },
+                "spender": {
+                  "type": "string"
+                },
+                "allowance": {
+                  "type": "string"
+                },
+                "requiredAmount": {
+                  "type": "string"
+                },
+                "amountUsd": {
+                  "type": "number"
+                },
+                "spenderVerified": {
+                  "type": "boolean",
+                  "description": "True only after independent verification against the protocol canonical deployment."
+                }
+              },
+              "additionalProperties": false
+            }
           }
-        }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [
         "`verdict`: `pass`, `review`, or `halt`.",
@@ -54,27 +80,66 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "transaction.to": {
+          "walletAddress": {
             "type": "string",
-            "description": ""
+            "pattern": "^0x[a-fA-F0-9]{40}$"
           },
-          "transaction.data": {
-            "type": "string",
-            "description": ""
-          },
-          "transaction.value": {
-            "type": "string",
-            "description": ""
-          },
-          "transaction.chainId": {
-            "type": "string",
-            "description": ""
+          "transaction": {
+            "type": "object",
+            "properties": {
+              "to": {
+                "type": "string"
+              },
+              "data": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "chainId": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "to",
+              "data"
+            ],
+            "additionalProperties": false
           },
           "expectedTransaction": {
-            "type": "number",
-            "description": "captured independently before the unsigned payload is returned: exact `to`, `chainId`, `value`, and SHA-256 `dataHash`."
+            "type": "object",
+            "properties": {
+              "to": {
+                "type": "string",
+                "pattern": "^0x[a-fA-F0-9]{40}$"
+              },
+              "chainId": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "value": {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              },
+              "dataHash": {
+                "type": "string",
+                "pattern": "^0x[a-fA-F0-9]{64}$"
+              }
+            },
+            "required": [
+              "to",
+              "chainId",
+              "dataHash"
+            ],
+            "additionalProperties": false
           }
-        }
+        },
+        "required": [
+          "transaction"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "risk"
@@ -84,7 +149,79 @@
       "description": "Analyze compatibility-swap risk using the released LI.FI and 0x quote boundary, allowance state, depeg checks, health factors, and positive-net-edge enforcement. x402 is payment/access infrastructure, not a swap provider. Risk analysis does not authorize, broadcast, confirm, or settle a transaction.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "fromChainId": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "toChainId": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "fromToken": {
+            "type": "string"
+          },
+          "toToken": {
+            "type": "string"
+          },
+          "fromAmount": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "walletAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "toAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "lifi",
+              "zerox"
+            ]
+          },
+          "slippage": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 5
+          },
+          "expectedUpsideUsd": {
+            "type": "number"
+          },
+          "protocolFeeUsd": {
+            "type": "number"
+          },
+          "gasUsd": {
+            "type": "number"
+          },
+          "bridgeFeeUsd": {
+            "type": "number"
+          },
+          "riskBufferUsd": {
+            "type": "number"
+          },
+          "enforcePositive": {
+            "type": "boolean"
+          },
+          "healthFactor": {
+            "type": "number"
+          },
+          "liquidationBufferPct": {
+            "type": "number"
+          },
+          "safetyMode": {
+            "type": "string",
+            "enum": [
+              "strict",
+              "balanced"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "risk"

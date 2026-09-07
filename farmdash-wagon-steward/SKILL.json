@@ -1,7 +1,7 @@
 {
   "name": "FarmDash Wagon Steward",
-  "version": "0.7.1",
-  "description": "Analyze read-only multichain EVM portfolios, wallet balances, idle stablecoins, capital efficiency, allocation drift, and rebalance proposals.",
+  "version": "0.7.2",
+  "description": "Use when watching a DeFi portfolio: balances, position health, idle capital, drift. Read-only; never rebalances or moves funds without your signature.",
   "tags": [
     "defi",
     "defi-portfolio",
@@ -31,7 +31,17 @@
       "description": "(Pioneer)\r\n\r\nTop-level snapshot. Use this first — it grounds every other recommendation.\r\n\r\n**",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "address": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          }
+        },
+        "required": [
+          "address"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -41,7 +51,17 @@
       "description": "(compatibility alias; Pioneer)\r\n\r\nDespite its legacy name, the current MCP mapping calls `/api/v1/agent/performance`. It returns FarmDash activity metrics (swap count, volume, fees, average size, protocol diversity, active days), Trail Cred/ranking data, daily activity, and a timestamp.\r\n\r\nIt does **not** return farming positions, APR, unrealized or realized P&L, impermanent loss, collateral health, liquidation distance, or rebalance hints. Never use it to claim a DeFi position is healthy. For a real position review, obtain protocol-native position/debt data and authoritative prices; if those tools are unavailable, say position health is unavailable.\r\n\r\n---",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "address": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          }
+        },
+        "required": [
+          "address"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -51,7 +71,17 @@
       "description": "(Pioneer)\r\n\r\nSurfaces stablecoins or unstaked native assets sitting unused.\r\n\r\n**",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "address": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          }
+        },
+        "required": [
+          "address"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"

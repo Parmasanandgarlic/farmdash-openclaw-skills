@@ -1,7 +1,7 @@
 ---
 name: FarmDash Futures Strategist
-description: "Research, size, and route user-signed Hyperliquid perpetual futures with funding analysis, drawdown guards, EIP-712, and zero custody."
-version: "3.2.1"
+description: "Use when analyzing perpetuals: funding rates, market scans, account state, strategy sizing. Orders are simulation-bound and preview-only; never self-executes."
+version: "3.2.2"
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
 tags: ["defi", "hyperliquid", "hyperliquid-api", "perpetual-futures", "perps-trading", "defi-trading", "ai-trading-agent", "funding-rates", "funding-arbitrage", "position-sizing", "drawdown-control", "liquidation-risk", "eip-712", "zero-custody", "openclaw", "mcp", "risk-management", "farmdash"]

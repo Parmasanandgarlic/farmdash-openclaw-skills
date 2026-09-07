@@ -1,10 +1,10 @@
 ---
 name: FarmDash Autonomous Operator
-description: "Orchestrate policy-bounded DeFi sessions, OODA plans, intent state, circuit breakers, and recovery; execution stays status-gated and separately authorized."
+description: "Use to run supervised autopilot cycles under a bounded, revocable session grant: intents, policy checks, approvals, receipts. Execution stays preview-gated."
 tags: ["defi", "autonomous-defi-agent", "ai-agent", "defi-automation", "openclaw", "agent-orchestration", "session-key", "delegated-execution", "ooda-loop", "intent-management", "risk-controls", "circuit-breaker", "agent-recovery", "zero-custody", "mcp", "web3", "farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
-version: "2.1.1"
+version: "2.1.2"
 icon: operator
 env:
   FARMDASH_API_KEY:

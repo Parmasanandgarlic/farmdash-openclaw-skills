@@ -314,15 +314,18 @@ paths:
   /agents/history:
     get:
       operationId: getSwapHistory
-      summary: Get fee event history
+      summary: Get your own fee event history (tenant-bound)
       description: |
-        Returns paginated swap fee events logged by Signal Architect.
-        Optionally filter by agent address. Use `?metrics=true` to get
-        aggregate revenue metrics instead of individual events.
+        Returns paginated swap fee events owned by the wallet bound to your
+        API key. Requires a Pioneer or Syndicate bearer key; anonymous/scout
+        callers receive 401 authentication_required. Any agentAddress that
+        differs from the authenticated wallet returns 403 cross_tenant_denied.
+        Use `?metrics=true` to get aggregate revenue metrics for your own
+        wallet instead of individual events. For the public leaderboard,
+        use GET /v1/agent/leaderboard (server-aggregated totals only).
       tags: [History]
       security:
         - bearerAuth: []
-        - {}
       parameters:
         - in: query
           name: agentAddress

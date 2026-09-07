@@ -1,7 +1,7 @@
 {
   "name": "FarmDash Ledger Keeper",
-  "version": "1.1.1",
-  "description": "Reconcile FarmDash DeFi activity, transaction records, fees, and CSV exports without inventing fills, realized P&L, or tax treatment.",
+  "version": "1.1.2",
+  "description": "Use for accounting exports from on-chain activity: realized PnL, ledger CSV, history summaries. Derived read-only from public chains; reconcile before filing.",
   "tags": [
     "defi",
     "defi-accounting",
@@ -33,9 +33,20 @@
         "properties": {
           "agentAddress": {
             "type": "string",
-            "description": ""
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "start": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "agentAddress"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [
         "spot event count.",
@@ -53,7 +64,23 @@
       "description": "Exports recorded spot execution rows as CSV with:\r\n\r\n- agent address.\r\n- date.\r\n- protocol.\r\n- from token.\r\n- to token.\r\n- volume.\r\n- recorded cost.\r\n- tx hash.\r\n- chain id.\r\n\r\nFutures activity requires venue fills for tax-lot accounting and is not represented as tax-ready lots by this skill.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "start": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agentAddress"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"

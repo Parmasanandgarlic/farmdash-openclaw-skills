@@ -1,7 +1,7 @@
 {
   "name": "FarmDash Supply Master",
-  "version": "1.1.1",
-  "description": "Compare DeFi yield pools by base and reward APY, TVL, history, stablecoin and impermanent-loss risk, data quality, and net expected yield.",
+  "version": "1.1.2",
+  "description": "Use when comparing lending and yield pools by net expected APY, TVL depth, stablecoin and impermanent-loss risk. Read-only; deposits need user-signed approval.",
   "tags": [
     "defi",
     "defi-yield",
@@ -32,34 +32,46 @@
         "type": "object",
         "properties": {
           "chains": {
-            "type": "string",
-            "description": "optional chain filter."
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "assets": {
-            "type": "string",
-            "description": "optional symbols such as `USDC`, `ETH`, `SOL`."
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "projects": {
-            "type": "string",
-            "description": "optional protocol filter."
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "riskPreference": {
             "type": "string",
-            "description": "`conservative`, `balanced`, or `aggressive`."
+            "enum": [
+              "conservative",
+              "balanced",
+              "aggressive"
+            ]
           },
           "minTvlUsd": {
-            "type": "string",
-            "description": "minimum pool depth."
+            "type": "number",
+            "exclusiveMinimum": 0
           },
           "stableOnly": {
-            "type": "string",
-            "description": "restrict to stablecoin pools."
+            "type": "boolean"
           },
           "limit": {
-            "type": "string",
-            "description": "max results."
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
           }
-        }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"

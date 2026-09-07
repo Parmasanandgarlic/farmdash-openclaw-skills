@@ -1,10 +1,10 @@
 ---
 name: FarmDash Camp Guard
-description: "Audit token allowances, unsigned DeFi transactions, route risk, and policy limits before signing with this read-only OpenClaw security skill."
+description: "Use for pre-sign safety: allowance audits, route/health sentinel checks, policy scan of unsigned transactions. Verdicts only; never signs or broadcasts."
 tags: ["defi", "defi-security", "smart-contract-risk", "token-allowance", "approval-risk", "transaction-risk-analysis", "transaction-policy", "wallet-security", "risk-sentinel", "pre-transaction-check", "scam-protection", "openclaw", "ai-agent", "mcp", "zero-custody", "web3-security", "farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
-version: "1.1.1"
+version: "1.1.2"
 icon: shield
 env:
   FARMDASH_API_KEY:

@@ -1,7 +1,7 @@
 {
   "name": "FarmDash Autonomous Operator",
-  "version": "2.1.1",
-  "description": "Orchestrate policy-bounded DeFi sessions, OODA plans, intent state, circuit breakers, and recovery; execution stays status-gated and separately authorized.",
+  "version": "2.1.2",
+  "description": "Use to run supervised autopilot cycles under a bounded, revocable session grant: intents, policy checks, approvals, receipts. Execution stays preview-gated.",
   "tags": [
     "defi",
     "autonomous-defi-agent",
@@ -30,7 +30,39 @@
       "description": "Creates a persistent agent session and returns a one-time `sessionToken`. Store it securely in the agent runtime. FarmDash stores only a hash.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "agentName": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string",
+            "minLength": 1
+          },
+          "nonce": {
+            "type": "string",
+            "minLength": 1
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "signatureType": {
+            "type": "string",
+            "enum": [
+              "eip712",
+              "eip191"
+            ]
+          }
+        },
+        "required": [
+          "agentAddress"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
@@ -40,7 +72,25 @@
       "description": "Extends the session expiry. Use it during active autonomous loops. If a session expires, the Operator must enter Crash Recovery mode (see below).",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
@@ -50,7 +100,25 @@
       "description": "Reads shared context for the session:\r\n* objective.\r\n* portfolio scope.\r\n* risk settings (including dynamically tuned `riskMultiplier`).\r\n* workflow state (ACTIVE, HALTED, RECOVERING).\r\n* ledger summary.\r\n* data freshness timestamps.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -60,7 +128,30 @@
       "description": "Patches shared context. The server controls `sessionId`, `agentAddress`, `revision`, and `updatedAt`; do not try to override them. Used for Dynamic Risk Autotuning and Circuit Breakers.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          },
+          "patch": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken",
+          "patch"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
@@ -70,7 +161,39 @@
       "description": "Reads recent agent events as a JSON snapshot. Use this before planning and after execution.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          },
+          "since": {
+            "type": "string"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -80,7 +203,27 @@
       "description": "Checks whether the user's Hyperliquid API wallet delegation is in place for autonomous perps.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "apiWalletAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "ownerAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          }
+        },
+        "required": [
+          "agentAddress",
+          "apiWalletAddress",
+          "ownerAddress"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -90,7 +233,59 @@
       "description": "Configure bounded autonomous cycles. Respect user allowlists, risk limits, and execution confirmations. (Syndicate tier required for activation).",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          },
+          "strategies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "riskPreference": {
+            "type": "string",
+            "enum": [
+              "conservative",
+              "balanced",
+              "aggressive"
+            ]
+          },
+          "maxEquityPct": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 0.8
+          },
+          "rebalanceIntervalMin": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "autoCompound": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken",
+          "strategies",
+          "assets"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
@@ -100,17 +295,38 @@
       "description": "Run bounded autonomous cycles. Respect user allowlists, risk limits, and execution confirmations. (Syndicate tier required).",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          },
+          "accountState": {}
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
     },
     {
       "name": "agent_onboard",
-      "description": "One-call setup guide and capability map for autonomous operation.",
+      "description": "One-call setup guide and capability map for autonomous operation. Takes no parameters.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {},
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -120,7 +336,40 @@
       "description": "Lists durable FarmDash receipts, optionally filtered by intent and status. Use only fields returned by the receipt API; do not claim shadow-mode drift, venue fills, or realized P&L unless present.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUBMITTED",
+              "CONFIRMED",
+              "FAILED",
+              "REJECTED"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 250
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -130,7 +379,113 @@
       "description": "Resolves a high-level natural language DeFi intent into structured parameters for policy/simulation/approval. Supervised execution uses local EIP-191/EIP-712 signing; bounded autonomy requires the separate grant described above. Autonomous Operator never receives private keys.\r\n\r\n**Intent Lifecycle — Plan → Approve → Execute → Observe**\r\nThe FarmDashIntent lifecycle enforces a strict pipeline. Every state-changing action must pass through policy, simulation, and approval gates before execution is allowed. These tools never hold private keys or broadcast transactions directly.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "swap",
+              "deposit",
+              "stake",
+              "provide_liquidity",
+              "withdraw",
+              "claim"
+            ]
+          },
+          "protocolId": {
+            "type": "string"
+          },
+          "chainId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "string",
+                "const": "solana-mainnet"
+              }
+            ]
+          },
+          "toChainId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "string",
+                "const": "solana-mainnet"
+              }
+            ]
+          },
+          "tokenIn": {
+            "type": "string"
+          },
+          "amountIn": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "userAddress": {
+            "type": "string"
+          },
+          "tokenOut": {
+            "type": "string"
+          },
+          "amountOut": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "slippage": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 5
+          },
+          "poolAddress": {
+            "type": "string"
+          },
+          "deadline": {
+            "type": "number"
+          },
+          "constraints": {
+            "type": "object",
+            "properties": {
+              "minAmountOut": {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              },
+              "maxSlippageBps": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "maxGasUsd": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "expectedUpsideUsd": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "riskBufferUsd": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "positiveNetEdge": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "action",
+          "protocolId",
+          "chainId",
+          "tokenIn",
+          "amountIn",
+          "userAddress"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -140,7 +495,30 @@
       "description": "Create a durable FarmDashIntent. This records what an agent wants to do — it never prepares, signs, broadcasts, or executes. The intent must include actor, action, chain, protocol, wallet, params, constraints, evidence, and `research_evidence_hash` (passed from Trail Intelligence).",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intent": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "FarmDashIntent create input. Must include actor, action, chain, protocol, wallet, params, constraints, and evidence."
+          }
+        },
+        "required": [
+          "intent"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
@@ -150,7 +528,36 @@
       "description": "Readiness probe for the generic intent policy gate. Public OpenClaw callers cannot provide trusted policy decisions; until the server policy evaluator is configured this returns policy_evaluator_unconfigured. Tool discovery does not grant policy authority.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          },
+          "policy": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "context": {
+            "$ref": "#/properties/policy"
+          }
+        },
+        "required": [
+          "intentId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -160,7 +567,33 @@
       "description": "Readiness probe for the generic intent simulation gate. Public OpenClaw callers cannot record trusted simulation evidence; until a server verifier is configured this returns simulation_verifier_unconfigured. Tool discovery does not grant simulation authority.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          },
+          "simulation": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "intentId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
@@ -170,7 +603,47 @@
       "description": "Build the EIP-712 IntentApproval payload that the human approver signs. This does not record approval or execute — it only constructs the typed data for the approver's wallet to sign.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          },
+          "approverAddress": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "REJECTED"
+            ],
+            "default": "APPROVED"
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 600
+          }
+        },
+        "required": [
+          "intentId",
+          "approverAddress"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -180,7 +653,79 @@
       "description": "Compatibility wrapper for submitting a signed EIP-712 IntentApproval. Use `request_approval_payload` first to build the exact typed data, then submit the signature through this tool.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          },
+          "approverAddress": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "REJECTED"
+            ],
+            "default": "APPROVED"
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{130}$"
+          },
+          "simulationId": {
+            "type": "string",
+            "pattern": "^fdsim\\_"
+          },
+          "policyCheckId": {
+            "type": "string",
+            "pattern": "^fdpc\\_"
+          },
+          "maxUsdValue": {
+            "type": "number",
+            "minimum": 0
+          },
+          "nonce": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "intentId",
+          "approverAddress",
+          "signature",
+          "simulationId",
+          "policyCheckId",
+          "maxUsdValue",
+          "nonce",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "execution"
@@ -190,7 +735,79 @@
       "description": "Submit a signed EIP-712 IntentApproval payload to approve or reject an intent. This does not prepare or execute the intent — it only records the cryptographic approval decision.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          },
+          "approverAddress": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "REJECTED"
+            ],
+            "default": "APPROVED"
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{130}$"
+          },
+          "simulationId": {
+            "type": "string",
+            "pattern": "^fdsim\\_"
+          },
+          "policyCheckId": {
+            "type": "string",
+            "pattern": "^fdpc\\_"
+          },
+          "maxUsdValue": {
+            "type": "number",
+            "minimum": 0
+          },
+          "nonce": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "intentId",
+          "approverAddress",
+          "signature",
+          "simulationId",
+          "policyCheckId",
+          "maxUsdValue",
+          "nonce",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "execution"
@@ -200,7 +817,29 @@
       "description": "Inspect whether an intent is awaiting approval, has been approved, was rejected, or is already executed. Returns the current lifecycle status and approval metadata.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          }
+        },
+        "required": [
+          "intentId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -210,7 +849,33 @@
       "description": "Validate typed adapter support and prepare an intent after policy, simulation, and approval gates pass. Registered adapters provide allowlisted validation. This does not broadcast a transaction.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          },
+          "preparation": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "intentId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
@@ -220,7 +885,57 @@
       "description": "Record the submitted, confirmed, failed, or rejected receipt for a prepared typed-adapter intent. Raw arbitrary calldata is rejected by the lifecycle API. Use this after the signing wallet has broadcast the transaction.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUBMITTED",
+              "CONFIRMED",
+              "FAILED",
+              "REJECTED"
+            ]
+          },
+          "txHash": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          },
+          "signedPayload": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "receipt": {
+            "$ref": "#/properties/signedPayload"
+          },
+          "details": {
+            "$ref": "#/properties/signedPayload"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "intentId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "execution"
@@ -230,7 +945,38 @@
       "description": "Record a confirmed receipt for a prepared or signed intent with a transaction hash. Use `get_receipt` for follow-up observation after submission.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          },
+          "txHash": {
+            "type": "string",
+            "minLength": 1
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "intentId",
+          "txHash"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "execution"
@@ -240,7 +986,29 @@
       "description": "Fetch one durable FarmDash receipt by receipt ID (`fdrcpt_*`). Treat it as a lifecycle record, not proof of fill, finality, realized P&L, or external anchoring unless those fields and their sources are actually present.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "receiptId": {
+            "type": "string",
+            "pattern": "^fdrcpt\\_"
+          }
+        },
+        "required": [
+          "receiptId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -250,7 +1018,102 @@
       "description": "Prepare a non-spendable, tenant-owned Virtuals ACP tender and return the exact EIP-712 approval payload. The customer's registered ACP wallet must sign that payload locally. Its local FarmDash ACP connector then creates and funds the three specialist jobs after explicit per-action approval. FarmDash is only the separately registered evaluator: it verifies the client, provider, evaluator, budget cap, deliverables, simulation, and Base receipts before completing or rejecting already customer-funded escrow jobs. Never provide a private key or RPC URL to this tool.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 200
+          },
+          "task": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Task payload retained by the local customer connector; FarmDash persists only its commitment hash."
+          },
+          "simulationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "expectedOutputAmount": {
+            "type": "string",
+            "pattern": "^\\d+(?:\\.\\d+)?$"
+          },
+          "expectedGasUsdCents": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "expectedYieldUsdCents": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "maxPaymentUnits": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Maximum total raw Base USDC units (6 decimals) across the three customer-funded jobs."
+          },
+          "providers": {
+            "type": "object",
+            "properties": {
+              "solidity_auditor": {
+                "type": "string",
+                "pattern": "^0x[a-fA-F0-9]{40}$"
+              },
+              "defi_economist": {
+                "type": "string",
+                "pattern": "^0x[a-fA-F0-9]{40}$"
+              },
+              "sentiment_analyst": {
+                "type": "string",
+                "pattern": "^0x[a-fA-F0-9]{40}$"
+              }
+            },
+            "required": [
+              "solidity_auditor",
+              "defi_economist",
+              "sentiment_analyst"
+            ],
+            "additionalProperties": false
+          },
+          "approvalNonce": {
+            "type": "string",
+            "pattern": "^\\d{10,20}$"
+          },
+          "approvalExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken",
+          "idempotencyKey",
+          "task",
+          "simulationId",
+          "expectedOutputAmount",
+          "expectedGasUsdCents",
+          "expectedYieldUsdCents",
+          "maxPaymentUnits",
+          "providers",
+          "approvalNonce",
+          "approvalExpiresAt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -260,7 +1123,25 @@
       "description": "Pause an available bounded-autopilot session. Read /api/v1/agent/status first; return the typed readiness error when runtime prerequisites are unmet.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
@@ -270,7 +1151,25 @@
       "description": "Resume an available bounded-autopilot session after rechecking policy, grant, and runtime readiness.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
@@ -280,7 +1179,79 @@
       "description": "Create a separately authorized, scoped, expiring session-key grant. A session token or chat instruction is never a substitute for this grant.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          },
+          "ownerAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionPublicKey": {
+            "type": "string"
+          },
+          "validAfter": {
+            "type": "string",
+            "description": "ISO timestamp"
+          },
+          "validUntil": {
+            "type": "string",
+            "description": "ISO timestamp"
+          },
+          "allowedProtocols": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowedAssets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "maxValuePerTx": {
+            "type": "number"
+          },
+          "maxTotalValue": {
+            "type": "number"
+          },
+          "chainId": {
+            "type": "number"
+          },
+          "nonce": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{130}$"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken",
+          "ownerAddress",
+          "sessionPublicKey",
+          "validAfter",
+          "validUntil",
+          "allowedProtocols",
+          "allowedAssets",
+          "maxValuePerTx",
+          "maxTotalValue",
+          "chainId",
+          "nonce",
+          "signature"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "execution"
@@ -290,7 +1261,29 @@
       "description": "Revoke a session-key grant and verify the returned backend state before representing authority as removed.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          },
+          "ownerAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "execution"
@@ -300,7 +1293,29 @@
       "description": "Read authoritative grant status, limits, expiry, and revocation state.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          },
+          "ownerAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -310,7 +1325,29 @@
       "description": "Read one bounded-autopilot cycle and its evidence-backed status.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken",
+          "jobId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -320,7 +1357,29 @@
       "description": "Request execution of eligible cycle actions only when the live status contract and active grant permit it; never infer enablement from tool discovery.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken",
+          "jobId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "execution"
@@ -330,7 +1389,49 @@
       "description": "Create a Biconomy MEE cross-chain intent record. Creation is not simulation, authorization, submission, or settlement.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "ownerAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "chainId": {
+                  "type": "number"
+                },
+                "targetProtocol": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "params": {
+                  "type": "object",
+                  "additionalProperties": {}
+                },
+                "estimatedGasUsd": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "chainId",
+                "targetProtocol",
+                "action",
+                "params"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "ownerAddress",
+          "steps"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "write"
@@ -340,7 +1441,16 @@
       "description": "Simulate a created MEE intent and stop when costs, risk, or net edge fail policy.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
@@ -350,7 +1460,25 @@
       "description": "Submit a separately signed, successfully simulated MEE intent only when the live capability gate is available.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{130}$"
+          },
+          "nonce": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "signature",
+          "nonce"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "execution"
@@ -360,7 +1488,16 @@
       "description": "Read authoritative MEE intent status; pending or submitted is not settled.",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputHints": [],
       "category": "read"
