@@ -9,7 +9,9 @@
     "workflow-automation",
     "multi-agent-system",
     "ai-agent-workflows",
-    "defi-automation",
+    "policy-gated",
+    "supervised-automation",
+    "defi-playbooks",
     "quality-gates",
     "workflow-status",
     "session-management",
@@ -19,6 +21,7 @@
     "zero-custody",
     "openclaw",
     "mcp",
+    "web3",
     "farmdash"
   ],
   "author": "FarmDash Pioneers (@Parmasanandgarlic)",

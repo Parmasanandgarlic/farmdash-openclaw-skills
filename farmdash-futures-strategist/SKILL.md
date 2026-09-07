@@ -4,7 +4,7 @@ description: "Use when analyzing perpetuals: funding rates, market scans, accoun
 version: "3.2.2"
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
-tags: ["defi", "hyperliquid", "hyperliquid-api", "perpetual-futures", "perps-trading", "defi-trading", "ai-trading-agent", "funding-rates", "funding-arbitrage", "position-sizing", "drawdown-control", "liquidation-risk", "eip-712", "zero-custody", "openclaw", "mcp", "risk-management", "farmdash"]
+tags: ["defi","hyperliquid","perpetual-futures","perps-trading","leverage-trading","perp-dex","defi-trading","ai-trading-agent","funding-rates","funding-arbitrage","position-sizing","drawdown-control","liquidation-risk","eip-712","zero-custody","openclaw","mcp","risk-management","web3","farmdash"]
 env:
   FARMDASH_API_KEY:
     description: "Optional Bearer token for Pioneer or Syndicate tier. Scout mode works with no key or with the public fd_scout_free token. Never share private keys, seed phrases, or mnemonics with this skill — perps execution uses EIP-712 local signing only via the user's Hyperliquid API wallet."

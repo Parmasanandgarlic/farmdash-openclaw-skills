@@ -9,6 +9,8 @@
     "wallet-analytics",
     "multichain-portfolio",
     "evm-wallet",
+    "solana",
+    "base",
     "portfolio-analysis",
     "asset-allocation",
     "portfolio-rebalancing",

@@ -1,7 +1,7 @@
 ---
 name: FarmDash Trail Intelligence
 description: "Use when researching DeFi protocols: Trail Heat scores, sybil risk, yield and points simulation. Read-only; never signs, approves, or executes."
-tags: ["defi", "defi-research", "airdrop-tracker", "crypto-airdrops", "points-farming", "airdrop-farming", "defi-protocols", "protocol-ranking", "onchain-analytics", "wallet-analysis", "sybil-risk", "trail-heat", "farmscore", "restaking", "depin", "layer-2", "openclaw", "mcp", "farmdash"]
+tags: ["defi","defi-research","airdrop-tracker","airdrop-hunter","crypto-airdrops","points-farming","airdrop-farming","defi-protocols","protocol-ranking","onchain-analytics","sybil-risk","trail-heat","farmscore","restaking","solana","openclaw","mcp","zero-custody","web3","farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
 version: "3.1.2"

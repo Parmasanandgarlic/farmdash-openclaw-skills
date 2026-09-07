@@ -1,7 +1,7 @@
 ---
 name: FarmDash Wagon Steward
 description: "Use when watching a DeFi portfolio: balances, position health, idle capital, drift. Read-only; never rebalances or moves funds without your signature."
-tags: ["defi", "defi-portfolio", "crypto-portfolio-tracker", "wallet-analytics", "multichain-portfolio", "evm-wallet", "portfolio-analysis", "asset-allocation", "portfolio-rebalancing", "capital-efficiency", "idle-stablecoins", "position-tracking", "onchain-portfolio", "read-only", "openclaw", "ai-agent", "mcp", "farmdash"]
+tags: ["defi","defi-portfolio","crypto-portfolio-tracker","wallet-analytics","multichain-portfolio","evm-wallet","solana","base","portfolio-analysis","asset-allocation","portfolio-rebalancing","capital-efficiency","idle-stablecoins","position-tracking","onchain-portfolio","read-only","openclaw","ai-agent","mcp","farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
 version: "0.7.2"

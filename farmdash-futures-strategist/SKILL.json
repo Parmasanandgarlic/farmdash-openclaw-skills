@@ -5,9 +5,10 @@
   "tags": [
     "defi",
     "hyperliquid",
-    "hyperliquid-api",
     "perpetual-futures",
     "perps-trading",
+    "leverage-trading",
+    "perp-dex",
     "defi-trading",
     "ai-trading-agent",
     "funding-rates",
@@ -20,6 +21,7 @@
     "openclaw",
     "mcp",
     "risk-management",
+    "web3",
     "farmdash"
   ],
   "author": "FarmDash Pioneers (@Parmasanandgarlic)",

@@ -1,7 +1,7 @@
 ---
 name: FarmDash Camp Guard
 description: "Use for pre-sign safety: allowance audits, route/health sentinel checks, policy scan of unsigned transactions. Verdicts only; never signs or broadcasts."
-tags: ["defi", "defi-security", "smart-contract-risk", "token-allowance", "approval-risk", "transaction-risk-analysis", "transaction-policy", "wallet-security", "risk-sentinel", "pre-transaction-check", "scam-protection", "openclaw", "ai-agent", "mcp", "zero-custody", "web3-security", "farmdash"]
+tags: ["defi","defi-security","smart-contract-risk","token-allowance","approval-revoke","approval-risk","transaction-risk-analysis","transaction-policy","wallet-security","risk-sentinel","pre-transaction-check","rug-pull","defi-scams","scam-protection","openclaw","ai-agent","mcp","zero-custody","web3-security","farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
 version: "1.1.2"

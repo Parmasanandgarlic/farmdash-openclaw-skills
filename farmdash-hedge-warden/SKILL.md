@@ -1,7 +1,7 @@
 ---
 name: FarmDash Hedge Warden
 description: "Use when sizing a hedge for existing DeFi exposure: delta-neutral recommendations with explicit bounds and risk notes. Advisory only; never trades itself."
-tags: ["defi", "delta-hedging", "defi-hedging", "crypto-hedging", "portfolio-hedge", "perpetual-futures", "short-perp", "delta-neutral", "basis-risk", "funding-cost", "residual-delta", "risk-management", "yield-farming-risk", "openclaw", "ai-agent", "mcp", "farmdash"]
+tags: ["defi","delta-hedging","defi-hedging","crypto-hedging","portfolio-hedge","portfolio-protection","drawdown-protection","perpetual-futures","short-perp","delta-neutral","basis-risk","funding-cost","residual-delta","risk-management","defi-risk-management","openclaw","ai-agent","mcp","web3","farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
 version: "1.1.2"

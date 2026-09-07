@@ -1,7 +1,7 @@
 ---
 name: FarmDash Trail Marshal
 description: "Use when composing multi-step DeFi workflows from FarmDash tools: plan, run, inspect supervised pipelines. Wallet steps stay policy-gated, preview-only."
-tags: ["defi", "defi-workflows", "agent-orchestration", "workflow-automation", "multi-agent-system", "ai-agent-workflows", "defi-automation", "quality-gates", "workflow-status", "session-management", "risk-management", "yield-farming-workflow", "airdrop-workflow", "zero-custody", "openclaw", "mcp", "farmdash"]
+tags: ["defi","defi-workflows","agent-orchestration","workflow-automation","multi-agent-system","ai-agent-workflows","policy-gated","supervised-automation","defi-playbooks","quality-gates","workflow-status","session-management","risk-management","yield-farming-workflow","airdrop-workflow","zero-custody","openclaw","mcp","web3","farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
 version: "1.1.2"
