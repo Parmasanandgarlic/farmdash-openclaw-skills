@@ -28,7 +28,7 @@ Copy any skill directory into your agent's skills path (e.g. OpenClaw / Claude C
 - MCP manifest: https://www.farmdash.one/.well-known/mcp.json
 - OpenAPI: https://www.farmdash.one/agents/openapi.yaml
 
-Also listed on KlawHub. Commercial disclosure: skills may surface `farmdash.one/go/*` partner routes with mandatory disclosure; never on avoid-verdicts. Details: https://www.farmdash.one/fees.
+Commercial disclosure: skills may surface `farmdash.one/go/*` partner routes with mandatory disclosure; never on avoid-verdicts. Details: https://www.farmdash.one/fees.
 
 ## License
 
