@@ -1,6 +1,6 @@
 {
   "name": "FarmDash Signal Architect",
-  "version": "4.1.2",
+  "version": "4.2.0",
   "description": "Use when building DeFi trade strategy: 84 MCP tools for quotes, simulation, Trail Heat, receipts, agent hiring. Swaps need fresh quote, simulation, signing.",
   "tags": [
     "defi",
@@ -573,7 +573,7 @@
     },
     {
       "name": "get_swap_quote",
-      "description": "Preview a compatibility-swap quote using released providers only: LI.FI for stabilized cross-chain routing and 0x for stabilized same-chain EVM routing. x402 is machine-payment/access infrastructure, not a swap provider; OKX is quarantined. For executable preparation, include the required wallet fields so FarmDash can bind the quote to simulation and intent evidence. Always disclose expected output, slippage, fee, route, and simulation state before asking the user to continue.",
+      "description": "Research: returns a provider-neutral market estimate (reference price, approximate output, server fee tier, route compatibility, freshness) without calling 0x, LI.FI, or Relay trading APIs. Never executable, never attributed, never executionReady. A wallet alone is exploratory context and never triggers provider quoting. For execution, POST /api/v1/agent/quote-intent with exact parameters, a real wallet, and an idempotency key to receive a firm single-provider quote bound to an intentId; then re-call this endpoint with identical parameters plus intentId to serve the stored firm quote with zero new provider calls. Always disclose expected output, slippage, fee, route, and simulation state before asking the user to continue.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -597,7 +597,8 @@
             "type": "string",
             "enum": [
               "lifi",
-              "zerox"
+              "zerox",
+              "relay"
             ]
           },
           "walletAddress": {

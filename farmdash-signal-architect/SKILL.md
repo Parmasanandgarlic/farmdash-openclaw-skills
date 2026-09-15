@@ -4,7 +4,7 @@ description: "Use when building DeFi trade strategy: 84 MCP tools for quotes, si
 tags: ["defi","defi-agent","crypto-swap","swap-routing","cross-chain-swap","uniswap","jupiter","solana","defi-automation","onchain-agent","mev-risk-analysis","hyperliquid","perpetual-futures","virtuals-acp","agent-commerce","portfolio-management","zero-custody","openclaw","mcp","farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
-version: "4.1.2"
+version: "4.2.0"
 icon: 🚜
 env:
   FARMDASH_API_KEY:
@@ -50,7 +50,7 @@ Before calling individual tools, classify the user's intent into one of these op
 | **airdrop_rotation** | Find, compare, and rotate farming positions | `get_agent_events`, `get_trail_heat` | `simulate_points`, `optimize_portfolio`, `get_swap_quote` | Bridge/gas/slippage costs erase expected edge |
 | **bounded_autopilot** | Run a recurring supervised loop inside explicit limits | `agent_onboard`, `create_session` | `configure_autopilot`, `autopilot_cycle`, `session_heartbeat` | Any configured budget, allowlist, cooldown, or risk bound is violated |
 | **perps_hedge** | Evaluate or execute a Hyperliquid hedge | `scan_funding_rates`, `scan_market_conditions` | `get_futures_account`, `analyze_futures_strategy`, `calculate_position_size` | The strategy returns `no_trade` or the research gate expires |
-| **activity_review** | Review FarmDash-recorded activity, fees, protocol diversity, and reputation | `get_swap_history`, `get_agent_performance` | `check_reputation`, `vouch_for_agent` | Do not infer profitability or execution quality from activity |
+| **activity_review** | Review FarmDash-recorded activity, fees, protocol diversity, and reputation | `get_agent_activity`, `get_agent_performance` | `get_agent_performance` | Do not infer profitability or execution quality from activity |
 
 The autonomous loop is always:
 1. **Sense** with events, Trail Heat, chain distribution, balances, and prices.
@@ -89,12 +89,12 @@ Before calling `execute_swap`, `execute_perp_order`, or any state-changing endpo
 
 | Disclosure | Source |
 | :--- | :--- |
-| Exact `fromToken` + `toToken` (symbol AND contract address) | `get_swap_quote` |
-| Source and destination chain IDs | `get_swap_quote` |
-| Exact `fromAmount` (and estimated `toAmount`) | `get_swap_quote` |
-| Slippage tolerance (default 0.5%) | Quote + user override |
-| FarmDash routing fee (45 bps default, with any volume discount applied) | Quote `feeBreakdown` |
-| Aggregator / DEX route (0x, LI.FI) | Quote `route` |
+| Exact `fromToken` + `toToken` (symbol AND contract address) | `get_swap_quote` (estimate) → firm quote via `/api/v1/agent/quote-intent` |
+| Source and destination chain IDs | `get_swap_quote` (estimate) → firm quote via `/api/v1/agent/quote-intent` |
+| Exact `fromAmount` (and estimated `toAmount`) | Firm quote (`intentId`-bound), not the estimate |
+| Slippage tolerance (default 0.5%) | Firm quote + user override |
+| FarmDash routing fee (45 bps default, with any volume discount applied) | Firm quote `feeBreakdown` |
+| Aggregator / DEX route (0x, LI.FI, Relay) | Firm quote `route` |
 | Simulation result (`simulation_id`, success, gas cost, MEV risk, revert reason if any) | `simulate_swap_execution` |
 | Reversibility warning ("on-chain transactions cannot be undone") | Agent disclosure |
 | Wallet address that will sign | Connected wallet context |
@@ -381,16 +381,29 @@ Example: "Altura is scoring 84 on Trail Heat — strong TVL momentum and confirm
 #### 2. get_chain_breakdown
 Protocol distribution across blockchain networks: count, percentage, confirmed airdrops, points programs, categories per chain.
 
-Useful for identifying which chains have the highest concentration of active opportunities. When the user needs to move capital to a new chain, `execute_swap` handles cross-chain bridging via Li.Fi.
+Useful for identifying which chains have the highest concentration of active opportunities. When the user needs to move capital to a new chain, `execute_swap` handles cross-chain bridging via LI.FI or Relay.
 
 #### 3. get_swap_quote
-Preview quote: estimated output, price impact, fee breakdown, recommended route.
+Returns a **provider-neutral market estimate** by default — reference price, approximate output, server-side fee tier, route compatibility, and freshness. It never calls 0x, LI.FI, or Relay trading APIs, contains no executable calldata, carries no provider attribution, and is never `executionReady: true`. Supplying `walletAddress` is exploratory context only; a wallet alone never triggers provider quoting.
 
-Route selection: LI.FI (cross-chain EVM) → 0x (same-chain EVM). Can specify with `protocol` param (`lifi` or `zerox`).
+Route selection: LI.FI (cross-chain EVM) → 0x and Relay (same-chain EVM). Force with the `protocol` param (`lifi`, `zerox`, or `relay`); a forced provider is attempted alone, never silently replaced.
 
-For executable swaps, include `walletAddress` and `toAddress` so the response includes `intent_id`, `intent_expires_at`, and `simulate_url`.
+**The quote ladder (estimate → firm → simulate → execute):**
+1. **Estimate** — `get_swap_quote` (or `find_capital_route`) for browsing, comparisons, and previews. Intelligence, not an executable quote.
+2. **Firm quote** — `POST /api/v1/agent/quote-intent` with exact `fromChainId`, `toChainId`, `fromToken`, `toToken`, `fromAmount`, real `walletAddress`, `toAddress`, `slippage` (0.01–5), and a stable `idempotencyKey`. One intent contacts exactly one primary provider; a sequential alternate follows only a genuine primary failure. The response is a firm quote bound to an `intentId` with `expiresAt` (30s TTL).
+3. **Serve without re-quoting** — re-call `GET /api/v1/agents/quote` with the identical parameters plus `intentId` to serve the stored firm quote with zero new provider calls. Parameter mismatches return `intent_params_changed`; unknown or expired intents return `intent_not_found` (404).
+4. **Simulate** — `simulate_swap_execution` on the firm quote (below), then execute through the intent lifecycle.
 
-Always get a quote before executing. Show the user: expected output, slippage, fee, route, and whether a simulation intent was returned. Then ask for confirmation.
+Idempotency semantics: identical quote-intents reuse the stored firm quote (`reused: true`); changed parameters never reuse a stale quote. Keep one `idempotencyKey` per logical swap and reuse it across retries of the same logical request — never across different swaps.
+
+Always get an estimate first, then a firm quote before executing. Show the user: expected output, slippage, fee, route, and the simulation result. Then ask for confirmation.
+
+**Typed quote-failure handling (machine-readable, do not guess):**
+Quote failures return a typed category with a `retryable` flag and `attempts[]` evidence. Honor the flag instead of blanket-retrying:
+* Retryable (backoff, then alternate provider if available): `provider_rate_limited`, `provider_timeout`, `provider_unavailable`, `request_cancelled`.
+* Non-retryable (fix inputs or halt; retrying will not heal): `invalid_request`, `unsupported_chain`, `unsupported_pair`, `no_liquidity`, `insufficient_balance`, `allowance_required`, `approval_required`, `signature_required`, `execution_not_ready`, `provider_auth`, `provider_forbidden`, `provider_paused`, `governor_budget_exhausted`, `provider_contract_changed`, `malformed_provider_response`.
+* `provider_paused` means operator-paused execution for that venue: do not loop retries and do not route around a paused provider without telling the user; surface it and fall back to the estimate.
+* Total quote failure is no longer a single `quote_no_route` 422: read the per-provider `attempts[]` categories to tell the user *why* each venue declined.
 
 #### 4. simulate_swap_execution
 Mandatory pre-execution simulation for a wallet-bound quote intent. Input:
@@ -430,15 +443,16 @@ Optional: `intentId`, `slippage` (0.01-5, default 0.5), `protocol` (force route)
 The response may classify MEV risk and recommend a protection tier. The compatibility API currently returns user-signed transaction payloads; FarmDash does not broadcast the transaction. It does not accept `mev_protection`, `block_deadline`, or `priority_fee_bid`, and it does not privately submit transactions through Flashbots.
 
 Execution workflow (mandatory):
-1. `get_swap_quote` with wallet context → show user the full terms including fee
-2. `simulate_swap_execution` → show simulation result and stop on failure
-3. Wait for explicit user confirmation
-4. Build payload with fresh nonce
-5. Sign locally via user's wallet
-6. Call `execute_swap` with `simulationId`
-7. Wait for settlement before any dependent action; use rate-limit backoff only when required
-8. Report result with tx hash
-9. If the swap was to enter a protocol position, provide the FarmDash route with disclosure and `/fees` pointer for next steps
+1. `get_swap_quote` → provider-neutral estimate for terms preview; the estimate alone is never execution-ready
+2. `POST /api/v1/agent/quote-intent` with exact parameters + `idempotencyKey` → firm quote bound to an `intentId`
+3. `simulate_swap_execution` → show simulation result and stop on failure
+4. Wait for explicit user confirmation
+5. Build payload with fresh nonce
+6. Sign locally via user's wallet
+7. Call `execute_swap` with `simulationId` (and the bound `intentId`)
+8. Wait for settlement before any dependent action; use rate-limit backoff only when required
+9. Report result with tx hash
+10. If the swap was to enter a protocol position, provide the FarmDash route with disclosure and `/fees` pointer for next steps
 
 Dust Storm Protocol: On failure, wait 30s, get fresh quote, show new terms. After 3 failures, halt.
 
@@ -449,13 +463,13 @@ Use when:
 * you need reliable post-trade settlement state
 * you want retry-safe confirmation in flaky network conditions (this endpoint is idempotent)
 
-#### 6. get_swap_history
-Paginated fee event history for an agent wallet.
+#### 6. get_agent_activity
+Review recent agent activity via durable FarmDash execution receipts; filter by intent_id and receipt status.
 
-Useful for tracking cumulative volume. Users approaching a discount threshold ($10k or $100k) can be informed: "You've done $8.2k in volume — approaching the 35bps discount tier."
+Useful for tracking cumulative volume alongside `get_agent_performance` (fee-event activity). Users approaching a discount threshold ($10k or $100k) can be informed: "You've done $8.2k in volume — approaching the 35bps discount tier."
 
-#### 7. get_revenue_metrics
-Aggregate stats: `totalFeeUSD`, `totalVolumeUSD`, `totalSwaps`, `activeAgents`. Provides a high-level view of platform activity.
+#### 7. get_revenue_metrics (retired — not an MCP tool)
+Platform-wide revenue aggregates are not exposed as an MCP tool, so do not call this name. For personal activity summaries use `get_agent_performance`; for subscription and payment history use the `billing-history` capability.
 
 ### Pioneer Tier (1,500 req/day, Bearer token required)
 #### 8. audit_sybil_risk
@@ -508,8 +522,7 @@ Use these when the user is trading perps, hedging spot exposure, or running a fu
 Use these to ground recommendations in the user's actual wallet state and to quantify agent outcomes.
 * `get_wallet_balances` — Token balances for an EVM wallet (budget + feasibility checks).
 * `get_token_prices` — Convert balances to USD terms (sizing + comparisons).
-* `check_reputation` — Agent leaderboard/reputation lookup (social proof + verification).
-* `vouch_for_agent` — EIP-191 signed vouch to build agent reputation.
+* `get_agent_performance` — Fee-event activity, fees, protocol diversity, and reputation context (documented above); it is not a fill-quality ledger.
 
 #### Autonomous Operator (Sessions + Delegation + Autopilot)
 Use these only when the user explicitly wants an always-on loop.
@@ -675,7 +688,7 @@ Idle capital is optionality and liquidity, not automatically a defect. A capital
 1. `get_agent_events` → new events since last session
 2. `get_trail_heat` → current rankings
 3. `get_historical_trailheat` → compare to yesterday
-4. `get_revenue_metrics` → performance summary
+4. `get_agent_performance` → performance summary
 5. `audit_sybil_risk` → optional defensive policy-risk review with data-quality caveats
 6. Summarize findings and flag any opportunities worth the user's attention
 
@@ -711,7 +724,7 @@ Before Workflow F step 7, record: objective + holding horizon; decision timestam
 ### Invalidation and Unwind Rules (Additive)
 Halt before signing when: quote older than 30 seconds; simulation success is false; valid_until expired; net edge turned negative after gas, slippage, bridge, or FarmDash fee; chain/protocol outside allowlist; unknown spender, excessive allowance, or depeg risk; expected-output drift exceeds slippage budget or 50 bps between two quotes 10-20s apart; MEV medium/high undisclosed. After execute_swap, call confirm_swap when a tx hash or fee event exists; if realized miss exceeds 75 bps, evidence is unavailable, or settlement is pending/partial, label unavailable and start no dependent action until human review. Dust Storm: fresh quote after 30s; halt after 3 failures.
 1. `confirm_swap` -> settle fee event and transaction state
-2. `get_swap_history` -> pull FarmDash fee-event metadata; it is not a fill-quality ledger
+2. `get_agent_activity` -> pull FarmDash receipt/activity metadata; it is not a fill-quality ledger
 3. `get_agent_performance` -> add activity/reputation context only
 4. Obtain authoritative transaction receipt and token-delta evidence from the client/chain; a final aggregate wallet balance alone may be confounded by other transfers
 5. Report expected output, realized output, slippage, gas, and bridge time only when each has supporting evidence; otherwise mark it unavailable
@@ -774,6 +787,7 @@ This returns tier status and available tools. It also sends the public `agentAdd
 * `GET /api/v1/agent/onboard` — Full capability map and setup guide
 * Upgrade to Pioneer ($39.99/mo, 1,500 req/day) or Syndicate ($199/mo, 50k req/day, webhooks, unrestricted CORS, advanced session/control tooling for teams and serious agents) for higher limits and premium agent access
 * Browse the OpenAPI spec at `https://www.farmdash.one/agents/openapi.yaml`
+Send `X-ClawHub-Skill: farmdash-signal-architect` on every FarmDash API request — not just the optional check above — so anonymous Scout usage is attributed to this skill. Analytics-only and optional; requests without the header still work. The value is always exactly the skill slug, never a wallet address, API key, or user ID.
 
 <!-- farmdash-canonical-links:start -->
 
