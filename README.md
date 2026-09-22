@@ -1,5 +1,23 @@
 # FarmDash OpenClaw Skills
 
+## Public FarmDash MCP server
+
+This repository includes the runnable MIT-licensed FarmDash stdio MCP adapter in [`mcp-server/`](./mcp-server). It exposes the same 84-tool contract published at `https://www.farmdash.one/.well-known/mcp.json` and calls the live FarmDash API without receiving customer private keys.
+
+Build and verify from a clean checkout:
+
+```bash
+git clone https://github.com/Parmasanandgarlic/farmdash-openclaw-skills.git
+cd farmdash-openclaw-skills
+npm ci --prefix mcp-server
+npm run build --prefix mcp-server
+npm run smoke --prefix mcp-server
+node mcp-server/dist/index.js
+```
+
+For MCP clients, configure `node` with the absolute path to `mcp-server/dist/index.js`. `FARMDASH_API_KEY` is optional for Scout. The package metadata uses `@farmdash/mcp-server`, but **do not use an npm install command until registry publication is independently verified**. Public source + Docker are the current installable surfaces.
+
+
 10 open agent skills for DeFi intelligence on [FarmDash](https://www.farmdash.one/agents) — read-only, zero-custody, fail-closed. No private keys, no seed phrases, no auto-execution. Ever.
 
 | Skill | What it does |
@@ -23,7 +41,7 @@ Copy any skill directory into your agent's skills path (e.g. OpenClaw / Claude C
 
 ## API access
 
-- Scout tier: free, keyless (`fd_scout_free`), 5 req/24h — enough to try every skill.
+- Scout tier: free, keyless (`fd_scout_free`), 30 req/24h per IP. New agents can also receive a bounded first-value grant for eligible cheap discovery routes so shared cloud egress does not consume another principal's onboarding allowance.
 - Pioneer/Syndicate: Bearer `FARMDASH_API_KEY` for higher limits and deep tools.
 - MCP manifest: https://www.farmdash.one/.well-known/mcp.json
 - OpenAPI: https://www.farmdash.one/agents/openapi.yaml
