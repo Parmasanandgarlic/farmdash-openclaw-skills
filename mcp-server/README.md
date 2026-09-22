@@ -9,8 +9,8 @@ FarmDash Agent OS MCP Server (v5.0.0) - 84 tools for DeFi intelligence, protocol
 ## Quick Start
 
 ```bash
-git clone https://github.com/Parmasanandgarlic/farmdash-openclaw-skills/tree/main/mcp-server.git
-cd farmdashbeta/mcp-server
+git clone https://github.com/Parmasanandgarlic/farmdash-openclaw-skills.git
+cd farmdash-openclaw-skills/mcp-server
 npm ci
 npm run build
 ```
@@ -26,7 +26,7 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "farmdash": {
       "command": "node",
-      "args": ["/absolute/path/to/farmdashbeta/mcp-server/dist/index.js"],
+      "args": ["/absolute/path/to/farmdash-openclaw-skills/mcp-server/dist/index.js"],
       "env": {
         "FARMDASH_API_KEY": "your-pioneer-or-syndicate-key"
       }
@@ -43,7 +43,7 @@ Add to Cursor Settings > MCP:
 {
   "farmdash": {
     "command": "node",
-    "args": ["/absolute/path/to/farmdashbeta/mcp-server/dist/index.js"],
+    "args": ["/absolute/path/to/farmdash-openclaw-skills/mcp-server/dist/index.js"],
     "env": {
       "FARMDASH_API_KEY": "your-key"
     }
@@ -60,7 +60,7 @@ Add to `.cline/mcp_settings.json`:
   "mcpServers": {
     "farmdash": {
       "command": "node",
-      "args": ["/absolute/path/to/farmdashbeta/mcp-server/dist/index.js"],
+      "args": ["/absolute/path/to/farmdash-openclaw-skills/mcp-server/dist/index.js"],
       "env": {
         "FARMDASH_API_KEY": "your-key"
       }
@@ -75,7 +75,7 @@ Add to `.cline/mcp_settings.json`:
 |----------|----------|---------|-------------|
 | `FARMDASH_API_KEY` | No | `fd_scout_free` | Public Scout token, or a paid Pioneer/Syndicate bearer token. Paid users can issue a key at `/api/v1/agent/api-key`. |
 
-Scout mode is the fastest path: build the MCP server from source and leave `FARMDASH_API_KEY` unset, or set it to `fd_scout_free` if your client requires an env value. When Scout reaches 30 requests per 24 hours, FarmDash returns a 402 response with route-specific x402 payment details. The configured default overage is 0.01 USDC; premium reports and compute-heavy routes publish their own price in the 402 response.
+Scout mode is the fastest path: build the MCP server from source and leave `FARMDASH_API_KEY` unset, or set it to `fd_scout_free` if your client requires an env value. After `agent_onboard`, the long-lived stdio adapter retains any bounded `X-FarmDash-Scout-Grant` token in memory for eligible cheap discovery calls; it is never persisted to disk. When Scout reaches 30 requests per 24 hours, FarmDash returns a 402 response with route-specific x402 payment details. The configured default overage is 0.01 USDC; premium reports and compute-heavy routes publish their own price in the 402 response.
 | `FARMDASH_BASE_URL` | No | `https://www.farmdash.one/api` | Override API base URL. |
 
 ## Tool Highlights (84 Total)
