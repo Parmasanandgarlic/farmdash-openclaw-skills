@@ -77,6 +77,8 @@ Add to `.cline/mcp_settings.json`:
 
 Scout mode is the fastest path: build the MCP server from source and leave `FARMDASH_API_KEY` unset, or set it to `fd_scout_free` if your client requires an env value. After `agent_onboard`, the long-lived stdio adapter retains any bounded `X-FarmDash-Scout-Grant` token in memory for eligible cheap discovery calls; it is never persisted to disk. When Scout reaches 30 requests per 24 hours, FarmDash returns a 402 response with route-specific x402 payment details. The configured default overage is 0.01 USDC; premium reports and compute-heavy routes publish their own price in the 402 response.
 | `FARMDASH_BASE_URL` | No | `https://www.farmdash.one/api` | Override API base URL. |
+| `FARMDASH_SCOUT_GRANT` | No | — | Optional short-lived onboarding grant. Normally captured in memory automatically after `agent_onboard`; never a paid entitlement. |
+| `FARMDASH_SKILL_ID` | No | — | Optional canonical skill slug for analytics attribution only; never a wallet, key, or user ID. |
 
 ## Tool Highlights (84 Total)
 
