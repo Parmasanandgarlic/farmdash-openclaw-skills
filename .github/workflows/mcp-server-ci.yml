@@ -1,0 +1,35 @@
+name: MCP Server CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mcp-server/**'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/mcp-server-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'mcp-server/**'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/mcp-server-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-introspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mcp-server/package-lock.json
+      - run: npm ci --prefix mcp-server
+      - run: npm run build --prefix mcp-server
+      - run: npm run smoke --prefix mcp-server
