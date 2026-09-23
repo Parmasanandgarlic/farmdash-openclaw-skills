@@ -73,16 +73,16 @@ Add to `.cline/mcp_settings.json`:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `FARMDASH_API_KEY` | No | `fd_scout_free` | Public Scout token, or a paid Pioneer/Syndicate bearer token. Paid users can issue a key at `/api/v1/agent/api-key`. |
-
-Scout mode is the fastest path: build the MCP server from source and leave `FARMDASH_API_KEY` unset, or set it to `fd_scout_free` if your client requires an env value. After `agent_onboard`, the long-lived stdio adapter retains any bounded `X-FarmDash-Scout-Grant` token in memory for eligible cheap discovery calls; it is never persisted to disk. When Scout reaches 30 requests per 24 hours, FarmDash returns a 402 response with route-specific x402 payment details. The configured default overage is 0.01 USDC; premium reports and compute-heavy routes publish their own price in the 402 response.
+| `FARMDASH_API_KEY` | No | — | Leave unset for keyless Scout, or provide a paid Pioneer/Syndicate bearer token. Paid users can issue a key at `/api/v1/agent/api-key`. |
 | `FARMDASH_BASE_URL` | No | `https://www.farmdash.one/api` | Override API base URL. |
-| `FARMDASH_SCOUT_GRANT` | No | — | Optional short-lived onboarding grant. Normally captured in memory automatically after `agent_onboard`; never a paid entitlement. |
+| `FARMDASH_SCOUT_GRANT` | No | — | Optional short-lived onboarding grant. If the live `agent_onboard` response returns one, the adapter captures it in memory automatically; never a paid entitlement. |
 | `FARMDASH_SKILL_ID` | No | — | Optional canonical skill slug for analytics attribution only; never a wallet, key, or user ID. |
+
+Scout mode is the fastest path: build the MCP server from source and leave `FARMDASH_API_KEY` unset, or set it to `fd_scout_free` only if your client requires an explicit value. The adapter is grant-aware, but it does **not** assume acquisition grants are live: it retains a grant only when the current FarmDash onboarding response actually returns one. When ordinary Scout quota is exhausted, FarmDash returns the current route-specific commercial response; clients should follow the live machine envelope rather than hard-code an overage price.
 
 ## Tool Highlights (84 Total)
 
-This section groups the principal tools. The authoritative count is the 84 `server.tool(...)` registrations in `src/index.ts`; MCP clients can retrieve the complete runtime catalog through tool discovery. Run `agent_onboard` first: it fetches the live `/api/v1/agent/status` readiness contract before returning onboarding guidance.
+This section groups the principal tools. The current runtime exposes 84 tools registered in `src/index-base.ts` behind the guarded `src/index.ts` entrypoint. MCP clients should treat `tools/list` as the authoritative runtime catalog; the included smoke test checks it against the generated capability map so future count drift fails verification. Run `agent_onboard` first: it fetches the live `/api/v1/agent/status` readiness contract before returning onboarding guidance.
 
 ### Protocol Risk Analyzer (1 tool) — NEW in v5.0
 
