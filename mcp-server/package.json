@@ -1,0 +1,59 @@
+{
+  "name": "@farmdash/mcp-server",
+  "version": "5.0.0",
+  "mcpName": "com.farmdash/agent-os",
+  "description": "FarmDash Agent OS MCP Server — capability-labeled tools for DeFi intelligence, supervised workflows, signed transaction preparation, and explicitly gated execution paths",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "farmdash-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Parmasanandgarlic/farmdash-openclaw-skills.git",
+    "directory": "mcp-server"
+  },
+  "homepage": "https://www.farmdash.one/agents",
+  "author": "FarmDash Pioneers (@Parmasanandgarlic)",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build && npm run smoke",
+    "smoke": "node scripts/smoke-introspection.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@virtuals-protocol/acp-node-v2": "0.1.10",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  },
+  "keywords": [
+    "mcp",
+    "farmdash",
+    "defi",
+    "airdrop",
+    "trail-heat",
+    "signal-architect",
+    "swap",
+    "agent",
+    "ai-tools",
+    "openclaw",
+    "model-context-protocol",
+    "zero-custody",
+    "protocol-risk",
+    "yield-simulation",
+    "portfolio-optimization"
+  ],
+  "license": "MIT"
+}
