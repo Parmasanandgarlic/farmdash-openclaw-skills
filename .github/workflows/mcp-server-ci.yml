@@ -7,6 +7,8 @@ on:
       - 'mcp-server/**'
       - 'Dockerfile'
       - '.dockerignore'
+      - '.gitattributes'
+      - 'UPSTREAM.json'
       - '.github/workflows/mcp-server-ci.yml'
   push:
     branches: [main]
@@ -14,6 +16,8 @@ on:
       - 'mcp-server/**'
       - 'Dockerfile'
       - '.dockerignore'
+      - '.gitattributes'
+      - 'UPSTREAM.json'
       - '.github/workflows/mcp-server-ci.yml'
 
 permissions:
@@ -30,6 +34,16 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: mcp-server/package-lock.json
-      - run: npm ci --prefix mcp-server
-      - run: npm run build --prefix mcp-server
-      - run: npm run smoke --prefix mcp-server
+      # Fails the build if any mirrored file diverges from the canonical SHA256 recorded in
+      # UPSTREAM.json or if the tool count drifts. Without this, a stale or hand-edited
+      # mirror ships silently - which is how this repository previously carried an
+      # unauthenticated confirm_swap for several releases while the live manifest kept
+      # pointing agents at it.
+      - name: Verify upstream parity
+        run: node mcp-server/scripts/verify-upstream-parity.mjs
+      - name: Install
+        run: npm ci --prefix mcp-server
+      - name: Build
+        run: npm run build --prefix mcp-server
+      - name: Smoke (introspection)
+        run: npm run smoke --prefix mcp-server
