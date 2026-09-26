@@ -1,0 +1,119 @@
+{
+  "$comment": "Provenance lock. Mirrored from canonical FarmDash production truth. Do not hand-edit mirrored files; re-run the sync from the canonical source instead.",
+  "source_repository": "hububstudio/farmdashbeta",
+  "source_sha": "44f45e624745ec1949fe1fa6327c0f8ae38367c2",
+  "sync_timestamp": "2026-09-26T22:21:19.261Z",
+  "mcp_tool_count": 84,
+  "mirrored_file_count": 26,
+  "not_mirrored_reason": {
+    "mcp-server/package.json": "distribution adaptation: canonical prebuild/postbuild reference ../scripts/*, absent here",
+    "mcp-server/tsconfig.json": "distribution adaptation",
+    "mcp-server/scripts/smoke-introspection.mjs": "public-only smoke harness"
+  },
+  "mirrored": {
+    "mcp-server/src/index-base.ts": {
+      "sha256": "4329e53f68f439aebff137d5383d7f2f76a41a5d2c4eac56e499f5b2a99e12a2",
+      "source": "mcp-server/src/index-base.ts"
+    },
+    "mcp-server/src/index.ts": {
+      "sha256": "88b3e60f47967442136e2ae8c167e9d8f8beb193f287ead1ad57915c36a074e6",
+      "source": "mcp-server/src/index.ts"
+    },
+    "mcp-server/src/api-client.ts": {
+      "sha256": "feb944e73e9c9a51262be4beda113a0b76ccf2406632123418f622a58259142a",
+      "source": "mcp-server/src/api-client.ts"
+    },
+    "mcp-server/src/tool-capabilities.generated.ts": {
+      "sha256": "b2e520fccc7194aca66ba4667a6b5359f2861e69c00f6a4cf414bc4fb2229af6",
+      "source": "mcp-server/src/tool-capabilities.generated.ts"
+    },
+    "farmdash-autonomous-operator/SKILL.md": {
+      "sha256": "3b67abf700bab873c9044baf1696e5aa4947458fa3b3a60dc3369b5b28f135a0",
+      "source": "public/openclaw-skills/farmdash-autonomous-operator/SKILL.md"
+    },
+    "farmdash-autonomous-operator/SKILL.json": {
+      "sha256": "c83618e9fd041945b50b7b40375b85d026225f604a4da1d8fef048cc6e9a9a59",
+      "source": "public/openclaw-skills/farmdash-autonomous-operator/SKILL.json"
+    },
+    "farmdash-camp-guard/SKILL.md": {
+      "sha256": "a14942376ce13866b796c43df756942bbc9c981d6caccde87cd4f65a4ac5652c",
+      "source": "public/openclaw-skills/farmdash-camp-guard/SKILL.md"
+    },
+    "farmdash-camp-guard/SKILL.json": {
+      "sha256": "4285d2da25889ce65b6d2f8dcde4ffe3a655712a41fa9d40ed77a196071799d3",
+      "source": "public/openclaw-skills/farmdash-camp-guard/SKILL.json"
+    },
+    "farmdash-futures-strategist/SKILL.md": {
+      "sha256": "2471bd33069891040953d526f20a6b62e4eda2aaff9abe5330c515bfd8a1a7b4",
+      "source": "public/openclaw-skills/farmdash-futures-strategist/SKILL.md"
+    },
+    "farmdash-futures-strategist/SKILL.json": {
+      "sha256": "848c26a13fdddf8ef894d12852642f8a8d75154fe0661dbb810388767c466f73",
+      "source": "public/openclaw-skills/farmdash-futures-strategist/SKILL.json"
+    },
+    "farmdash-futures-strategist/openapi.yaml": {
+      "sha256": "4c805403f8c3408a44a97a1ec89b874b535c1fc1bf36ba2476de7f2861bfc57f",
+      "source": "public/openclaw-skills/farmdash-futures-strategist/openapi.yaml"
+    },
+    "farmdash-hedge-warden/SKILL.md": {
+      "sha256": "d5e63d29b48b9cfcb478bb1cf43559803a9887e29f3362c8de582f8577eee4f1",
+      "source": "public/openclaw-skills/farmdash-hedge-warden/SKILL.md"
+    },
+    "farmdash-hedge-warden/SKILL.json": {
+      "sha256": "ea215bff742ffe8728646c538c52786adb1890c1c08136eb0b66ed2f68b05513",
+      "source": "public/openclaw-skills/farmdash-hedge-warden/SKILL.json"
+    },
+    "farmdash-ledger-keeper/SKILL.md": {
+      "sha256": "4e670cfbc3e625fb8293200b2f0bec8c2738ed1302bc21d7f53f150d87de4588",
+      "source": "public/openclaw-skills/farmdash-ledger-keeper/SKILL.md"
+    },
+    "farmdash-ledger-keeper/SKILL.json": {
+      "sha256": "d90facbadea80180e48860deab14030b11533e92e7c9d52daf3612d999cc7329",
+      "source": "public/openclaw-skills/farmdash-ledger-keeper/SKILL.json"
+    },
+    "farmdash-signal-architect/SKILL.md": {
+      "sha256": "cf59975171ec0f91bbe6bd855f0997d65cfb7e56b6017e23c5ee62502dc4ee08",
+      "source": "public/openclaw-skills/farmdash-signal-architect/SKILL.md"
+    },
+    "farmdash-signal-architect/SKILL.json": {
+      "sha256": "1199163fa3de5f0f3d9d21a0b06f00543156673b0a131ccd5e5b17f55117df27",
+      "source": "public/openclaw-skills/farmdash-signal-architect/SKILL.json"
+    },
+    "farmdash-signal-architect/openapi.yaml": {
+      "sha256": "4fa693cbcdca73d78748e572c7d1b219f13ec41720e62670db08d7612e37923e",
+      "source": "public/openclaw-skills/farmdash-signal-architect/openapi.yaml"
+    },
+    "farmdash-supply-master/SKILL.md": {
+      "sha256": "4df9fcb3891ab03acaefe7b1430d745e95400f7b15a495c95a37affd5b5d274f",
+      "source": "public/openclaw-skills/farmdash-supply-master/SKILL.md"
+    },
+    "farmdash-supply-master/SKILL.json": {
+      "sha256": "30f07c8d831c459f826bfd124808a82cee7452d96b2b50d056b6d87d259ff316",
+      "source": "public/openclaw-skills/farmdash-supply-master/SKILL.json"
+    },
+    "farmdash-trail-intelligence/SKILL.md": {
+      "sha256": "7ead2d8e3caab4c971a3812dd6f17f46c6143d3c8ade35c80814f3561c3f256c",
+      "source": "public/openclaw-skills/farmdash-trail-intelligence/SKILL.md"
+    },
+    "farmdash-trail-intelligence/SKILL.json": {
+      "sha256": "076c7d63478bb4d69d59d1c3c32f24dcc27af3d0751d4cb0242deed04d0acd71",
+      "source": "public/openclaw-skills/farmdash-trail-intelligence/SKILL.json"
+    },
+    "farmdash-trail-marshal/SKILL.md": {
+      "sha256": "81a84b20b379d0efc64ff366239bf49b1b678b3dad77e0265143050798314440",
+      "source": "public/openclaw-skills/farmdash-trail-marshal/SKILL.md"
+    },
+    "farmdash-trail-marshal/SKILL.json": {
+      "sha256": "52aa527d08a0d33086cd5c9227434847192428fbf7a0b6606913e98ccb36947d",
+      "source": "public/openclaw-skills/farmdash-trail-marshal/SKILL.json"
+    },
+    "farmdash-wagon-steward/SKILL.md": {
+      "sha256": "0d464f3e80b49f2a16c39dc395e387fed32f818d3ee7a80812b99f0fdfebfa47",
+      "source": "public/openclaw-skills/farmdash-wagon-steward/SKILL.md"
+    },
+    "farmdash-wagon-steward/SKILL.json": {
+      "sha256": "5c97f5ddcb0f578af300fc580a1ecdca9933288af4500b0ca3402472a389297c",
+      "source": "public/openclaw-skills/farmdash-wagon-steward/SKILL.json"
+    }
+  }
+}

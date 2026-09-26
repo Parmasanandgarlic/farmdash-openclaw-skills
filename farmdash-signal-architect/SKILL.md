@@ -1,10 +1,10 @@
 ---
 name: FarmDash Signal Architect
-description: "Use when building DeFi trade strategy: 84 MCP tools for quotes, simulation, Trail Heat, receipts, agent hiring. Swaps need fresh quote, simulation, signing."
+description: "OpenClaw DeFi execution with FarmDash's 84-tool MCP server: LI.FI and Relay swaps, simulation, zero-custody settlement verification."
 tags: ["defi","defi-agent","crypto-swap","swap-routing","cross-chain-swap","uniswap","jupiter","solana","defi-automation","onchain-agent","mev-risk-analysis","hyperliquid","perpetual-futures","virtuals-acp","agent-commerce","portfolio-management","zero-custody","openclaw","mcp","farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
-version: "4.2.0"
+version: "4.2.1"
 icon: 🚜
 env:
   FARMDASH_API_KEY:
@@ -32,6 +32,8 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 ## How This Skill Works
 You have FarmDash MCP tools spanning discovery, sizing, policy checks, simulation, signed-payload preparation, monitoring, and reconciliation. Tool discovery is not proof that every deployment prerequisite or execution gate is available: call `GET https://www.farmdash.one/api/v1/agent/status` first and fail closed on a disabled capability. Never replace missing data with fabricated values. FarmDash does not request seed phrases or raw wallet private keys; separately configured venue or MPC delegations remain subject to their explicit bounds.
+
+FarmDash's MCP server currently exposes 84 tools across its agent suite. Signal Architect declares 21 focused tools from that broader ecosystem. MCP discovery: https://www.farmdash.one/.well-known/mcp.json
 
 MCP Configuration: https://www.farmdash.one/.well-known/mcp.json
 
@@ -94,7 +96,7 @@ Before calling `execute_swap`, `execute_perp_order`, or any state-changing endpo
 | Exact `fromAmount` (and estimated `toAmount`) | Firm quote (`intentId`-bound), not the estimate |
 | Slippage tolerance (default 0.5%) | Firm quote + user override |
 | FarmDash routing fee (45 bps default, with any volume discount applied) | Firm quote `feeBreakdown` |
-| Aggregator / DEX route (0x, LI.FI, Relay) | Firm quote `route` |
+| Aggregator / DEX route (LI.FI, Relay) | Firm quote `route` |
 | Simulation result (`simulation_id`, success, gas cost, MEV risk, revert reason if any) | `simulate_swap_execution` |
 | Reversibility warning ("on-chain transactions cannot be undone") | Agent disclosure |
 | Wallet address that will sign | Connected wallet context |
@@ -133,7 +135,7 @@ Active FarmDash routes:
 * HyperLend: https://www.farmdash.one/go/hyperlend
 * Based Terminal: https://www.farmdash.one/go/based-terminal
 * Theo Network: https://www.farmdash.one/go/theo
-* Genius Terminal: https://www.farmdash.one/go/genius
+* Genius Terminal research: https://www.farmdash.one/tracker/genius
 * Trojan: https://www.farmdash.one/go/trojan
 * Kamino: https://www.farmdash.one/go/kamino
 * Jupiter: https://www.farmdash.one/go/jupiter
@@ -384,15 +386,70 @@ Protocol distribution across blockchain networks: count, percentage, confirmed a
 Useful for identifying which chains have the highest concentration of active opportunities. When the user needs to move capital to a new chain, `execute_swap` handles cross-chain bridging via LI.FI or Relay.
 
 #### 3. get_swap_quote
-Returns a **provider-neutral market estimate** by default — reference price, approximate output, server-side fee tier, route compatibility, and freshness. It never calls 0x, LI.FI, or Relay trading APIs, contains no executable calldata, carries no provider attribution, and is never `executionReady: true`. Supplying `walletAddress` is exploratory context only; a wallet alone never triggers provider quoting.
+Returns a **provider-neutral market estimate** by default — reference price, approximate output, server-side fee tier, route compatibility, and freshness. It never calls 0x, LI.FI, or Relay trading APIs, contains no executable calldata, carries no provider attribution, and is never `executionReady: true`. Supplying `walletAddress` alone remains exploratory context. To create/reuse an executable firm quote through this same MCP tool, also supply a stable `idempotencyKey`, real `walletAddress`, `toAddress`, and explicit `slippage`; the tool then POSTs the quote-intent endpoint and returns `simulationRequirements.intent_id` (`fd_intent_*`). x402 is machine-payment/access infrastructure, not a swap provider.
 
-Route selection: LI.FI (cross-chain EVM) → 0x and Relay (same-chain EVM). Force with the `protocol` param (`lifi`, `zerox`, or `relay`); a forced provider is attempted alone, never silently replaced.
+Route selection: Automatic provider selection is the default across active, configured, and enabled providers (LI.FI and Relay are currently active; 0x is paused until reinstated). Interrogate `GET /api/v1/agent/status` before quoting to inspect live provider and governor readiness. Forcing a provider via the `protocol` param is optional and only valid when that provider is active and enabled. If a caller explicitly requests a paused provider such as `zerox`, FarmDash returns an immediate machine state without wasting upstream quote requests:
 
-**The quote ladder (estimate → firm → simulate → execute):**
+```text
+BLOCKED
+reason: requested_provider_paused
+requested_provider: zerox
+safe_alternative: automatic provider selection
+user_action_required: false
+operator_action_required: false
+next_action: retry firm quote without forced provider
+```
+
+**The canonical execution lifecycle:**
+```text
+discover/research
+        ↓
+market estimate
+        ↓
+create_firm_quote_intent
+        ↓
+authoritative simulation
+        ↓
+policy + risk evaluation
+        ↓
+prepare_swap_transaction
+        ↓
+USER SIGNS
+        ↓
+USER BROADCASTS
+        ↓
+confirm_swap
+```
+
+### Two-Stage Execution Architecture
+
+To prevent provider rate-limit exhaustion and protect execution quotas, Signal Architect enforces a strict separation between intelligence decisioning and execution preparation:
+
+* **Stage A: Decision / Intelligence (Zero Execution Provider Calls)**
+  Routine decisioning, opportunity scanning, and risk policy evaluation run exclusively through Stage A tools:
+  - Trail Heat (`get_trail_heat`, `/api/v1/trail-heat`)
+  - Balances & Portfolio (`get_wallet_balances`, `/api/v1/agent/balances`)
+  - Camp Guard / Policy constraints (`/api/v1/agent/camp-guard`)
+  - Token Pricing & Indicative Route Previews (`get_token_prices`, `get_swap_quote`, `find_capital_route`)
+  - **Output**: A typed decision (`yes` / `no` / `reject` / `candidate` / `allowed`).
+  - **Strict Rule**: Stage A must make **ZERO** LI.FI or Relay executable quote calls. Market estimates are derived from indexed oracle rates and liquidity metrics; they are explicitly marked as estimates and never manufacture execution precision from spot prices.
+
+* **Stage B: Execution Preparation (Firm Quote Intent)**
+  Only after the Stage A decision passes AND the user/agent decides to prepare an executable trade:
+  - Call `get_swap_quote` again with exact trade parameters, real wallet/destination, slippage, and client `idempotencyKey` (direct REST equivalent: `POST /api/v1/agent/quote-intent`).
+  - Exactly one active provider is called first (LI.FI or Relay under automatic selection while 0x is paused); a sequential alternate is attempted only on genuine fallback-eligible failure.
+  - Automatic deduplication: identical requests or identical economic trades within the 15s window reuse active firm quotes (`reused: true`) with **zero new upstream provider calls**.
+  - Provider protection: upstream 429 errors return `provider_rate_limited` and honor provider `Retry-After` duration + jitter; repeated failures (threshold: 3) trip the circuit breaker.
+  - Zero autonomous signing or broadcasting: FarmDash returns the transaction envelope for client-side EIP-191 signing.
+
 1. **Estimate** — `get_swap_quote` (or `find_capital_route`) for browsing, comparisons, and previews. Intelligence, not an executable quote.
-2. **Firm quote** — `POST /api/v1/agent/quote-intent` with exact `fromChainId`, `toChainId`, `fromToken`, `toToken`, `fromAmount`, real `walletAddress`, `toAddress`, `slippage` (0.01–5), and a stable `idempotencyKey`. One intent contacts exactly one primary provider; a sequential alternate follows only a genuine primary failure. The response is a firm quote bound to an `intentId` with `expiresAt` (30s TTL).
-3. **Serve without re-quoting** — re-call `GET /api/v1/agents/quote` with the identical parameters plus `intentId` to serve the stored firm quote with zero new provider calls. Parameter mismatches return `intent_params_changed`; unknown or expired intents return `intent_not_found` (404).
-4. **Simulate** — `simulate_swap_execution` on the firm quote (below), then execute through the intent lifecycle.
+2. **Firm quote intent** — call `get_swap_quote` with exact `fromChainId`, `toChainId`, `fromToken`, `toToken`, `fromAmount`, real `walletAddress`, `toAddress`, `slippage` (0.01–5), and a stable `idempotencyKey`. The REST equivalent is `POST /api/v1/agent/quote-intent`. Automatic provider selection is default. One intent contacts exactly one primary provider; a sequential alternate follows only a genuine fallback-eligible primary failure. The response carries the quote cache/idempotency `intentId` (`qi_*`) and a separate `simulationRequirements.intent_id` (`fd_intent_*`).
+3. **Serve without re-quoting** — direct REST callers may re-call `GET /api/agents/quote` with identical parameters plus the `qi_*` `intentId` to serve the stored firm quote with zero new provider calls. Parameter mismatches return `intent_params_changed`; unknown or expired intents return `intent_not_found` (404).
+4. **Resolve provider prerequisites before simulation** — if `executionReady`/`simulationRequirements.valid_for_execution` is false, inspect `approval`, `firmQuote.providerExecutionPlan`, `firmQuote.signatureRequirements`, and `firmQuote.planContinuation`. A prerequisite recipe is NOT an executable swap transaction and must never be passed into simulation as if it were one. LI.FI: when `approval.required` is true, `approval.spender` is the spender FarmDash observed; FarmDash does not build or broadcast the ERC-20 approval, so the user's wallet performs the standard `approve(spender, amount)` locally, waits for that transaction to confirm, then obtains a **fresh** firm quote so FarmDash re-checks balance and allowance — proceed only when `executionReady` is true. The zero address `0x0000000000000000000000000000000000000000` is the LI.FI native-token sentinel and needs no ERC-20 allowance; it is not WETH. Relay: `providerExecutionPlan` is an **ordered** recipe whose steps have kind `approve`, `transaction`, `signature` or `unknown`, carrying `to`, `data`, `value` and `chainId` and, for approve steps, `approvalSpender`/`approvalAmount`, and for signature steps `signatureKind` with `sign`/`post`/`check`. Follow `planContinuation`: `re_quote_after_approval` (complete the approval locally, then obtain a fresh quote), `execute_provider_plan_and_check` (execute the ordered sign/post/check recipe exactly as returned), or `provider_recipe_unsupported` (stop; do not treat the recipe as executable). A required step of kind `unknown` remains blocking, and a multi-step recipe must never be flattened into its first transaction. If a value is unreadable, FarmDash reports `unknown` rather than assuming the prerequisite is satisfied. Completing a prerequisite is not settlement.
+5. **Authoritative simulation** — call `simulate_swap_execution` with `simulationRequirements.intent_id` (`fd_intent_*`) and the same wallet. It returns `simulation_id`; do not pass the `qi_*` quote-cache ID here.
+6. **Prepare swap transaction** — `execute_swap` validates the fresh `simulation_id` and user EIP-191 signature, returning the prepared transaction payload for the user wallet to broadcast. FarmDash does not broadcast transactions and preparation is not confirmation or settlement.
+7. **User Signs & Broadcasts** — User wallet signs/submits the prepared transaction to the network.
+8. **Confirm swap** — call `confirm_swap` with the authenticated owning session plus both the prepared swap's `feeEventId` and the wallet-broadcast `txHash`. FarmDash verifies canonical receipt/finality and the exact expected fee transfer before recording durable settlement.
 
 Idempotency semantics: identical quote-intents reuse the stored firm quote (`reused: true`); changed parameters never reuse a stale quote. Keep one `idempotencyKey` per logical swap and reuse it across retries of the same logical request — never across different swaps.
 
@@ -401,9 +458,23 @@ Always get an estimate first, then a firm quote before executing. Show the user:
 **Typed quote-failure handling (machine-readable, do not guess):**
 Quote failures return a typed category with a `retryable` flag and `attempts[]` evidence. Honor the flag instead of blanket-retrying:
 * Retryable (backoff, then alternate provider if available): `provider_rate_limited`, `provider_timeout`, `provider_unavailable`, `request_cancelled`.
-* Non-retryable (fix inputs or halt; retrying will not heal): `invalid_request`, `unsupported_chain`, `unsupported_pair`, `no_liquidity`, `insufficient_balance`, `allowance_required`, `approval_required`, `signature_required`, `execution_not_ready`, `provider_auth`, `provider_forbidden`, `provider_paused`, `governor_budget_exhausted`, `provider_contract_changed`, `malformed_provider_response`.
-* `provider_paused` means operator-paused execution for that venue: do not loop retries and do not route around a paused provider without telling the user; surface it and fall back to the estimate.
-* Total quote failure is no longer a single `quote_no_route` 422: read the per-provider `attempts[]` categories to tell the user *why* each venue declined.
+* Non-retryable customer prerequisites (resolve prerequisite; retrying identical state will not heal): `approval_required` (status 409: approve ERC-20 allowance), `insufficient_balance` (status 422: fund wallet), `signature_required` (status 422). These do NOT fall through to alternate providers.
+* Non-retryable routing / pairs: `invalid_request`, `unsupported_chain`, `unsupported_pair`, `no_liquidity`.
+* Non-retryable provider state: `provider_auth`, `provider_forbidden`, `requested_provider_paused`, `governor_budget_exhausted`, `provider_contract_changed`, `malformed_provider_response`.
+* `requested_provider_paused` means operator-paused execution for that venue: do not loop retries; safe alternative is automatic provider selection.
+* Total quote failure is no longer a single opaque `quote_no_route` 422: read the per-provider `attempts[]` categories to tell the user *why* each venue declined.
+
+**Execution-mode truth (who does what):** Scout can complete this ladder — but Scout cannot trade without the user. Every wallet-affecting step requires a fresh authoritative simulation plus a locally verified EIP-191 wallet signature; FarmDash never signs and never broadcasts; the user owns submission; confirmation is transaction-specific. Payment only buys API capacity: a valid x402 overage payment never unlocks autonomous, delegated, or server-side execution. Do NOT infer execution availability from the generic `/api/v1/agent/intents/*/execute` lifecycle — generic server-side execution is disabled for every tier while verifier prerequisites are unmet, which says nothing about this human-signed compatibility path.
+
+**Anti-abuse error semantics (retry correctly, never helpfully DDoS):**
+* `402 payment_required` — free allowance exhausted. Not fixed by retrying; pay the x402 overage or wait for quota reset.
+* `403 tier_required` — capability genuinely unavailable to this tier. Never retryable.
+* `409 idempotency_conflict` — the idempotency key was reused with materially different parameters. Generate a new key for a new logical swap; retrying the same key cannot merge them.
+* `409/428 simulation_required_or_stale` — safety prerequisite: re-quote → re-simulate before preparing.
+* `429 rate_limited` — caller budget exceeded. Fixed by waiting `Retry-After`, nothing else.
+* `503 execution_governor_unavailable` — provider-spend governor unavailable. Bounded exponential backoff only.
+* `503 execution_rate_limiter_unavailable` — distributed abuse protection unavailable. Bounded exponential backoff; do not fan out.
+* `413 body_too_large` — execution-facing request bodies are capped at 32 KB; shrink the payload, never chunk it.
 
 #### 4. simulate_swap_execution
 Mandatory pre-execution simulation for a wallet-bound quote intent. Input:
@@ -457,11 +528,18 @@ Execution workflow (mandatory):
 Dust Storm Protocol: On failure, wait 30s, get fresh quote, show new terms. After 3 failures, halt.
 
 #### 5. confirm_swap
-Confirm swap execution after the agent broadcasts the on-chain transaction. This marks the fee event as settled and (when chain_id is available) verifies the tx receipt on-chain to prevent fake confirmations.
+Verify and durably record swap settlement after the customer-controlled or locally controlled agent wallet broadcasts the prepared transaction. FarmDash does not broadcast the compatibility swap. Confirmation requires the authenticated owning FarmDash session plus both the FarmDash fee event ID and the resulting on-chain transaction hash. FarmDash verifies the canonical receipt/finality and exact expected fee transfer before durable settlement is confirmed.
 
 Use when:
-* you need reliable post-trade settlement state
-* you want retry-safe confirmation in flaky network conditions (this endpoint is idempotent)
+* you need reliable post-trade settlement state after the wallet has submitted the prepared transaction
+* you need retry-safe settlement confirmation; replaying the same valid confirmation is idempotent
+
+Inputs:
+* `sessionId`: required owning FarmDash session ID
+* `agentAddress`: required session owner / customer wallet address
+* `sessionToken`: required session credential; this authenticates the FarmDash session and is not wallet signing or transaction authority
+* `feeEventId`: required FarmDash fee-event identifier associated with the prepared swap
+* `txHash`: required on-chain transaction hash produced after the customer-controlled wallet broadcasts the prepared transaction
 
 #### 6. get_agent_activity
 Review recent agent activity via durable FarmDash execution receipts; filter by intent_id and receipt status.
@@ -571,7 +649,7 @@ Use this state machine for any end-to-end autonomous agent flow. It prevents the
 * **confirm** must show exact tokens, chain IDs, amount, slippage, fees, route, and irreversible-action warning.
 * **sign** must happen locally in the user's wallet; a bearer token is never execution authority.
 * **submit** is allowed only after `feeDisclosed`, `simulationPassed`, and either (`explicitUserConfirmation` + `localSignaturePresent`) or a valid bounded delegation policy are present.
-* **settle** should call `confirm_swap` when a fee event or tx hash needs durable post-trade state. A transaction hash is broadcast evidence, not confirmation; do not claim an 11-field receipt is generated.
+* **settle** should call `confirm_swap` only when both the associated `feeEventId` and wallet-broadcast `txHash` are available together with the authenticated owning session. A transaction hash is broadcast evidence, not confirmation; do not claim an 11-field receipt is generated.
 * **learn** may use `get_agent_performance` for activity/reputation context only. Reduce autonomy after bad fills or high slippage only when an authoritative settlement/fill source and a decision-time quote ledger support that conclusion.
 
 ### Hard halts:
@@ -649,7 +727,7 @@ For size-sensitive routes, get two quotes 10-20 seconds apart before confirmatio
 
 ### Post-Trade Reconciliation
 After `execute_swap`:
-1. Call `confirm_swap` when a tx hash or fee event exists.
+1. Call `confirm_swap` after wallet broadcast only when both the associated `feeEventId` and `txHash` are available and the owning FarmDash session can authenticate the request.
 2. Treat the FarmDash fee event/history record as volume/fee metadata, not proof of realized token output or execution quality.
 3. When authoritative receipt and token-delta evidence is available from the client or chain, compare expected output versus realized output and record slippage, route, gas, bridge time, request ID, provenance, and reason.
 4. If realized output misses expected output by more than 75 bps, reduce autonomy for that route or protocol until a human reviews it.
@@ -722,7 +800,7 @@ Before Workflow F step 7, record: objective + holding horizon; decision timestam
 ### Workflow G: "Post-Execution Quality Review"
 
 ### Invalidation and Unwind Rules (Additive)
-Halt before signing when: quote older than 30 seconds; simulation success is false; valid_until expired; net edge turned negative after gas, slippage, bridge, or FarmDash fee; chain/protocol outside allowlist; unknown spender, excessive allowance, or depeg risk; expected-output drift exceeds slippage budget or 50 bps between two quotes 10-20s apart; MEV medium/high undisclosed. After execute_swap, call confirm_swap when a tx hash or fee event exists; if realized miss exceeds 75 bps, evidence is unavailable, or settlement is pending/partial, label unavailable and start no dependent action until human review. Dust Storm: fresh quote after 30s; halt after 3 failures.
+Halt before signing when: quote older than 30 seconds; simulation success is false; valid_until expired; net edge turned negative after gas, slippage, bridge, or FarmDash fee; chain/protocol outside allowlist; unknown spender, excessive allowance, or depeg risk; expected-output drift exceeds slippage budget or 50 bps between two quotes 10-20s apart; MEV medium/high undisclosed. After the customer-controlled wallet broadcasts the prepared `execute_swap` transaction, call `confirm_swap` only with the authenticated owning session and both the associated `feeEventId` and resulting `txHash`; if realized miss exceeds 75 bps, evidence is unavailable, or settlement is pending/partial, label unavailable and start no dependent action until human review. Dust Storm: fresh quote after 30s; halt after 3 failures.
 1. `confirm_swap` -> settle fee event and transaction state
 2. `get_agent_activity` -> pull FarmDash receipt/activity metadata; it is not a fill-quality ledger
 3. `get_agent_performance` -> add activity/reputation context only
@@ -742,8 +820,7 @@ Report: objective + horizon; decision/source timestamps and missing sources; Tra
 ## Data Sources
 * **DeFiLlama:** TVL, protocol metrics
 * **Alchemy:** Balances, prices
-* **0x:** DEX routing
-* **Li.Fi:** Cross-chain routing
+* **LI.FI / Relay:** DEX and cross-chain routing (0x paused until reinstated)
 * **Helius:** Solana data
 
 ## Disclaimers
@@ -757,7 +834,7 @@ Report: objective + horizon; decision/source timestamps and missing sources; Tra
 
 **Skill Manual:** Available at `https://www.farmdash.one/openclaw-skills/farmdash-signal-architect/SKILL.md`
 
-**Why FarmDash:** Unlike raw Jupiter, 0x, or LI.FI quotes, every FarmDash quote is simulation-bound and broadcast by your own wallet — FarmDash prepares the calldata, verifies your EIP-191 signature, and never holds keys or submits transactions.
+**Why FarmDash:** Unlike raw Jupiter, Relay, or LI.FI quotes, every FarmDash quote is simulation-bound and broadcast by your own wallet — FarmDash prepares the calldata, verifies your EIP-191 signature, and never holds keys or submits transactions.
 
 **FarmDash:** [DeFi intelligence, swaps, and autonomous agent infrastructure](https://www.farmdash.one/)
 

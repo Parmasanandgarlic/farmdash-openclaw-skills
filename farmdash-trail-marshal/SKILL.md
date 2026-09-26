@@ -125,7 +125,7 @@ If the runtime catalog references a skill that is not installed in the user's en
 
 | Tier | Cost | Limits | Capability |
 |---|---|---|---|
-| **Scout** | Free | 5 req / 24h | Returns the public workflow catalog |
+| **Scout** | Free | 30 req / 24h | Returns the public workflow catalog |
 | **Pioneer** | $39.99/mo | 1,500 req / day | Adds higher-rate catalog use; filtering is via the `filter` search string |
 | **Syndicate** | $199/mo | 50k req / day | Teams, serious agents, high-volume orchestration, webhooks, unrestricted CORS, advanced session/control tooling |
 
@@ -270,6 +270,7 @@ This returns tier status and available tool access. Skipping this step does not 
 1. Use the Scout workflow catalog without setup when no key is configured.
 2. Add `FARMDASH_API_KEY` only when the user wants higher-rate Pioneer/Syndicate workflow features.
 3. Browse the OpenAPI spec at `https://www.farmdash.one/agents/openapi.yaml`.
+Send `X-ClawHub-Skill: farmdash-trail-marshal` on every FarmDash API request — not just the optional check above — so anonymous Scout usage is attributed to this skill. Analytics-only and optional; requests without the header still work. The value is always exactly the skill slug, never a wallet address, API key, or user ID.
 
 <!-- farmdash-canonical-links:start -->
 

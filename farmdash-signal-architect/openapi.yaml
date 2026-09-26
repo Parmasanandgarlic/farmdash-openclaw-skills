@@ -176,7 +176,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [lifi, zerox, relay]
+            enum: [lifi, relay]
           description: Force a specific routing protocol (auto-selected if omitted)
         - in: query
           name: walletAddress
@@ -334,7 +334,7 @@ paths:
                 walletAddress: { type: string }
                 toAddress: { type: string }
                 slippage: { type: number, minimum: 0.01, maximum: 5 }
-                protocol: { type: string, enum: [lifi, zerox, relay] }
+                protocol: { type: string, enum: [lifi, relay] }
                 idempotencyKey: { type: string }
       responses:
         '201':
@@ -357,6 +357,14 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '402':
           description: Free-tier limit exceeded
+        '409':
+          description: This idempotencyKey was already used for a materially different request (idempotency_conflict). Generate a new key for a new logical swap.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Request body too large. Execution-facing bodies are capped at 32 KB.
         '429':
           description: Rate limit exceeded
         '502':
@@ -402,8 +410,9 @@ paths:
         Execution Alpha routing, and enforces Risk Sentinel guardrails before
         returning ready-to-broadcast transaction calldata.
 
-        FarmDash does not broadcast the returned compatibility-swap transaction. The chosen
-        provider (automatic routing across 0x, LI.FI, and Relay) executes the swap.
+        FarmDash does not broadcast the returned compatibility-swap transaction. FarmDash prepares
+        the transaction calldata for the user or agent wallet to broadcast. Automatic routing dynamically
+        selects across active providers (LI.FI, Relay; 0x paused until reinstated).
         The FarmDash treasury receives the fee haircut directly from the protocol.
 
         **Signing**: The agent must sign the deterministic payload:
@@ -921,7 +930,7 @@ components:
           description: Slippage tolerance in percent
         protocol:
           type: string
-          enum: [lifi, zerox, relay]
+          enum: [lifi, relay]
           description: Force protocol (auto-selected if omitted)
         expectedUpsideUsd:
           type: number
@@ -1102,7 +1111,7 @@ components:
         toAddress: { type: string, pattern: '^0x[a-fA-F0-9]{40}$' }
         protocol:
           type: string
-          enum: [lifi, zerox, relay]
+          enum: [lifi, relay]
         slippage: { type: number }
         expectedUpsideUsd: { type: number }
         riskBufferUsd: { type: number }

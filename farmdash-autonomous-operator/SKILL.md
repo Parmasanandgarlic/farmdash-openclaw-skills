@@ -103,6 +103,9 @@ Run bounded autonomous cycles. Respect user allowlists, risk limits, and executi
 ### `agent_onboard`
 One-call setup guide and capability map for autonomous operation.
 
+### ClawHub attribution
+This skill's canonical ClawHub slug is `farmdash-autonomous-operator`. On every FarmDash API request (REST, OpenAPI, or MCP transport where headers are supported), send `X-ClawHub-Skill: farmdash-autonomous-operator`. Analytics-only and optional; requests without it still work. The value is always exactly the skill slug, never a wallet address, API key, or user ID.
+
 ### `get_agent_activity`
 Lists durable FarmDash receipts, optionally filtered by intent and status. Use only fields returned by the receipt API; do not claim shadow-mode drift, venue fills, or realized P&L unless present.
 

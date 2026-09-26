@@ -31,6 +31,7 @@ const apiFetch = createApiFetch({
   skillId: process.env.FARMDASH_SKILL_ID ?? '',
 });
 const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
+const TOKEN_CONTRACT_GUIDANCE = 'ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match.';
 const HEX_SIGNATURE = /^0x[a-fA-F0-9]{130}$/;
 const BASE_UNIT_AMOUNT = /^[0-9]+$/;
 const SIGNATURE_SCHEMA = z.object({
@@ -163,7 +164,11 @@ function toolAnnotations(name: string) {
     title: `FarmDash ${name}`,
     readOnlyHint: !changesState,
     destructiveHint: DESTRUCTIVE_OR_FINANCIAL_TOOLS.has(name),
-    idempotentHint: !changesState,
+    // Idempotency is independent of state-changing: a durable mutation can be
+    // replay-safe. Source it from the generated canonical contract rather than
+    // re-deriving it from a hand-maintained tool-name set (the two disagree for
+    // every canonically-IDEMPOTENT mutation that mutates state).
+    idempotentHint: getMcpToolCapability(name).idempotent,
     openWorldHint: true,
   };
 }
@@ -532,12 +537,12 @@ server.tool(
 
 server.tool(
   'find_capital_route',
-  'Find the most efficient route between tokens/chains. Considers fees, slippage, and gas. Returns a provider-neutral market estimate (never executable, never attributed) — a wallet alone never triggers provider quoting. For execution, create a firm single-provider quote via the quote-intent API (0x, LI.FI, or Relay as the selected provider), then simulate before preparing.',
+  'Find the most efficient route between tokens/chains. Considers fees, slippage, and gas. Returns a provider-neutral market estimate (never executable, never attributed) — a wallet alone never triggers provider quoting. For execution, create a firm single-provider quote via the quote-intent API (LI.FI or Relay; 0x remains operator-paused), then simulate before preparing.',
   {
     fromChainId: z.number().int(),
     toChainId: z.number().int(),
-    fromToken: z.string(),
-    toToken: z.string(),
+    fromToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE),
+    toToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE),
     fromAmount: z.string().regex(BASE_UNIT_AMOUNT).describe('Amount in token base units.'),
     protocol: z.enum(['lifi', 'relay']).optional(),
   },
@@ -864,8 +869,8 @@ server.tool(
   {
     fromChainId: z.number().int(),
     toChainId: z.number().int(),
-    fromToken: z.string(),
-    toToken: z.string(),
+    fromToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE),
+    toToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE),
     fromAmount: z.string().regex(BASE_UNIT_AMOUNT),
     protocol: z.enum(['lifi', 'relay']).optional(),
     walletAddress: z.string().regex(EVM_ADDRESS).optional(),
@@ -958,8 +963,8 @@ server.tool(
   {
     fromChainId: z.number().int(),
     toChainId: z.number().int(),
-    fromToken: z.string(),
-    toToken: z.string(),
+    fromToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE),
+    toToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE),
     fromAmount: z.string().regex(BASE_UNIT_AMOUNT),
     agentAddress: z.string().regex(EVM_ADDRESS),
     toAddress: z.string().regex(EVM_ADDRESS),
@@ -985,11 +990,14 @@ server.tool(
 
 server.tool(
   'confirm_swap',
-  'Confirm a swap by tx hash. Marks the fee event as confirmed.',
-  { feeEventId: z.string(), txHash: z.string(), agentAddress: z.string().regex(EVM_ADDRESS) },
+  'Confirm settlement of a FarmDash fee event for a compatibility swap the customer-controlled wallet has already broadcast. Requires the owning session; independently verifies the canonical-chain receipt, the exact committed fee asset, payer, recipient, amount and required finality before durably marking the fee event confirmed. FarmDash never broadcasts this transaction, and a caller-supplied transaction hash alone is not confirmation.',
+  { sessionId: z.string(), agentAddress: z.string().regex(EVM_ADDRESS), sessionToken: z.string(), feeEventId: z.string(), txHash: z.string() },
   async (params) => {
     try {
-      const data = await apiFetch('/agents/confirm', { method: 'POST', body: JSON.stringify(params) });
+      // The session token is an ambient caller credential: send it as the
+      // X-FarmDash-Session-Token header, never inside the logged JSON body.
+      const { sessionToken, ...body } = params;
+      const data = await apiFetch('/agents/confirm', { method: 'POST', body: JSON.stringify(body), sessionToken });
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
       return {
@@ -1066,8 +1074,8 @@ server.tool(
   {
     fromChainId: z.number().int().positive().optional(),
     toChainId: z.number().int().positive().optional(),
-    fromToken: z.string().optional(),
-    toToken: z.string().optional(),
+    fromToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE).optional(),
+    toToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE).optional(),
     fromAmount: z.string().regex(BASE_UNIT_AMOUNT).optional(),
     walletAddress: z.string().regex(EVM_ADDRESS).optional(),
     toAddress: z.string().regex(EVM_ADDRESS).optional(),

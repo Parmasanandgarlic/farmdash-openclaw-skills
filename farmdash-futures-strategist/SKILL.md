@@ -1,7 +1,7 @@
 ---
 name: FarmDash Futures Strategist
-description: "Use when analyzing perpetuals: funding rates, market scans, account state, strategy sizing. Orders are simulation-bound and preview-only; never self-executes."
-version: "3.2.2"
+description: "Hyperliquid perps strategist: market scans, funding rates, position sizing, and user-signed EIP-712 order execution & cancellation with drawdown guardrails."
+version: "3.3.0"
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
 tags: ["defi","hyperliquid","perpetual-futures","perps-trading","leverage-trading","perp-dex","defi-trading","ai-trading-agent","funding-rates","funding-arbitrage","position-sizing","drawdown-control","liquidation-risk","eip-712","zero-custody","openclaw","mcp","risk-management","web3","farmdash"]
@@ -14,10 +14,10 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Futures Strategist
 
-> Use this skill when trading perps: researching Hyperliquid markets, sizing positions with drawdown guards, or preparing a user-signed perp order.
+> Use this skill for Hyperliquid perpetuals: researching markets, funding rates, sizing positions with drawdown guards, and submitting user-signed EIP-712 orders or cancellations under explicit manual confirmation.
 
 ## What This Skill Is
-This skill is the FarmDash autonomous perps execution engine for Hyperliquid.
+This skill is the FarmDash guarded perps strategy and execution engine for Hyperliquid with zero-custody, user-signed EIP-712 execution.
 
 It is designed to help an agent:
 * research perp markets before any execution
@@ -40,17 +40,21 @@ Hyperliquid perps execution requires current market/account data, guarded reques
 
 ### 1. Execution Gating and Limits
 Execution (`execute_perp_order`, `cancel_perp_order`) is available to all tiers:
-* **Scout (Free):** Limited to 5 execution or analysis requests per day.
+* **Scout (Free):** Limited to 30 execution or analysis requests per day.
 * **Pioneer / Syndicate:** Unlimited execution and analysis requests.
 
-**CRITICAL SAFETY REQUIREMENT:** Under no circumstances should the agent invoke `execute_perp_order` or `cancel_perp_order` automatically. Before every trade execution or cancellation request, the agent MUST explicitly present the trade details (coin, direction, size, leverage, stop-loss, and estimated exposure) to the user and obtain their immediate, manual confirmation. 
+**CRITICAL SAFETY REQUIREMENT:** Under no circumstances should the agent invoke `execute_perp_order` or `cancel_perp_order` automatically. Before every trade execution or cancellation request, the agent MUST explicitly present the trade details (coin, direction, size, leverage, stop-loss, and estimated exposure) to the user and obtain their immediate, manual confirmation.
 
-* If Scout user exceeds limit: "Scout limit reached (5/day). Upgrade to Pioneer or Syndicate at farmdash.one/agents or pay one-off x402 to bypass. Want me to keep researching?"
+Consent is non-transferable and never standing: Analysis permission ≠ trading permission. Subscription entitlement ≠ trading permission. x402 payment ≠ trading permission. Previous confirmation ≠ trading permission for a later order. "Trade for me" and similar broad instructions ≠ standing authorization for subsequent orders. Every execution and every cancellation gets its own current-turn confirmation.
+
+* If Scout user exceeds limit: "Scout limit reached (30 requests per 24 hours, server-enforced). Upgrade to Pioneer or Syndicate at farmdash.one/agents or pay one-off x402 to bypass. Want me to keep researching?" The API's returned entitlement and rate-limit state is authoritative over any prose quota.
 
 ### 2. Optional Hyperliquid Affiliate Routing
 When a user is setting up their Hyperliquid API wallet delegation or asks for the canonical exchange URL, the agent will provide the neutral canonical URL (`https://app.hyperliquid.xyz`) by default. The agent may optionally offer the FarmDash partner route (`https://www.farmdash.one/go/hyperliquid`) as an alternative to support the platform.
 
 * Disclosure is mandatory if offered: "Disclosure: this is a FarmDash partner route. FarmDash may receive referral, affiliate, or routing compensation. Fee details: [FarmDash Fee Structure](https://www.farmdash.one/fees). You can also access Hyperliquid directly at https://app.hyperliquid.xyz."
+
+The `analyze_futures_strategy` response carries the same separation machine-readably: `trailHeatCrossRef` is analytical-only (protocolId, score, farmingOpportunity), while commercial navigation lives in `partnerRoute` (url, canonicalUrl, relationship, compensationDisclosure, affectsRecommendation: false, displayAfterAnalysis: true). Never present `partnerRoute` as strategy evidence; surface it only after the analysis, with the disclosure above.
 
 ## Fixed Network Boundary
 Stay inside this disclosed network boundary. Do not fetch undisclosed remote config and do not mutate the skill from an external manifest after install.
@@ -126,7 +130,7 @@ This skill recognizes one primary API credential: `FARMDASH_API_KEY`. Scout mode
 Legacy docs may refer to `PIONEER_KEY` or `SYNDICATE_KEY` as placeholders for tier-specific bearer tokens. In actual agent configs, use only `FARMDASH_API_KEY`.
 
 Tier behavior:
-* **Scout** - no env var required; safe for up to 5 execution or analysis requests per day
+* **Scout** - no env var required; safe for up to 30 execution or analysis requests per day
 * **Pioneer** - use a Pioneer-tier bearer token for unlimited execution and analysis requests
 * **Syndicate** - use a Syndicate-tier bearer token for unlimited execution and analysis requests
 
@@ -157,10 +161,10 @@ Primary research tool. Returns the strategy recommendation, confidence score, ma
 Inspect sizing math separately when the user wants to validate risk and margin.
 
 #### 6. execute_perp_order
-Execute only after fresh research, parameter binding, exact builder-fee disclosure, local signing, and explicit user confirmation. The response distinguishes `filled`, `resting_unfilled`, and rejection; inspect authoritative venue status and fills before any dependent action.
+State-changing execution: Forwards a user-signed EIP-712 order to Hyperliquid's exchange API. Execute only after fresh research, parameter binding, exact builder-fee disclosure, local signing, and immediate explicit manual user confirmation. The response distinguishes `filled`, `resting_unfilled`, and rejection; inspect authoritative venue status and fills before any dependent action.
 
 #### 7. cancel_perp_order
-Cancel stale or superseded open orders. Treat cancellation as successful only when the response state is `cancelled` and Hyperliquid returned one `success` application status per requested ID. `partially_rejected`, `rejected`, and `unknown` mean one or more orders may remain active; inspect `failed` and authoritative open orders before changing exposure.
+State-changing action: Cancel open Hyperliquid orders using a pre-signed EIP-712 cancellation payload. Requires immediate, explicit manual confirmation before invoking. Treat cancellation as successful only when the response state is `cancelled` and Hyperliquid returned one `success` application status per requested ID. `partially_rejected`, `rejected`, and `unknown` mean one or more orders may remain active; inspect `failed` and authoritative open orders before changing exposure.
 
 #### 8. get_agent_performance
 Use only for FarmDash fee-event activity, fees, protocol diversity, and reputation. It does not return Hyperliquid fills, trade outcomes, win rate, slippage, or realized P&L and must not drive strategy selection or drawdown controls.
@@ -666,6 +670,7 @@ This returns tier status and available tool access. Skipping this step does not 
 1. Use Scout research tools without setup when no key is configured.
 2. Add `FARMDASH_API_KEY` only when the user wants Pioneer/Syndicate features.
 3. Browse the OpenAPI spec at `https://www.farmdash.one/agents/openapi.yaml`.
+Send `X-ClawHub-Skill: farmdash-futures-strategist` on every FarmDash API request — not just the optional check above — so anonymous Scout usage is attributed to this skill. Analytics-only and optional; requests without the header still work. The value is always exactly the skill slug, never a wallet address, API key, or user ID.
 
 <!-- farmdash-canonical-links:start -->
 

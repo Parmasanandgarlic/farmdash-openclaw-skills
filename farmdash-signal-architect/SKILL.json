@@ -1,7 +1,7 @@
 {
   "name": "FarmDash Signal Architect",
-  "version": "4.2.0",
-  "description": "Use when building DeFi trade strategy: 84 MCP tools for quotes, simulation, Trail Heat, receipts, agent hiring. Swaps need fresh quote, simulation, signing.",
+  "version": "4.2.1",
+  "description": "OpenClaw DeFi execution with FarmDash's 84-tool MCP server: LI.FI and Relay swaps, simulation, zero-custody settlement verification.",
   "tags": [
     "defi",
     "defi-agent",
@@ -573,7 +573,7 @@
     },
     {
       "name": "get_swap_quote",
-      "description": "Research: returns a provider-neutral market estimate (reference price, approximate output, server fee tier, route compatibility, freshness) without calling 0x, LI.FI, or Relay trading APIs. Never executable, never attributed, never executionReady. A wallet alone is exploratory context and never triggers provider quoting. For execution, POST /api/v1/agent/quote-intent with exact parameters, a real wallet, and an idempotency key to receive a firm single-provider quote bound to an intentId; then re-call this endpoint with identical parameters plus intentId to serve the stored firm quote with zero new provider calls. Always disclose expected output, slippage, fee, route, and simulation state before asking the user to continue.",
+      "description": "Get swap pricing in two explicit modes. Without idempotencyKey, return a provider-neutral market estimate with zero trading-provider calls. With idempotencyKey plus walletAddress, toAddress and slippage, create or reuse a firm wallet-bound quote intent from an active provider (LI.FI or Relay; 0x only if runtime status reports it reinstated) and return simulationRequirements.intent_id for simulate_swap_execution. x402 is machine-payment/access infrastructure, not a swap provider. Resolve any approval/signature prerequisites locally and re-quote when instructed before simulation.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -584,10 +584,14 @@
             "type": "integer"
           },
           "fromToken": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match."
           },
           "toToken": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match."
           },
           "fromAmount": {
             "type": "string",
@@ -597,7 +601,6 @@
             "type": "string",
             "enum": [
               "lifi",
-              "zerox",
               "relay"
             ]
           },
@@ -632,6 +635,11 @@
               "strict",
               "balanced"
             ]
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
           }
         },
         "required": [
@@ -674,7 +682,7 @@
     },
     {
       "name": "execute_swap",
-      "description": "Prepare a compatibility swap only after the required policy, simulation, signature, and quote-freshness gates pass. Released quote providers are LI.FI and 0x. FarmDash returns the prepared transaction for the customer or agent wallet to submit; FarmDash does not broadcast the compatibility transaction and preparation is not confirmation or settlement.",
+      "description": "Prepare a compatibility swap only after the required policy, simulation, signature, and quote-freshness gates pass. Released quote providers are selected dynamically based on live capability status. FarmDash returns the prepared transaction for the customer or agent wallet to submit; FarmDash does not broadcast the compatibility transaction and preparation is not confirmation or settlement.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -685,10 +693,14 @@
             "type": "integer"
           },
           "fromToken": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match."
           },
           "toToken": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match."
           },
           "fromAmount": {
             "type": "string",
@@ -722,7 +734,7 @@
             "type": "string",
             "enum": [
               "lifi",
-              "zerox"
+              "relay"
             ]
           }
         },
@@ -746,26 +758,77 @@
     },
     {
       "name": "confirm_swap",
-      "description": "Confirm swap execution after the agent broadcasts the on-chain transaction. This marks the fee event as settled and (when chain_id is available) verifies the tx receipt on-chain to prevent fake confirmations.\r\n\r\nUse when:\r\n* you need reliable post-trade settlement state\r\n* you want retry-safe confirmation in flaky network conditions (this endpoint is idempotent)",
+      "description": "Confirm settlement of a FarmDash fee event for a compatibility swap that the customer or agent wallet has already signed, submitted and broadcast. FarmDash prepares the compatibility transaction; the wallet broadcasts it, so a transaction hash exists only after that broadcast and both feeEventId and transactionHash are required. Authenticated owning-session credentials are required (sessionId, agentAddress, sessionToken); sessionToken is session/authentication authority, not wallet execution or signing authority. FarmDash verifies the canonical-chain receipt and required finality together with the exact expected fee transfer before durably marking the fee event settled. Re-submitting the same valid confirmation is idempotent. confirm_swap never broadcasts the compatibility swap.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "feeEventId": {
-            "type": "string"
-          },
-          "txHash": {
+          "sessionId": {
             "type": "string"
           },
           "agentAddress": {
             "type": "string",
             "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string"
+          },
+          "feeEventId": {
+            "type": "string"
+          },
+          "txHash": {
+            "type": "string"
           }
         },
         "required": [
+          "sessionId",
+          "agentAddress",
+          "sessionToken",
           "feeEventId",
-          "txHash",
-          "agentAddress"
+          "txHash"
         ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputHints": [],
+      "category": "write"
+    },
+    {
+      "name": "get_agent_activity",
+      "description": "Lists durable FarmDash receipts, optionally filtered by intent and status. Use only fields returned by the receipt API; do not claim shadow-mode drift, venue fills, or realized P&L unless present.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
+          "intentId": {
+            "type": "string",
+            "pattern": "^fdi\\_"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUBMITTED",
+              "CONFIRMED",
+              "FAILED",
+              "REJECTED"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 250
+          }
+        },
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },

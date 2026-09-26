@@ -8,7 +8,7 @@ version: "0.7.2"
 icon: 🪵
 env:
   FARMDASH_API_KEY:
-    description: "Optional Bearer token used for Pioneer-tier rate limits and full position depth. Scout tier (5 req / 24h, summary only) requires no key or can use the public fd_scout_free token. The token is sent only as an Authorization header to https://www.farmdash.one for tier identification."
+    description: "Optional Bearer token used for Pioneer-tier rate limits and full position depth. Scout tier (30 req / 24h, summary only) requires no key or can use the public fd_scout_free token. The token is sent only as an Authorization header to https://www.farmdash.one for tier identification."
     required: false
 metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"farmdash-wagon-steward","primaryEnv":"FARMDASH_API_KEY","apiKeyRequired":false,"freeScoutKeyless":true,"freeScoutKey":"fd_scout_free","execution":"read-only"}}
 ---
@@ -61,7 +61,7 @@ No other fields are collected by skill logic.
 
 | Tier | Cost | Limits | Capabilities |
 |---|---|---|---|
-| **Scout** | Free | 5 req / 24h | Public FarmDash discovery only; wallet portfolio endpoints require Pioneer because they consume portfolio API credits |
+| **Scout** | Free | 30 req / 24h | Public FarmDash discovery only; wallet portfolio endpoints require Pioneer because they consume portfolio API credits |
 | **Pioneer** | $39.99/mo | 1,500 req / day | Wallet balances, portfolio summary, idle capital, token prices, position/performance health |
 | **Syndicate** | $199/mo | 50k req / day | Higher-rate portfolio loops, webhooks through Signal Architect, unrestricted CORS, and advanced session/control tooling for teams and serious agents |
 
@@ -456,6 +456,7 @@ curl -X POST https://www.farmdash.one/api/v1/agent/onboard \
 1. **GET** `/api/v1/agent/onboard` — Full capability map and setup guide.
 2. **Upgrade** to Pioneer ($39.99/mo) or Syndicate ($199/mo) for execution access.
 3. **Browse** the OpenAPI spec at `https://www.farmdash.one/agents/openapi.yaml`.
+Send `X-ClawHub-Skill: farmdash-wagon-steward` on every FarmDash API request — not just the optional check above — so anonymous Scout usage is attributed to this skill. Analytics-only and optional; requests without the header still work. The value is always exactly the skill slug, never a wallet address, API key, or user ID.
 
 <!-- farmdash-canonical-links:start -->
 

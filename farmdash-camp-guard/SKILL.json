@@ -149,7 +149,7 @@
     },
     {
       "name": "run_risk_sentinel",
-      "description": "Analyze compatibility-swap risk using the released LI.FI and 0x quote boundary, allowance state, depeg checks, health factors, and positive-net-edge enforcement. x402 is payment/access infrastructure, not a swap provider. Risk analysis does not authorize, broadcast, confirm, or settle a transaction.",
+      "description": "Analyze compatibility-swap risk using the active provider quote boundary, allowance state, depeg checks, health factors, and positive-net-edge enforcement. x402 is machine-payment/access infrastructure, not a swap provider. Risk analysis does not authorize, broadcast, confirm, or settle a transaction.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -162,10 +162,14 @@
             "exclusiveMinimum": 0
           },
           "fromToken": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match."
           },
           "toToken": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match."
           },
           "fromAmount": {
             "type": "string",
@@ -183,7 +187,7 @@
             "type": "string",
             "enum": [
               "lifi",
-              "zerox"
+              "relay"
             ]
           },
           "slippage": {

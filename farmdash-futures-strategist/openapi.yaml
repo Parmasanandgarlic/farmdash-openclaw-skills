@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FarmDash Futures Strategist API
-  version: 2.1.0
+  version: 2.2.0
   description: |
     WARNING: Running trade executions and cancellations places real perpetual futures trades and alters active market exposure, carrying significant risk of financial loss. Immediate, explicit manual end-user confirmation and consent is strictly required immediately before placing any execution or cancellation request. Do not allow autonomous agents to auto-run trade execution or cancellation without manual user approval.
 
@@ -13,7 +13,7 @@ info:
 
     ## Authentication
     - **Primary optional credential**: `Authorization: Bearer <FARMDASH_API_KEY>`.
-    - **Scout (Free)**: Omit the bearer token. Limited analysis and execution quota (5/day).
+    - **Scout (Free)**: Omit the bearer token. Limited analysis and execution quota (30 requests per 24 hours, server-enforced). The API's returned entitlement and rate-limit state is authoritative; prose quotas here are descriptive, not normative.
     - **Pioneer**: Use a Pioneer-tier `FARMDASH_API_KEY`. Full analysis, sizing, and unlimited compatibility execution.
     - **Syndicate**: Use a Syndicate-tier `FARMDASH_API_KEY`. Full analysis, sizing, and unlimited compatibility execution.
     - **Execution auth**: `execute-order` and `cancel-order` require a fresh EIP-712 signature from the user's Hyperliquid API wallet on every request.
@@ -59,6 +59,8 @@ paths:
       security:
         - bearerAuth: []
         - {}
+      parameters:
+        - $ref: '#/components/parameters/X-ClawHub-Skill'
       responses:
         '200':
           description: Funding rate scan results
@@ -99,6 +101,7 @@ paths:
         - bearerAuth: []
         - {}
       parameters:
+        - $ref: '#/components/parameters/X-ClawHub-Skill'
         - name: coin
           in: query
           required: true
@@ -144,6 +147,7 @@ paths:
         - bearerAuth: []
         - {}
       parameters:
+        - $ref: '#/components/parameters/X-ClawHub-Skill'
         - name: agentAddress
           in: query
           required: true
@@ -217,6 +221,8 @@ paths:
                 riskMultiplier:
                   type: number
                   description: Optional flexibility modifier for risk tolerance. 1.0 is default (2% max). 0.5 is conservative (1% max). Server caps at 1.0.
+      parameters:
+        - $ref: '#/components/parameters/X-ClawHub-Skill'
       responses:
         '200':
           description: Strategy recommendation
@@ -325,6 +331,8 @@ paths:
                 riskMultiplier:
                   type: number
                   description: Optional flexibility modifier for risk tolerance. 1.0 is default (2% max). 0.5 is conservative (1% max). Server caps at 1.0.
+      parameters:
+        - $ref: '#/components/parameters/X-ClawHub-Skill'
       responses:
         '200':
           description: Position sizing result
@@ -353,7 +361,7 @@ paths:
         analyzed leverage metadata, stop-derived risk, and the account whose
         equity funded the sizing decision. `funding_arb` remains
         analysis-only because this endpoint cannot atomically bind both legs.
-        Requires `Authorization: Bearer <FARMDASH_API_KEY>` for Pioneer/Syndicate unlimited access, or omit for free Scout access (5/day). A bearer token alone is insufficient: every request
+        Requires `Authorization: Bearer <FARMDASH_API_KEY>` for Pioneer/Syndicate unlimited access, or omit for free Scout access (30 requests per 24 hours, server-enforced). A bearer token alone is insufficient: every request
         must also include a fresh EIP-712 signature from the user's
         Hyperliquid API wallet. All risk
         guardrails enforced server-side before forwarding. `nonce`, `expiresAt`,
@@ -435,7 +443,9 @@ paths:
                   description: Required FarmDash-side order intent hash for payload auditability.
                 signedAction:
                   type: object
-                  description: Pre-built Hyperliquid exchange action (optional, built server-side if omitted). If provided, it must match all request fields and contain signed `builder: { b: FarmDash treasury, f: 1 }`; Hyperliquid f units are tenths of a basis point.
+                  description: 'Pre-built Hyperliquid exchange action (optional, built server-side if omitted). If provided, it must match all request fields and contain signed `builder: { b: FarmDash treasury, f: 1 }`; Hyperliquid f units are tenths of a basis point.'
+      parameters:
+        - $ref: '#/components/parameters/X-ClawHub-Skill'
       responses:
         '200':
           description: Order execution result
@@ -472,7 +482,7 @@ paths:
       description: |
         Cancels one or more open Hyperliquid orders using a pre-signed EIP-712
         cancellation payload. Supports batch cancellation of up to 50 order IDs.
-        Requires `Authorization: Bearer <FARMDASH_API_KEY>` for Pioneer/Syndicate unlimited access, or omit for free Scout access (5/day). A bearer token alone is insufficient: every
+        Requires `Authorization: Bearer <FARMDASH_API_KEY>` for Pioneer/Syndicate unlimited access, or omit for free Scout access (30 requests per 24 hours, server-enforced). A bearer token alone is insufficient: every
         cancellation request must include a fresh EIP-712 signature from the
         user's Hyperliquid API wallet. For delegated signing, `accountAddress`
         identifies the venue-verified equity owner. A subaccount/vault owner is
@@ -534,6 +544,8 @@ paths:
                 signedAction:
                   type: object
                   description: Pre-built Hyperliquid cancel action (optional). If provided, it must match the request fields.
+      parameters:
+        - $ref: '#/components/parameters/X-ClawHub-Skill'
       responses:
         '200':
           description: Cancellation result
@@ -574,12 +586,23 @@ paths:
           description: Upstream failure or incomplete/malformed venue application statuses; cancellation state is unknown
 
 components:
+  parameters:
+    X-ClawHub-Skill:
+      name: X-ClawHub-Skill
+      in: header
+      required: false
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9-]{1,128}$'
+        example: farmdash-futures-strategist
+      description: 'ClawHub skill attribution. An installed FarmDash skill sends its canonical skill slug (e.g. farmdash-futures-strategist) on every FarmDash API request so anonymous Scout usage can be attributed to the skill that drove it. Optional and analytics-only: absence never blocks a request, and malformed values are ignored. This is a skill identity, never a wallet address, API key, or user ID.'
+
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: FARMDASH_API_KEY
-      description: Optional `FARMDASH_API_KEY` bearer token. Omit for Scout-tier endpoints. Use a Pioneer-tier key or Syndicate-tier key for unlimited execution and analysis (5/day limit applies to Scout). This bearer token gates tier access only and never replaces the required EIP-712 execution signature.
+      description: Optional `FARMDASH_API_KEY` bearer token. Omit for Scout-tier endpoints. Use a Pioneer-tier key or Syndicate-tier key for unlimited execution and analysis (30-requests-per-24-hours limit applies to Scout, server-enforced). This bearer token gates tier access only and never replaces the required EIP-712 execution signature.
 
   schemas:
     FundingAnalysis:
@@ -828,8 +851,24 @@ components:
               type: number
             farmingOpportunity:
               type: boolean
-            referralLink:
+        partnerRoute:
+          type: object
+          description: Optional commercial navigation, structurally isolated from strategy evidence. Identical market/account inputs produce identical strategy whether or not this object is present.
+          properties:
+            url:
               type: string
+            canonicalUrl:
+              type: string
+            relationship:
+              type: string
+            compensationDisclosure:
+              type: string
+            affectsRecommendation:
+              type: boolean
+              enum: [false]
+            displayAfterAnalysis:
+              type: boolean
+              enum: [true]
         fundingAnalysis:
           $ref: '#/components/schemas/FundingAnalysis'
         indicators:

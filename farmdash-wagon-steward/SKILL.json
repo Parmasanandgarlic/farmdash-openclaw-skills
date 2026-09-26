@@ -92,7 +92,7 @@
   "operatingRules": [],
   "requiredEnv": {
     "FARMDASH_API_KEY": {
-      "description": "Optional Bearer token used for Pioneer-tier rate limits and full position depth. Scout tier (5 req / 24h, summary only) requires no key or can use the public fd_scout_free token. The token is sent only as an Authorization header to https://www.farmdash.one for tier identification.",
+      "description": "Optional Bearer token used for Pioneer-tier rate limits and full position depth. Scout tier (30 req / 24h, summary only) requires no key or can use the public fd_scout_free token. The token is sent only as an Authorization header to https://www.farmdash.one for tier identification.",
       "required": false
     }
   },

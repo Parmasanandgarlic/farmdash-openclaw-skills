@@ -1,7 +1,7 @@
 {
   "name": "FarmDash Futures Strategist",
-  "version": "3.2.2",
-  "description": "Use when analyzing perpetuals: funding rates, market scans, account state, strategy sizing. Orders are simulation-bound and preview-only; never self-executes.",
+  "version": "3.3.0",
+  "description": "Hyperliquid perps strategist: market scans, funding rates, position sizing, and user-signed EIP-712 order execution & cancellation with drawdown guardrails.",
   "tags": [
     "defi",
     "hyperliquid",
@@ -84,7 +84,7 @@
     },
     {
       "name": "analyze_futures_strategy",
-      "description": "Primary research tool. Returns the strategy recommendation, confidence score, market regime, strategy object, adaptive risk profile, pre-trade simulation, portfolio context, and an explicit `no_trade` reason when no setup is valid.",
+      "description": "Primary research tool. Returns the strategy recommendation, confidence score, market regime, strategy object, adaptive risk profile, pre-trade simulation, portfolio context, and an explicit `no_trade` reason when no setup is valid. accountAddress optionally pins the equity-owner account for delegated-wallet flows (master/subaccount/vault); omit only for a direct signer.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -92,6 +92,10 @@
             "type": "string"
           },
           "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "accountAddress": {
             "type": "string",
             "pattern": "^0x[a-fA-F0-9]{40}$"
           },
@@ -156,7 +160,7 @@
     },
     {
       "name": "execute_perp_order",
-      "description": "Execute only after fresh research, parameter binding, exact builder-fee disclosure, local signing, and explicit user confirmation. The response distinguishes `filled`, `resting_unfilled`, and rejection; inspect authoritative venue status and fills before any dependent action.",
+      "description": "State-changing execution: Forwards a user-signed EIP-712 order to Hyperliquid's exchange API. Execute only after fresh research, parameter binding, exact builder-fee disclosure, local signing, and immediate explicit manual user confirmation. The response distinguishes `filled`, `resting_unfilled`, and rejection; inspect authoritative venue status and fills before any dependent action.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -247,7 +251,7 @@
     },
     {
       "name": "cancel_perp_order",
-      "description": "Cancel stale or superseded open orders. Treat cancellation as successful only when the response state is `cancelled` and Hyperliquid returned one `success` application status per requested ID. `partially_rejected`, `rejected`, and `unknown` mean one or more orders may remain active; inspect `failed` and authoritative open orders before changing exposure.",
+      "description": "State-changing action: Cancel open Hyperliquid orders using a pre-signed EIP-712 cancellation payload. Requires immediate, explicit manual confirmation before invoking. Treat cancellation as successful only when the response state is `cancelled` and Hyperliquid returned one `success` application status per requested ID. `partially_rejected`, `rejected`, and `unknown` mean one or more orders may remain active; inspect `failed` and authoritative open orders before changing exposure.",
       "inputSchema": {
         "type": "object",
         "properties": {
