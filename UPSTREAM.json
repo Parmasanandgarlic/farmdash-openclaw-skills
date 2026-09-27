@@ -1,7 +1,7 @@
 {
   "$comment": "Provenance lock. Mirrored from canonical FarmDash production truth. Do not hand-edit mirrored files; re-run the sync from the canonical source instead.",
   "source_repository": "hububstudio/farmdashbeta",
-  "source_sha": "3c17f511ba54e50e0d2c3ea9fad01d9dd3401ae6",
+  "source_sha": "beaf0eba21ba5d0c94190f215a297eaf92c4e3e0",
   "sync_timestamp": "2026-09-27T01:17:28.107Z",
   "mcp_tool_count": 84,
   "mirrored_file_count": 26,
@@ -115,5 +115,6 @@
       "sha256": "5c97f5ddcb0f578af300fc580a1ecdca9933288af4500b0ca3402472a389297c",
       "source": "public/openclaw-skills/farmdash-wagon-steward/SKILL.json"
     }
-  }
+  },
+  "source_repo": "hububstudio/farmdashbeta"
 }
