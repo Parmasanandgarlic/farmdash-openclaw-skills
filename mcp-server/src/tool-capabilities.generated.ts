@@ -4,6 +4,7 @@ export interface McpToolCapability {
   feature_status_id: string;
   availability: string;
   tier: string;
+  commercial_model?: string;
   idempotent: boolean;
   status_endpoint: string;
 }
@@ -356,40 +357,45 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "scan_funding_rates": {
     "api_route": "/api/v1/agent/futures/scan-funding",
     "feature_status_id": "futures.hyperliquid_guarded",
-    "availability": "available_with_tier_gate",
-    "tier": "pioneer_research_syndicate_execution",
+    "availability": "available",
+    "tier": "scout_preview_pioneer_full",
+    "commercial_model": "default_overage",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
   "scan_market_conditions": {
     "api_route": "/api/v1/agent/futures/market-conditions",
     "feature_status_id": "futures.hyperliquid_guarded",
-    "availability": "available_with_tier_gate",
-    "tier": "pioneer_research_syndicate_execution",
+    "availability": "available",
+    "tier": "scout_plus",
+    "commercial_model": "default_overage",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
   "get_futures_account": {
     "api_route": "/api/v1/agent/futures/account-state",
     "feature_status_id": "futures.hyperliquid_guarded",
-    "availability": "available_with_tier_gate",
-    "tier": "pioneer_research_syndicate_execution",
+    "availability": "paid_ready",
+    "tier": "pioneer_plus_or_x402",
+    "commercial_model": "wallet_portfolio",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
   "analyze_futures_strategy": {
     "api_route": "/api/v1/agent/futures/analyze-strategy",
     "feature_status_id": "futures.hyperliquid_guarded",
-    "availability": "available_with_tier_gate",
-    "tier": "pioneer_research_syndicate_execution",
+    "availability": "paid_ready",
+    "tier": "pioneer_plus_or_x402",
+    "commercial_model": "futures_strategy",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
   "calculate_position_size": {
     "api_route": "/api/v1/agent/futures/position-sizing",
     "feature_status_id": "futures.hyperliquid_guarded",
-    "availability": "available_with_tier_gate",
-    "tier": "pioneer_research_syndicate_execution",
+    "availability": "paid_ready",
+    "tier": "pioneer_plus_or_x402",
+    "commercial_model": "futures_strategy",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -397,7 +403,8 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/v1/agent/futures/execute-order",
     "feature_status_id": "futures.hyperliquid_guarded",
     "availability": "available_with_tier_gate",
-    "tier": "pioneer_research_syndicate_execution",
+    "tier": "scout_capacity_signature_gated",
+    "commercial_model": "default_overage",
     "idempotent": false,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -405,7 +412,8 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/v1/agent/futures/cancel-order",
     "feature_status_id": "futures.hyperliquid_guarded",
     "availability": "available_with_tier_gate",
-    "tier": "pioneer_research_syndicate_execution",
+    "tier": "scout_capacity_signature_gated",
+    "commercial_model": "default_overage",
     "idempotent": false,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -413,7 +421,8 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/v1/agent/performance",
     "feature_status_id": "ledger.activity",
     "availability": "paid_ready",
-    "tier": "pioneer_plus",
+    "tier": "pioneer_plus_or_x402",
+    "commercial_model": "wallet_portfolio",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },

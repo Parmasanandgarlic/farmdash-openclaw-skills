@@ -1,0 +1,14 @@
+# Build and dependency artifacts must never be published here.
+#
+# This repository distributes the MCP server SOURCE. `dist/` is produced by
+# `npm run build` and `node_modules/` by `npm ci`; both are reproduced from
+# package-lock.json by any consumer following the README, so committing them would add tens
+# of thousands of files that can drift from their sources.
+node_modules/
+dist/
+
+# Local env / editor noise
+.env
+.env.*
+.DS_Store
+*.log

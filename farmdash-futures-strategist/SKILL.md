@@ -1,7 +1,7 @@
 ---
 name: FarmDash Futures Strategist
 description: "Hyperliquid perps strategist: market scans, funding rates, position sizing, and user-signed EIP-712 order execution & cancellation with drawdown guardrails."
-version: "3.3.0"
+version: "3.3.2"
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
 tags: ["defi","hyperliquid","perpetual-futures","perps-trading","leverage-trading","perp-dex","defi-trading","ai-trading-agent","funding-rates","funding-arbitrage","position-sizing","drawdown-control","liquidation-risk","eip-712","zero-custody","openclaw","mcp","risk-management","web3","farmdash"]
@@ -39,9 +39,13 @@ The bundled `openapi.yaml` file in this folder is the contract for the futures e
 Hyperliquid perps execution requires current market/account data, guarded request handling, and robust venue connectivity. This skill employs a strict, non-predatory monetization model to sustain these operations:
 
 ### 1. Execution Gating and Limits
-Execution (`execute_perp_order`, `cancel_perp_order`) is available to all tiers:
-* **Scout (Free):** Limited to 30 execution or analysis requests per day.
-* **Pioneer / Syndicate:** Unlimited execution and analysis requests.
+Commercial access and Hyperliquid execution authority are separate:
+* **Scout (Free):** 30 requests / 24h. Scout gets `scan_market_conditions`, a top-3 numeric `scan_funding_rates` preview, and signed execute/cancel capacity inside the shared quota.
+* **Pioneer:** 1,500 requests / day and the full Futures research surface.
+* **Syndicate:** 50,000 requests / day and the full Futures surface at higher capacity.
+* **Eligible x402 one-offs:** buy exactly one request under the route's published policy; they never create signing or delegation authority.
+
+`get_futures_account`, `analyze_futures_strategy`, and `calculate_position_size` are not Scout-free. A valid Pioneer/Syndicate token or the eligible one-off x402 policy is required. A default-overage x402 payment unlocks the full funding response for that request.
 
 **CRITICAL SAFETY REQUIREMENT:** Under no circumstances should the agent invoke `execute_perp_order` or `cancel_perp_order` automatically. Before every trade execution or cancellation request, the agent MUST explicitly present the trade details (coin, direction, size, leverage, stop-loss, and estimated exposure) to the user and obtain their immediate, manual confirmation.
 
@@ -131,8 +135,8 @@ Legacy docs may refer to `PIONEER_KEY` or `SYNDICATE_KEY` as placeholders for ti
 
 Tier behavior:
 * **Scout** - no env var required; safe for up to 30 execution or analysis requests per day
-* **Pioneer** - use a Pioneer-tier bearer token for unlimited execution and analysis requests
-* **Syndicate** - use a Syndicate-tier bearer token for unlimited execution and analysis requests
+* **Pioneer** - use a Pioneer-tier bearer token for up to 1,500 requests per day
+* **Syndicate** - use a Syndicate-tier bearer token for up to 50,000 requests per day
 
 Critical distinction:
 * bearer token = FarmDash access tier and rate limits
@@ -582,12 +586,12 @@ This section makes the existing tier model explicit so the agent always knows wh
 
 | User tier | Research tools available | Execution tools available | Default posture |
 | :--- | :--- | :--- | :--- |
-| **Scout (no key)** | `scan_funding_rates`, `scan_market_conditions`, `analyze_futures_strategy` (rate-limited to 30 / 24h) | `execute_perp_order`, `cancel_perp_order` (rate-limited to 30 / 24h) | Safe for limited execution (30/day) |
-| **Pioneer (Bearer key)** | All research tools, unlimited | `execute_perp_order`, `cancel_perp_order` (unlimited) | Full analysis and execution loop |
-| **Syndicate (Bearer key)** | All research tools | `execute_perp_order`, `cancel_perp_order` (unlimited) | Full skill surface; respect every guardrail |
+| **Scout (no key)** | `scan_funding_rates` top-3 numeric preview + `scan_market_conditions`; account/strategy/sizing require paid capacity | `execute_perp_order`, `cancel_perp_order` inside the shared 30 / 24h quota, but only with valid venue authority/signatures | Limited supervised execution; payment never creates authority |
+| **Pioneer (Bearer key)** | All research tools, up to 1,500 requests/day | `execute_perp_order`, `cancel_perp_order` within quota | Full supervised analysis/execution loop |
+| **Syndicate (Bearer key)** | All research tools, up to 50,000 requests/day | `execute_perp_order`, `cancel_perp_order` within quota | High-volume supervised surface; same signing/risk rules |
 
-When a Scout user exceeds their daily limit, refuse execution/analysis until reset or payment:
-"Scout daily limit of 30 requests reached. I can continue in analysis-only mode using cached data, or you can upgrade to Pioneer/Syndicate at farmdash.one/agents or pay a one-off x402 charge."
+When a Scout user exceeds the shared daily limit, stop the live call until reset, subscription capacity, or an eligible one-off x402 payment:
+"Scout daily limit of 30 requests reached. I can use already-returned data, or you can upgrade to Pioneer/Syndicate at farmdash.one/agents or use the route's published one-off x402 option."
 
 Never silently generate an unsigned payload as a workaround.
 
@@ -646,7 +650,7 @@ Required behavior:
 **OpenAPI Spec:** [FarmDash API Schema](https://www.farmdash.one/agents/openapi.yaml)
 
 ## Optional Setup Check
-No registration call is required to install this skill or use its research-only futures tools. Scout research works without onboarding and without `FARMDASH_API_KEY`.
+No registration call is required to install this skill. Scout-eligible Futures calls work without onboarding and without `FARMDASH_API_KEY`; paid research tools still require Pioneer/Syndicate capacity or their eligible x402 policy.
 
 Only run the setup check if the user explicitly asks to verify FarmDash tier/setup status and agrees to send the listed metadata.
 
@@ -667,8 +671,8 @@ curl -X POST https://www.farmdash.one/api/v1/agent/onboard \
 This returns tier status and available tool access. Skipping this step does not disable research-only futures analysis.
 
 ### Next steps:
-1. Use Scout research tools without setup when no key is configured.
-2. Add `FARMDASH_API_KEY` only when the user wants Pioneer/Syndicate features.
+1. Use only Scout-eligible calls without setup when no key is configured.
+2. Add `FARMDASH_API_KEY` when the user wants Pioneer/Syndicate capacity, or follow the API's x402 response for an eligible one-off request.
 3. Browse the OpenAPI spec at `https://www.farmdash.one/agents/openapi.yaml`.
 Send `X-ClawHub-Skill: farmdash-futures-strategist` on every FarmDash API request — not just the optional check above — so anonymous Scout usage is attributed to this skill. Analytics-only and optional; requests without the header still work. The value is always exactly the skill slug, never a wallet address, API key, or user ID.
 

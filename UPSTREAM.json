@@ -1,8 +1,8 @@
 {
   "$comment": "Provenance lock. Mirrored from canonical FarmDash production truth. Do not hand-edit mirrored files; re-run the sync from the canonical source instead.",
   "source_repository": "hububstudio/farmdashbeta",
-  "source_sha": "44f45e624745ec1949fe1fa6327c0f8ae38367c2",
-  "sync_timestamp": "2026-09-26T22:21:19.261Z",
+  "source_sha": "3c17f511ba54e50e0d2c3ea9fad01d9dd3401ae6",
+  "sync_timestamp": "2026-09-27T01:17:28.107Z",
   "mcp_tool_count": 84,
   "mirrored_file_count": 26,
   "not_mirrored_reason": {
@@ -24,7 +24,7 @@
       "source": "mcp-server/src/api-client.ts"
     },
     "mcp-server/src/tool-capabilities.generated.ts": {
-      "sha256": "b2e520fccc7194aca66ba4667a6b5359f2861e69c00f6a4cf414bc4fb2229af6",
+      "sha256": "c2bc533c1b9d91226e3861bfce8ef333077768937556dee953d0979009acee02",
       "source": "mcp-server/src/tool-capabilities.generated.ts"
     },
     "farmdash-autonomous-operator/SKILL.md": {
@@ -44,15 +44,15 @@
       "source": "public/openclaw-skills/farmdash-camp-guard/SKILL.json"
     },
     "farmdash-futures-strategist/SKILL.md": {
-      "sha256": "2471bd33069891040953d526f20a6b62e4eda2aaff9abe5330c515bfd8a1a7b4",
+      "sha256": "9f3af5f13e5b24af17429a29e6da7607059a99814b8d8d49f9caa44d30d4377a",
       "source": "public/openclaw-skills/farmdash-futures-strategist/SKILL.md"
     },
     "farmdash-futures-strategist/SKILL.json": {
-      "sha256": "848c26a13fdddf8ef894d12852642f8a8d75154fe0661dbb810388767c466f73",
+      "sha256": "5accf643fbeab4e1c04508b46f14ac09b6aa73e6799639f1c9049242e414afba",
       "source": "public/openclaw-skills/farmdash-futures-strategist/SKILL.json"
     },
     "farmdash-futures-strategist/openapi.yaml": {
-      "sha256": "4c805403f8c3408a44a97a1ec89b874b535c1fc1bf36ba2476de7f2861bfc57f",
+      "sha256": "6713d3e5878449bb248ed8adadcb93a1d0f8930253493286623e38362733fb68",
       "source": "public/openclaw-skills/farmdash-futures-strategist/openapi.yaml"
     },
     "farmdash-hedge-warden/SKILL.md": {
@@ -80,7 +80,7 @@
       "source": "public/openclaw-skills/farmdash-signal-architect/SKILL.json"
     },
     "farmdash-signal-architect/openapi.yaml": {
-      "sha256": "4fa693cbcdca73d78748e572c7d1b219f13ec41720e62670db08d7612e37923e",
+      "sha256": "d5334eeebc92993af9c55e8e0c11f889a6f44fa2500c40aa873e3fa5aee1226d",
       "source": "public/openclaw-skills/farmdash-signal-architect/openapi.yaml"
     },
     "farmdash-supply-master/SKILL.md": {

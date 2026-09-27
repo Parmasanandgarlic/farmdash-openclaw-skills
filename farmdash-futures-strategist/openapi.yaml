@@ -14,8 +14,8 @@ info:
     ## Authentication
     - **Primary optional credential**: `Authorization: Bearer <FARMDASH_API_KEY>`.
     - **Scout (Free)**: Omit the bearer token. Limited analysis and execution quota (30 requests per 24 hours, server-enforced). The API's returned entitlement and rate-limit state is authoritative; prose quotas here are descriptive, not normative.
-    - **Pioneer**: Use a Pioneer-tier `FARMDASH_API_KEY`. Full analysis, sizing, and unlimited compatibility execution.
-    - **Syndicate**: Use a Syndicate-tier `FARMDASH_API_KEY`. Full analysis, sizing, and unlimited compatibility execution.
+    - **Pioneer**: Use a Pioneer-tier `FARMDASH_API_KEY`. Full eligible analysis/sizing and signed execution capacity up to 1,500 requests / day.
+    - **Syndicate**: Use a Syndicate-tier `FARMDASH_API_KEY`. Full eligible analysis/sizing and signed execution capacity up to 50,000 requests / day.
     - **Execution auth**: `execute-order` and `cancel-order` require a fresh EIP-712 signature from the user's Hyperliquid API wallet on every request.
     - **Signer binding**: FarmDash recovers the signer from the exact Hyperliquid L1 action, nonce, expiry, environment, and any subaccount/vault routing address and rejects a mismatch with `agentAddress`.
     - **Delegation binding**: when `accountAddress` differs, Hyperliquid `userRole` must report `agentAddress` as its active API wallet; if the owner is a subaccount or vault, that address is included as `vaultAddress` in both the signature hash and exchange request. Ambiguity fails closed.
@@ -54,7 +54,7 @@ paths:
         Returns current and predicted funding rates across all Hyperliquid perp
         markets. Cross-references with Binance and Bybit to identify arbitrage
         opportunities where HL funding diverges from other venues.
-        Scout tier receives top 3 opportunities with encrypted numerics.
+        Scout receives the top 3 opportunities with ordinary numeric fields. After the Scout quota, the `default_overage` x402 one-off ($0.01 USDC by default) returns Pioneer-depth data for that request.
       tags: [Research]
       security:
         - bearerAuth: []
@@ -191,8 +191,7 @@ paths:
         Runs the complete research pipeline: funding rates, technical indicators,
         order book liquidity, Trail Heat cross-reference, and risk budget.
         Returns a single actionable strategy recommendation with position sizing.
-        Available under the Scout daily quota or a Pioneer/Syndicate tier. The
-        bearer token controls access only; it does not authorize trade execution.
+        Requires Pioneer/Syndicate capacity or an eligible `futures_strategy` x402 one-off ($7.99 USDC by default). The bearer token or payment controls API capacity only; it does not authorize trade execution.
         For a delegated API wallet, set `accountAddress` to the master/subaccount
         whose equity and venue history must determine size and loss guards.
       tags: [Strategy]
@@ -300,8 +299,7 @@ paths:
         Given entry price, stop price, account equity, and risk percentage,
         returns the exact position size, leverage, and margin required.
         All guardrails enforced server-side (max leverage 5x, max risk 2%).
-        Requires `Authorization: Bearer <FARMDASH_API_KEY>` with Pioneer or
-        Syndicate tier.
+        Requires Pioneer/Syndicate capacity or an eligible `futures_strategy` x402 one-off ($7.99 USDC by default).
       tags: [Strategy]
       security:
         - bearerAuth: []
@@ -361,7 +359,7 @@ paths:
         analyzed leverage metadata, stop-derived risk, and the account whose
         equity funded the sizing decision. `funding_arb` remains
         analysis-only because this endpoint cannot atomically bind both legs.
-        Requires `Authorization: Bearer <FARMDASH_API_KEY>` for Pioneer/Syndicate unlimited access, or omit for free Scout access (30 requests per 24 hours, server-enforced). A bearer token alone is insufficient: every request
+        Scout capacity is available inside the shared 30 requests / 24h quota; Pioneer is capped at 1,500/day and Syndicate at 50,000/day. After the Scout quota, the default x402 overage is $0.01 USDC for one additional API call. Commercial capacity never supplies venue authority: every request
         must also include a fresh EIP-712 signature from the user's
         Hyperliquid API wallet. All risk
         guardrails enforced server-side before forwarding. `nonce`, `expiresAt`,
@@ -482,7 +480,7 @@ paths:
       description: |
         Cancels one or more open Hyperliquid orders using a pre-signed EIP-712
         cancellation payload. Supports batch cancellation of up to 50 order IDs.
-        Requires `Authorization: Bearer <FARMDASH_API_KEY>` for Pioneer/Syndicate unlimited access, or omit for free Scout access (30 requests per 24 hours, server-enforced). A bearer token alone is insufficient: every
+        Scout capacity is available inside the shared 30 requests / 24h quota; Pioneer is capped at 1,500/day and Syndicate at 50,000/day. After the Scout quota, the default x402 overage is $0.01 USDC for one additional API call. Commercial capacity never supplies venue authority: every
         cancellation request must include a fresh EIP-712 signature from the
         user's Hyperliquid API wallet. For delegated signing, `accountAddress`
         identifies the venue-verified equity owner. A subaccount/vault owner is
@@ -602,7 +600,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: FARMDASH_API_KEY
-      description: Optional `FARMDASH_API_KEY` bearer token. Omit for Scout-tier endpoints. Use a Pioneer-tier key or Syndicate-tier key for unlimited execution and analysis (30-requests-per-24-hours limit applies to Scout, server-enforced). This bearer token gates tier access only and never replaces the required EIP-712 execution signature.
+      description: Optional `FARMDASH_API_KEY` bearer token. Omit for Scout-tier endpoints. Shared quotas are Scout 30 requests / 24h, Pioneer 1,500/day, and Syndicate 50,000/day. Eligible x402 one-offs can buy API capacity for specific routes. A bearer token or payment never replaces the required EIP-712 execution signature.
 
   schemas:
     FundingAnalysis:

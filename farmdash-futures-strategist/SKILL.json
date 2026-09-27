@@ -1,6 +1,6 @@
 {
   "name": "FarmDash Futures Strategist",
-  "version": "3.3.0",
+  "version": "3.3.2",
   "description": "Hyperliquid perps strategist: market scans, funding rates, position sizing, and user-signed EIP-712 order execution & cancellation with drawdown guardrails.",
   "tags": [
     "defi",
@@ -29,7 +29,7 @@
   "tools": [
     {
       "name": "scan_funding_rates",
-      "description": "Scan current and venue-published predicted funding snapshots. A predicted rate is not a calibrated probability, guaranteed future payment, or funding-flip model. Takes no parameters.",
+      "description": "Scan current and venue-published predicted funding snapshots. Scout receives a top-3 numeric preview; Pioneer/Syndicate or the default-overage x402 one-off receives the full response for that request. Predicted funding is not a calibrated probability or guaranteed future payment.",
       "inputSchema": {
         "type": "object",
         "properties": {},
