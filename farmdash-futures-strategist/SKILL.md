@@ -1,7 +1,7 @@
 ---
 name: FarmDash Futures Strategist
 description: "Hyperliquid perps strategist: market scans, funding rates, position sizing, and user-signed EIP-712 order execution & cancellation with drawdown guardrails."
-version: "3.3.2"
+version: "3.4.0"
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
 tags: ["defi","hyperliquid","perpetual-futures","perps-trading","leverage-trading","perp-dex","defi-trading","ai-trading-agent","funding-rates","funding-arbitrage","position-sizing","drawdown-control","liquidation-risk","eip-712","zero-custody","openclaw","mcp","risk-management","web3","farmdash"]
@@ -121,6 +121,19 @@ For `execute_perp_order`, include all of:
 * `intentHash` - hash of the intended order payload for auditability and mutation detection
 
 For `cancel_perp_order`, `nonce`, `expiresAt`, and `intentHash` are required. `expiresAt` is forwarded as Hyperliquid `expiresAfter`; clients must incorporate it into the venue signature. Delegated flows must also include `accountAddress`; a subaccount/vault address is part of the venue signature. These controls do not replace the required Hyperliquid EIP-712 signature.
+
+### Unsupported markets: namespaced HIP-3 perp-DEX assets
+FarmDash supports the default Hyperliquid perp DEX only. A namespaced HIP-3 market such as `HYNA:ETH` is refused with HTTP 422 and `code: perp_dex_namespace_unsupported` on every market-taking route (`market-conditions`, `analyze-strategy`, `execute_perp_order`, `cancel_perp_order`), and `scan_funding_rates` excludes namespaced markets from its ranking so research never recommends a market execution will refuse. The response echoes the requested `market` and its `dex`.
+
+Treat the refusal as final. Do not strip the namespace and retry against the base symbol: `HYNA:ETH` and `ETH` are different markets, so that substitution would trade something the user did not ask for. Full perp-DEX support is not shipped.
+
+### Leverage is venue state, not request state
+`execute_perp_order` never changes your leverage and never assumes a requested leverage took effect. Before an exposure-increasing order it reads the venue's authoritative configuration for that exact market and compares it with `leverage`:
+* Matching: the response reports `leverageStatus: venue_verified` together with `leverageVenue` and `leverageMarginMode`.
+* Different: the order is refused with HTTP 422 and `code: perp_leverage_prerequisite`, carrying `leverageRequested`, `leverageVenue`, and `howToResolve`. Submit an independently signed Hyperliquid `updateLeverage` action, wait for venue confirmation, re-read venue state, then resubmit. The prerequisite clears only when venue state itself changes.
+* No position yet: the venue does not publish per-asset leverage before a position exists, so FarmDash cannot confirm the standing setting. The order proceeds with `leverageVerified: false` and an explicit notice - the venue's own configuration governs. Never report the requested leverage as applied.
+
+Reduce-only orders and `cancel_perp_order` are never gated on leverage. Exposure-reducing and cancellation actions must not be blocked by an unrelated margin prerequisite.
 
 ## Evidence and Receipt Honesty
 
@@ -650,7 +663,7 @@ Required behavior:
 **OpenAPI Spec:** [FarmDash API Schema](https://www.farmdash.one/agents/openapi.yaml)
 
 ## Optional Setup Check
-No registration call is required to install this skill. Scout-eligible Futures calls work without onboarding and without `FARMDASH_API_KEY`; paid research tools still require Pioneer/Syndicate capacity or their eligible x402 policy.
+No registration call is required to install this skill or use its research-only futures tools. Scout-eligible Futures calls work without onboarding and without `FARMDASH_API_KEY`; paid research tools still require Pioneer/Syndicate capacity or their eligible x402 policy.
 
 Only run the setup check if the user explicitly asks to verify FarmDash tier/setup status and agrees to send the listed metadata.
 

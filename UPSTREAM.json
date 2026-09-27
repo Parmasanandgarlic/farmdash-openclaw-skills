@@ -2,7 +2,7 @@
   "$comment": "Provenance lock. Mirrored from canonical FarmDash production truth. Do not hand-edit mirrored files; re-run the sync from the canonical source instead.",
   "source_repository": "hububstudio/farmdashbeta",
   "source_sha": "beaf0eba21ba5d0c94190f215a297eaf92c4e3e0",
-  "sync_timestamp": "2026-09-27T01:17:28.107Z",
+  "sync_timestamp": "2026-09-27T05:09:51.464540Z",
   "mcp_tool_count": 84,
   "mirrored_file_count": 26,
   "not_mirrored_reason": {
@@ -44,11 +44,11 @@
       "source": "public/openclaw-skills/farmdash-camp-guard/SKILL.json"
     },
     "farmdash-futures-strategist/SKILL.md": {
-      "sha256": "9f3af5f13e5b24af17429a29e6da7607059a99814b8d8d49f9caa44d30d4377a",
+      "sha256": "3ac48378f9b21e1c9a942fb4c4178b9fd8672058880205f61e83cb735e58a592",
       "source": "public/openclaw-skills/farmdash-futures-strategist/SKILL.md"
     },
     "farmdash-futures-strategist/SKILL.json": {
-      "sha256": "5accf643fbeab4e1c04508b46f14ac09b6aa73e6799639f1c9049242e414afba",
+      "sha256": "0fbc234f77dc1e1bef768b042d86f15fa562b72e3ff9e24cf7036d98b3f655b0",
       "source": "public/openclaw-skills/farmdash-futures-strategist/SKILL.json"
     },
     "farmdash-futures-strategist/openapi.yaml": {
