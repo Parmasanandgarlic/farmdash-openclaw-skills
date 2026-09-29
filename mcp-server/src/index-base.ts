@@ -1211,7 +1211,7 @@ server.tool(
 
 server.tool(
   'execute_perp_order',
-  'Compatibility: submit a pre-signed EIP-712 Hyperliquid order after a 60-second parameter-bound research gate. For delegated API wallets, set accountAddress to the venue-verified equity owner used during analysis. FarmDash recovers the exact L1 signer, rejects an agentAddress mismatch, and preflights the owner maxBuilderFee. The signed action must disclose builder f=1 (0.1 bp/0.001% of filled notional), and expiresAt is venue-signed as expiresAfter. A resting order is not a fill.',
+  'Compatibility: submit a pre-signed EIP-712 Hyperliquid order after a 60-second parameter-bound research gate. `market_ioc` is a signed, price-protected IOC limit order with a live 100 bps adverse-price cap, never an unbounded market order; its outcome distinguishes full, partial, and zero fill, and an IOC resting response is unknown/inconsistent. For delegated API wallets, set accountAddress to the venue-verified equity owner used during analysis. FarmDash recovers the exact L1 signer, rejects an agentAddress mismatch, and preflights the owner maxBuilderFee. The signed action must disclose builder f=1 (0.1 bp/0.001% of filled notional), and expiresAt is venue-signed as expiresAfter. Venue nonce authority is network + signer + nonce across account/vault contexts; durable replay control fails closed before submission.',
   {
     agentAddress: z.string().regex(EVM_ADDRESS),
     accountAddress: z.string().regex(EVM_ADDRESS).optional(),
@@ -1219,7 +1219,7 @@ server.tool(
     isBuy: z.boolean(),
     size: z.string(),
     price: z.string(),
-    orderType: z.string(),
+    orderType: z.enum(['limit_gtc', 'limit_ioc', 'limit_alo', 'market_ioc', 'stop_loss', 'take_profit']),
     signature: SIGNATURE_SCHEMA,
     reduceOnly: z.boolean().optional(),
     leverage: z.number().positive().optional(),
@@ -1243,12 +1243,15 @@ server.tool(
 
 server.tool(
   'cancel_perp_order',
-  'Cancel stale or resting Hyperliquid orders with a venue-signed expiresAfter and FarmDash intent hash. For a delegated API wallet, accountAddress identifies the verified equity owner and is included as the signed vault/subaccount routing address when required. Success requires one authoritative venue success status per order; mixed errors are returned as partial rejection.',
+  'Cancel stale or resting Hyperliquid orders with a venue-signed expiresAfter and FarmDash intent hash. For a delegated API wallet, accountAddress identifies the verified equity owner and is included as the signed vault/subaccount routing address when required. `accepted` is an application acknowledgement, not final venue cancellation: reconcile every requested ID through /api/v1/agent/futures/reconcile-order before dependent actions. Mixed errors are partial rejection; malformed or timeout outcomes are unknown. Venue nonce authority is network + signer + nonce across account/vault contexts; durable replay control fails closed before submission.',
   {
     agentAddress: z.string().regex(EVM_ADDRESS),
     accountAddress: z.string().regex(EVM_ADDRESS).optional(),
     coin: z.string(),
-    orderIds: z.array(z.number().int().positive()).min(1).max(50),
+    orderIds: z.array(z.number().int().positive()).min(1).max(50).refine(
+      (orderIds) => new Set(orderIds).size === orderIds.length,
+      'Duplicate order IDs are not allowed in a signed cancellation.',
+    ),
     signature: SIGNATURE_SCHEMA,
     signedAction: z.any().optional(),
     nonce: z.number().int().positive(),

@@ -357,7 +357,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "scan_funding_rates": {
     "api_route": "/api/v1/agent/futures/scan-funding",
     "feature_status_id": "futures.hyperliquid_guarded",
-    "availability": "available",
+    "availability": "available_with_tier_gate",
     "tier": "scout_preview_pioneer_full",
     "commercial_model": "default_overage",
     "idempotent": true,
@@ -366,7 +366,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "scan_market_conditions": {
     "api_route": "/api/v1/agent/futures/market-conditions",
     "feature_status_id": "futures.hyperliquid_guarded",
-    "availability": "available",
+    "availability": "available_with_tier_gate",
     "tier": "scout_plus",
     "commercial_model": "default_overage",
     "idempotent": true,
@@ -375,7 +375,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "get_futures_account": {
     "api_route": "/api/v1/agent/futures/account-state",
     "feature_status_id": "futures.hyperliquid_guarded",
-    "availability": "paid_ready",
+    "availability": "available_with_tier_gate",
     "tier": "pioneer_plus_or_x402",
     "commercial_model": "wallet_portfolio",
     "idempotent": true,
@@ -384,7 +384,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "analyze_futures_strategy": {
     "api_route": "/api/v1/agent/futures/analyze-strategy",
     "feature_status_id": "futures.hyperliquid_guarded",
-    "availability": "paid_ready",
+    "availability": "available_with_tier_gate",
     "tier": "pioneer_plus_or_x402",
     "commercial_model": "futures_strategy",
     "idempotent": true,
@@ -393,7 +393,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "calculate_position_size": {
     "api_route": "/api/v1/agent/futures/position-sizing",
     "feature_status_id": "futures.hyperliquid_guarded",
-    "availability": "paid_ready",
+    "availability": "available_with_tier_gate",
     "tier": "pioneer_plus_or_x402",
     "commercial_model": "futures_strategy",
     "idempotent": true,

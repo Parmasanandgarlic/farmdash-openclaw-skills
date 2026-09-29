@@ -4,7 +4,7 @@
 
 FarmDash Agent OS MCP Server (v5.0.0) - 84 tools for DeFi intelligence, protocol risk analysis, yield strategy simulation, and policy-bounded zero-custody workflows via [Model Context Protocol](https://modelcontextprotocol.io).
 
-> Registry status (verified 2026-08-23): `@farmdash/mcp-server` is not published on the public npm registry. Use the source installation below. Do not present a registry quickstart unless a future release is independently visible on npm.
+> Registry status (verified 2026-09-29): `@farmdash/mcp-server` is **not published** on the public npm registry — `npm view @farmdash/mcp-server` returns `E404` from `registry.npmjs.org`. Use the source installation below. Do not present a registry quickstart unless a future release is independently visible on npm.
 
 ## Quick Start
 
@@ -26,13 +26,18 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "farmdash": {
       "command": "node",
-      "args": ["/absolute/path/to/farmdash-openclaw-skills/mcp-server/dist/index.js"],
-      "env": {
-        "FARMDASH_API_KEY": "your-pioneer-or-syndicate-key"
-      }
+      "args": ["/absolute/path/to/farmdash-openclaw-skills/mcp-server/dist/index.js"]
     }
   }
 }
+```
+
+Scout needs no API key, so no `env` block is required. Add one only to run a paid tier:
+
+```json
+    "env": {
+      "FARMDASH_API_KEY": "your-pioneer-or-syndicate-bearer-token"
+    }
 ```
 
 ### Cursor
@@ -43,10 +48,7 @@ Add to Cursor Settings > MCP:
 {
   "farmdash": {
     "command": "node",
-    "args": ["/absolute/path/to/farmdash-openclaw-skills/mcp-server/dist/index.js"],
-    "env": {
-      "FARMDASH_API_KEY": "your-key"
-    }
+    "args": ["/absolute/path/to/farmdash-openclaw-skills/mcp-server/dist/index.js"]
   }
 }
 ```
@@ -60,10 +62,7 @@ Add to `.cline/mcp_settings.json`:
   "mcpServers": {
     "farmdash": {
       "command": "node",
-      "args": ["/absolute/path/to/farmdash-openclaw-skills/mcp-server/dist/index.js"],
-      "env": {
-        "FARMDASH_API_KEY": "your-key"
-      }
+      "args": ["/absolute/path/to/farmdash-openclaw-skills/mcp-server/dist/index.js"]
     }
   }
 }
@@ -73,16 +72,16 @@ Add to `.cline/mcp_settings.json`:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `FARMDASH_API_KEY` | No | — | Leave unset for keyless Scout, or provide a paid Pioneer/Syndicate bearer token. Paid users can issue a key at `/api/v1/agent/api-key`. |
-| `FARMDASH_BASE_URL` | No | `https://www.farmdash.one/api` | Override API base URL. |
-| `FARMDASH_SCOUT_GRANT` | No | — | Optional short-lived onboarding grant. If the live `agent_onboard` response returns one, the adapter captures it in memory automatically; never a paid entitlement. |
-| `FARMDASH_SKILL_ID` | No | — | Optional canonical skill slug for analytics attribution only; never a wallet, key, or user ID. |
+| `FARMDASH_API_KEY` | No | unset | Leave unset to run as a free Scout client. Set it only to a paid Pioneer/Syndicate bearer token, issued at `/api/v1/agent/api-key`. Any non-empty value is sent verbatim as `Authorization: Bearer <value>`, so do not pass a placeholder string. |
+| `FARMDASH_BASE_URL` | No | `https://www.farmdash.one/api` | Override the API base URL. |
 
-Scout mode is the fastest path: build the MCP server from source and leave `FARMDASH_API_KEY` unset, or set it to `fd_scout_free` only if your client requires an explicit value. The adapter is grant-aware, but it does **not** assume acquisition grants are live: it retains a grant only when the current FarmDash onboarding response actually returns one. When ordinary Scout quota is exhausted, FarmDash returns the current route-specific commercial response; clients should follow the live machine envelope rather than hard-code an overage price.
+Scout mode is the fastest path: build the MCP server from source and leave `FARMDASH_API_KEY` unset. When Scout reaches 30 requests per 24 hours, FarmDash returns a 402 response with route-specific x402 payment details. The configured default overage is 0.01 USDC; premium reports and compute-heavy routes publish their own price in the 402 response.
+
+Two further optional variables exist for advanced integrations: `FARMDASH_SCOUT_GRANT` (an onboarding grant, normally attached in memory after `agent_onboard` returns one) and `FARMDASH_SKILL_ID` (OpenClaw skill attribution). Neither is needed for a normal client.
 
 ## Tool Highlights (84 Total)
 
-This section groups the principal tools. The current runtime exposes 84 tools registered in `src/index-base.ts` behind the guarded `src/index.ts` entrypoint. MCP clients should treat `tools/list` as the authoritative runtime catalog; the included smoke test checks it against the generated capability map so future count drift fails verification. Run `agent_onboard` first: it fetches the live `/api/v1/agent/status` readiness contract before returning onboarding guidance.
+This section groups the principal tools. The authoritative count is the 84 `server.tool(...)` registrations in `src/index.ts`; MCP clients can retrieve the complete runtime catalog through tool discovery. Run `agent_onboard` first: it fetches the live `/api/v1/agent/status` readiness contract before returning onboarding guidance.
 
 ### Protocol Risk Analyzer (1 tool) — NEW in v5.0
 
@@ -132,15 +131,17 @@ This section groups the principal tools. The current runtime exposes 84 tools re
 
 ### Futures Strategist (7 tools)
 
-| Tool | Tier | Description |
-|------|------|-------------|
-| `scan_funding_rates` | Scout+ | Hyperliquid vs Binance/Bybit funding rate arbitrage |
-| `scan_market_conditions` | Scout | Technical indicators (EMA, RSI, MACD, ATR, BB, ADX) |
-| `get_futures_account` | Pioneer+ | Positions, margin, equity, PnL, liquidation prices |
-| `analyze_futures_strategy` | Pioneer+ | Full research pipeline with strategy recommendation |
-| `calculate_position_size` | Pioneer+ | Risk-based sizing with guardrail enforcement |
-| `execute_perp_order` | Syndicate | EIP-712 signed Hyperliquid order execution |
-| `cancel_perp_order` | Syndicate | Batch cancel up to 50 orders |
+Commercial access buys API capacity only; it never creates Hyperliquid signing authority. Scout is 30 requests / 24h, Pioneer is 1,500 / day, and Syndicate is 50,000 / day. Eligible x402 payments unlock one request under the route's published policy.
+
+| Tool | Access | Description |
+|------|--------|-------------|
+| `scan_funding_rates` | Scout preview; Pioneer+ or the default-overage x402 for full response | Hyperliquid vs Binance/Bybit funding-rate arbitrage |
+| `scan_market_conditions` | Scout+ | Technical indicators (EMA, RSI, MACD, ATR, BB, ADX) |
+| `get_futures_account` | Pioneer+ or wallet-portfolio x402 | Positions, margin, equity, PnL, liquidation prices |
+| `analyze_futures_strategy` | Pioneer+ or futures-strategy x402 | Full research pipeline; new-risk execution gate is valid for 60 seconds |
+| `calculate_position_size` | Pioneer+ or futures-strategy x402 | Risk-based sizing with guardrail enforcement |
+| `execute_perp_order` | Scout capacity or paid capacity + EIP-712 authority | Forwards a user-signed Hyperliquid order; FarmDash never signs |
+| `cancel_perp_order` | Scout capacity or paid capacity + EIP-712 authority | Forwards a user-signed cancellation; no prior FarmDash order required |
 
 ### Virtuals ACP Tender Coordination (10 tools)
 
@@ -208,7 +209,7 @@ The Futures Strategist enforces hard limits that cannot be overridden:
 
 ## Fee Model
 
-- **Swap fee**: 45 bps default, 35 bps at $10K+ volume, 25 bps at $100K+
+- **Swap fee** (combined routing target; LI.FI 25 bps platform component deducted, not stacked; gas/slippage excluded): 50 bps under $10K, 45 bps at $10K+, 40 bps at $100K+, 30 bps at $1M+
 - **Treasury**: `0xb0Ed0d7bca24BBaD635B977C2efbE06742e33377`
 
 ## What's New in v5.0
