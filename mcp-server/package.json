@@ -1,8 +1,8 @@
 {
   "name": "@farmdash/mcp-server",
   "version": "5.0.0",
-  "mcpName": "com.farmdash/agent-os",
-  "description": "FarmDash Agent OS MCP Server — capability-labeled tools for DeFi intelligence, supervised workflows, signed transaction preparation, and explicitly gated execution paths",
+  "mcpName": "io.github.hububstudio/farmdash-agent-os",
+  "description": "FarmDash Agent OS MCP Server — 84 capability-labeled tools for DeFi intelligence, supervised workflows, signed transaction preparation, and explicitly gated execution paths",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -10,7 +10,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "server.json"
   ],
   "repository": {
     "type": "git",
@@ -21,6 +22,9 @@
   "author": "FarmDash Pioneers (@Parmasanandgarlic)",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc",

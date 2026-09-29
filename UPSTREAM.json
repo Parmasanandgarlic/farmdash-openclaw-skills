@@ -1,18 +1,23 @@
 {
   "$comment": "Provenance lock. Mirrored from canonical FarmDash production truth. Do not hand-edit mirrored files; re-run the sync from the canonical source instead.",
   "source_repository": "hububstudio/farmdashbeta",
-  "source_sha": "beaf0eba21ba5d0c94190f215a297eaf92c4e3e0",
-  "sync_timestamp": "2026-09-27T05:09:51.464540Z",
+  "source_sha": "f5a5614875183ab893ed77eecd1f6eaffe571ca9",
+  "sync_timestamp": "2026-09-29T04:40:13.088Z",
   "mcp_tool_count": 84,
-  "mirrored_file_count": 26,
+  "mirrored_file_count": 27,
   "not_mirrored_reason": {
     "mcp-server/package.json": "distribution adaptation: canonical prebuild/postbuild reference ../scripts/*, absent here",
     "mcp-server/tsconfig.json": "distribution adaptation",
-    "mcp-server/scripts/smoke-introspection.mjs": "public-only smoke harness"
+    "mcp-server/scripts/smoke-introspection.mjs": "public-only smoke harness",
+    "mcp-server/src/tool-contracts.ts": "canonical-only: not imported by the MCP server build; referenced only by the private monorepo test suite and lib/api/agent/workflow-compiler.ts",
+    "mcp-server/README.md": "public adaptation: mirror installability banner prepended to the canonical README body",
+    "mcp-server/LICENSE": "distribution adaptation: CRLF line endings",
+    "mcp-server/package-lock.json": "distribution adaptation: CRLF line endings",
+    "mcp-server/.gitignore": "canonical-only: superseded by this repository root .gitignore"
   },
   "mirrored": {
     "mcp-server/src/index-base.ts": {
-      "sha256": "4329e53f68f439aebff137d5383d7f2f76a41a5d2c4eac56e499f5b2a99e12a2",
+      "sha256": "bf5736a3cda90962a17fd196af45edb4cfa24c212cf93dc475fed11bc01256cf",
       "source": "mcp-server/src/index-base.ts"
     },
     "mcp-server/src/index.ts": {
@@ -20,11 +25,11 @@
       "source": "mcp-server/src/index.ts"
     },
     "mcp-server/src/api-client.ts": {
-      "sha256": "feb944e73e9c9a51262be4beda113a0b76ccf2406632123418f622a58259142a",
+      "sha256": "a3ebbdbce9ccc822e994decc85f4970307602b66607ddc9589404b45b2862440",
       "source": "mcp-server/src/api-client.ts"
     },
     "mcp-server/src/tool-capabilities.generated.ts": {
-      "sha256": "c2bc533c1b9d91226e3861bfce8ef333077768937556dee953d0979009acee02",
+      "sha256": "122222b8d324750d1514f2bb208add075e6158e742c8e7603af300f73cef4be9",
       "source": "mcp-server/src/tool-capabilities.generated.ts"
     },
     "farmdash-autonomous-operator/SKILL.md": {
@@ -114,6 +119,10 @@
     "farmdash-wagon-steward/SKILL.json": {
       "sha256": "5c97f5ddcb0f578af300fc580a1ecdca9933288af4500b0ca3402472a389297c",
       "source": "public/openclaw-skills/farmdash-wagon-steward/SKILL.json"
+    },
+    "mcp-server/server.json": {
+      "sha256": "79ee853602d1e3873bcf4276212838960e1e2fd44ef2b39094f91c6c7d39d121",
+      "source": "mcp-server/server.json"
     }
   },
   "source_repo": "hububstudio/farmdashbeta"

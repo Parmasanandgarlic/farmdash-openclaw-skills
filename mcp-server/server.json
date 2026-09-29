@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.hububstudio/farmdash-agent-os",
+  "title": "FarmDash Agent OS",
+  "description": "Zero-custody DeFi intelligence MCP server: 84 tools for Trail Heat, risk, yield, and gated swaps.",
+  "repository": {
+    "url": "https://github.com/Parmasanandgarlic/farmdash-openclaw-skills",
+    "source": "github",
+    "subfolder": "mcp-server"
+  },
+  "version": "5.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@farmdash/mcp-server",
+      "version": "5.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "FARMDASH_API_KEY",
+          "description": "Optional. Leave unset to run as a free Scout client (30 requests / 24h per IP plus bounded onboarding grants). Paid Pioneer/Syndicate capacity is issued by FarmDash.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "FARMDASH_BASE_URL",
+          "description": "Optional. Overrides the FarmDash API base URL. The default points at the production API and normally does not need to be set.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
