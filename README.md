@@ -2,7 +2,7 @@
 
 ## Public FarmDash MCP server
 
-This repository includes the runnable MIT-licensed FarmDash stdio MCP adapter in [`mcp-server/`](./mcp-server). It exposes the same 84-tool contract published at `https://www.farmdash.one/.well-known/mcp.json` and calls the live FarmDash API without receiving customer private keys.
+This repository includes the runnable MIT-licensed FarmDash stdio MCP adapter in [`mcp-server/`](./mcp-server). It exposes the same 94-tool contract published at `https://www.farmdash.one/.well-known/mcp.json` and calls the live FarmDash API without receiving customer private keys.
 
 Build and verify from a clean checkout:
 
@@ -43,8 +43,8 @@ Copy any skill directory into your agent's skills path (e.g. OpenClaw / Claude C
 
 - Scout tier: free, keyless (`fd_scout_free`), 30 req/24h per IP. The MCP adapter is forward-compatible with a bounded onboarding grant if the live FarmDash onboarding response advertises one; clients must treat `/api/v1/agent/status` and `/api/v1/agent/onboard` as runtime truth rather than assuming the grant is deployed.
 - Pioneer/Syndicate: Bearer `FARMDASH_API_KEY` for higher limits and deep tools.
-- MCP manifest: https://www.farmdash.one/.well-known/mcp.json
-- OpenAPI: https://www.farmdash.one/agents/openapi.yaml
+- MCP manifest: https://www.farmdash.one/.well-known/mcp.json (v5.0.0, 94 runtime tools)
+- OpenAPI: https://www.farmdash.one/agents/openapi.yaml (54 primary operations / 75 total across 4 documents)
 
 Commercial disclosure: skills may surface `farmdash.one/go/*` partner routes with mandatory disclosure; never on avoid-verdicts. Details: https://www.farmdash.one/fees.
 

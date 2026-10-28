@@ -15,11 +15,25 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Camp Guard
 
+## Futures Execution Mode Contract
+
+- **USER_SIGNED** requires fresh human approval for every order/cancel and a local Hyperliquid EIP-712 venue signature.
+- **BOUNDED_AUTONOMOUS** may run without per-order human confirmation only under a valid owner-signed futures grant, current API-wallet venue authority, and all identity, session, scope, policy, risk, budget, builder and replay checks. Every venue action still requires a local signature.
+- Read futures bounded readiness in the generated canonical table and live status. Separate spot and futures authority; a generic session policy or spot grant never authorizes futures.
+- Read `POST /api/v1/agent/authority`, `action: get_futures_authority`, `sessionId`, `sessionToken`; the restrictive revoke control is `action: revoke_futures_policy`, `grantId`, `sessionId`, `sessionToken`. These are authority REST actions, not new Camp Guard tools. Missing/storage-unavailable authority yields halt, never presumed permission.
+- Verify owner/session agent/API-wallet/account/subaccount/network bindings; status, expiry and revocation; allowed markets, actions and order types; order notional, aggregate exposure, venue leverage, risk/trade, session/daily loss and consumed/reserved new-risk budget. Record source and timestamp; supplied-data checks cannot substitute for server admission or authoritative venue state.
+- Typed scopes: `futures.open`, `futures.reduce`, `futures.close`, `futures.cancel`, `futures.protective_order`. Proven reduction/cancel/protection may survive exhausted new-risk capacity or a risk-increase breaker: a budget exception, never an authority bypass. Valid grant, venue delegation, bindings, session, allowlists, expiry/revocation, local signature, builder and replay checks still apply. A client label or reduce-only flag alone does not prove a safe reduction.
+- Futures Strategist signs venue actions locally; Camp Guard never signs. Orchestrators never own keys. Research/accounting skills remain nonsigners. Limits are admission checks, not guaranteed loss ceilings; no profit or positive expected-value promise. Ambiguous venue outcomes retain liabilities until reconciliation and must not be blind-retried.
+
 > Use this skill before signing anything: auditing token allowances and unsigned transactions for a pass, review, or halt verdict.
 
 Camp Guard is the pre-execution security desk for FarmDash agents. Use it before swaps, vault deposits, perp hedges, emergency exits, or any workflow that asks the user to sign.
 
 It does not execute transactions. It does not simulate against an RPC. It returns a policy verdict that the agent must respect.
+
+## ClawHub Attribution
+
+This skill's canonical ClawHub slug is `farmdash-camp-guard`. On every FarmDash API request (REST, OpenAPI, or MCP transport where headers are supported), send `X-ClawHub-Skill: farmdash-camp-guard`. Analytics-only and optional; requests without it still work. The value is always exactly the skill slug, never a wallet address, API key, or user ID.
 
 ## Tools
 
@@ -62,6 +76,15 @@ Runs FarmDash Risk Sentinel on either:
 - manual risk fields (`healthFactor`, `liquidationBufferPct`, `expectedUpsideUsd`, `gasUsd`, `bridgeFeeUsd`, `riskBufferUsd`).
 
 Use this before `execute_swap`, `resolve_defi_intent`, and any emergency exit route.
+
+## Bounded Autonomy Policy Awareness
+For spot `BOUNDED_AUTONOMOUS`, review authoritative delegation evidence against the following bounds. Camp Guard's supplied-data tools do not themselves query grants, reserve budget, verify venue authority or prove runtime enablement; the owning executor and server must enforce admission:
+- Target chain ID is in the delegation's allowed chain set.
+- Target protocol and token contracts are on the delegation allowlist.
+- Dollar value does not exceed `max_value_usd_per_tx`.
+- Cumulative spend does not exceed `remaining_budget_usd`.
+- Delegation has not expired and cooldown interval is respected.
+Any observed bound violation or unregistered signer requires a halt. Missing authority evidence is unavailable, not a pass. Futures use the separate futures policy checks above, not this spot delegation checklist.
 
 ## Operating Rules
 
@@ -121,4 +144,31 @@ Camp Guard is a risk gate, not insurance. It cannot detect every malicious contr
 - [Fees and commercial terms](https://www.farmdash.one/fees)
 - [Security and authority boundaries](https://www.farmdash.one/security)
 
+### Canonical capability readiness
+
+Generated from shared/capability-truth.ts; read live status for deployment and per-request gates. Implementation readiness is not funded-production proof, commercial admission or signer authority.
+
+| Capability | Status | Required runtime/authority prerequisite |
+|---|---|---|
+| spot.USER_SIGNED | operational | Healthy execution governor, quote provider, RPC and durable receipt store; customer signs and submits. |
+| spot.BOUNDED_AUTONOMOUS | operational | Owner-signed EVM grant, exact simulation/calldata binding, durable budget and customer-local signer authority. |
+| futures.USER_SIGNED | operational | Venue account ownership, local action signature, builder approval, risk/research gates and durable order control. |
+| futures.BOUNDED_AUTONOMOUS | operational | Authenticated owner-bound futures policy, authorized local API-wallet signature, durable nonce/budget/order controls. |
+| solana.USER_SIGNED | operational | Native Jupiter/RPC route, durable preparation and finality store; customer signs and broadcasts. |
+| solana.BOUNDED_AUTONOMOUS | operational | Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority. |
+| ERC4337_SERVER_SUBMISSION | preparation_only | Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration. |
+| GENERIC_SERVER_INTENT_EXECUTION | preparation_only | Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier. |
+| MEE | preparation_only | Production coordinator and authoritative source/destination receipt verifier. |
+| ACP | deployment_prerequisite | AcpReadinessService paidWorkflowReady, evaluator/client identities, migrations, funding/finality workers and Base RPC. |
+
 <!-- farmdash-canonical-links:end -->
+
+<!-- installation-attribution:start -->
+
+### Optional installation attribution
+
+Generate a random UUIDv4 locally once per installation (for example, `crypto.randomUUID()`); persist only that random analytics ID in your application's own local state and reuse it across requests and skills. Never copy an example ID or generate a new ID for every request. Send optional `X-FarmDash-Installation-ID`; keep `X-ClawHub-Skill: farmdash-camp-guard` and optionally `X-FarmDash-Skill-Version: 1.1.2`. Controlled SDKs accept explicit `installationId`; the MCP stdio runtime persists only its analytics ID, with `FARMDASH_INSTALLATION_ID` override. No generic SDK writes files for you.
+
+This is untrusted analytics only. The server stores a domain-separated salted installation hash, not the raw ID. An installation is not a person, principal or wallet. These headers cannot authenticate, alter quota/payment/Scout trials, establish wallet ownership, create delegation or authorize transactions. Missing headers remain fully compatible. Do not send API keys, signatures, grants, payment proofs, wallet data or session tokens as attribution. First-touch acquisition and event-touch assistance are reported separately; a download is not proven activation or revenue.
+
+<!-- installation-attribution:end -->

@@ -38,14 +38,20 @@ servers:
 
 paths:
   /v1/agent/protocols:
+    parameters:
+      - $ref: '#/components/parameters/X-FarmDash-Installation-ID'
+      - $ref: '#/components/parameters/X-FarmDash-Client'
+      - $ref: '#/components/parameters/X-FarmDash-Client-Version'
+      - $ref: '#/components/parameters/X-FarmDash-Skill-Version'
     get:
       operationId: getProtocolCatalog
       summary: Get catalog protocol directory (discovery heuristic scores)
       description: |
         Returns the curated FarmDash catalog with EDITORIAL discovery heuristic scores (catalog-editorial-v1). NOT live Trail Heat — canonical quantitative Trail Heat: /v1/trail-heat.
-        Live scoring uses calibrated TVL, seven-day TVL momentum, chain diversification,
-        category baseline comparison, and FarmDash evidence prior when upstream data is available.
-        Static tracker pages use a calibrated catalog fallback with TVL, status, category prior,
+        Live quantitative Trail Heat uses calibrated TVL, seven-day TVL momentum, chain diversification,
+        and category outperformance when upstream data is available. Editorial notes are separate
+        metadata and excluded from the quantitative score. Static tracker pages use a distinct catalog
+        discovery heuristic with TVL, status, category prior,
         hot momentum, and recency.
         Scout tier receives top 3 with encrypted numeric values.
         Pioneer/Syndicate tiers receive the full unencrypted dataset.
@@ -91,6 +97,11 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /v1/agent/chain-breakdown:
+    parameters:
+      - $ref: '#/components/parameters/X-FarmDash-Installation-ID'
+      - $ref: '#/components/parameters/X-FarmDash-Client'
+      - $ref: '#/components/parameters/X-FarmDash-Client-Version'
+      - $ref: '#/components/parameters/X-FarmDash-Skill-Version'
     get:
       operationId: getChainBreakdown
       summary: Get protocol distribution by chain
@@ -121,6 +132,11 @@ paths:
           description: Rate limit exceeded
 
   /agents/quote:
+    parameters:
+      - $ref: '#/components/parameters/X-FarmDash-Installation-ID'
+      - $ref: '#/components/parameters/X-FarmDash-Client'
+      - $ref: '#/components/parameters/X-FarmDash-Client-Version'
+      - $ref: '#/components/parameters/X-FarmDash-Skill-Version'
     get:
       operationId: getSwapQuote
       summary: Get a token swap quote
@@ -254,6 +270,11 @@ paths:
           description: Live quote provider timed out. Code quote_provider_timeout, retryable true.
 
   /v1/agent/market-estimate:
+    parameters:
+      - $ref: '#/components/parameters/X-FarmDash-Installation-ID'
+      - $ref: '#/components/parameters/X-FarmDash-Client'
+      - $ref: '#/components/parameters/X-FarmDash-Client-Version'
+      - $ref: '#/components/parameters/X-FarmDash-Skill-Version'
     get:
       operationId: getMarketEstimate
       summary: Get a provider-neutral market estimate
@@ -303,6 +324,11 @@ paths:
           description: Rate limit exceeded
 
   /v1/agent/quote-intent:
+    parameters:
+      - $ref: '#/components/parameters/X-FarmDash-Installation-ID'
+      - $ref: '#/components/parameters/X-FarmDash-Client'
+      - $ref: '#/components/parameters/X-FarmDash-Client-Version'
+      - $ref: '#/components/parameters/X-FarmDash-Skill-Version'
     post:
       operationId: createQuoteIntent
       summary: Create an execution intent with a firm single-provider quote
@@ -375,6 +401,11 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /v1/simulate:
+    parameters:
+      - $ref: '#/components/parameters/X-FarmDash-Installation-ID'
+      - $ref: '#/components/parameters/X-FarmDash-Client'
+      - $ref: '#/components/parameters/X-FarmDash-Client-Version'
+      - $ref: '#/components/parameters/X-FarmDash-Skill-Version'
     post:
       operationId: simulateSwapExecution
       summary: Simulate a wallet-bound swap intent
@@ -401,6 +432,11 @@ paths:
           description: Intent and wallet mismatch
 
   /agents/swap:
+    parameters:
+      - $ref: '#/components/parameters/X-FarmDash-Installation-ID'
+      - $ref: '#/components/parameters/X-FarmDash-Client'
+      - $ref: '#/components/parameters/X-FarmDash-Client-Version'
+      - $ref: '#/components/parameters/X-FarmDash-Skill-Version'
     post:
       operationId: executeSwap
       summary: Execute a signed token swap
@@ -471,6 +507,11 @@ paths:
               description: Seconds until rate limit resets
 
   /agents/history:
+    parameters:
+      - $ref: '#/components/parameters/X-FarmDash-Installation-ID'
+      - $ref: '#/components/parameters/X-FarmDash-Client'
+      - $ref: '#/components/parameters/X-FarmDash-Client-Version'
+      - $ref: '#/components/parameters/X-FarmDash-Skill-Version'
     get:
       operationId: getSwapHistory
       summary: Get your own fee event history (tenant-bound)
@@ -522,6 +563,11 @@ paths:
           description: Rate limit exceeded
 
   /v1/agent/risk-sentinel:
+    parameters:
+      - $ref: '#/components/parameters/X-FarmDash-Installation-ID'
+      - $ref: '#/components/parameters/X-FarmDash-Client'
+      - $ref: '#/components/parameters/X-FarmDash-Client-Version'
+      - $ref: '#/components/parameters/X-FarmDash-Skill-Version'
     get:
       operationId: getRiskSentinelInfo
       summary: Describe Risk Sentinel usage
@@ -587,6 +633,46 @@ paths:
 
 components:
   parameters:
+    X-FarmDash-Installation-ID:
+      name: X-FarmDash-Installation-ID
+      in: header
+      required: false
+      description: Optional analytics-only locally generated UUIDv4 installation hint. Stored only as a domain-separated salted hash. Not authentication, principal proof, quota, payment, wallet ownership, delegation or transaction authority. Omission changes no functionality.
+      schema:
+        type: string
+        format: uuid
+        pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+    X-FarmDash-Client:
+      name: X-FarmDash-Client
+      in: header
+      required: false
+      description: Optional untrusted analytics client hint; never security evidence.
+      schema:
+        type: string
+        enum:
+          - mcp
+          - ts_agent_kit
+          - python_agent_kit
+          - public_client
+          - webapp
+    X-FarmDash-Client-Version:
+      name: X-FarmDash-Client-Version
+      in: header
+      required: false
+      description: Optional analytics client version; never security evidence.
+      schema:
+        type: string
+        maxLength: 64
+        pattern: ^[A-Za-z0-9._+-]{1,64}$
+    X-FarmDash-Skill-Version:
+      name: X-FarmDash-Skill-Version
+      in: header
+      required: false
+      description: Optional event-touch analytics skill version, alongside X-ClawHub-Skill; never security evidence.
+      schema:
+        type: string
+        maxLength: 64
+        pattern: ^[A-Za-z0-9._+-]{1,64}$
     X-ClawHub-Skill:
       name: X-ClawHub-Skill
       in: header
@@ -950,7 +1036,7 @@ components:
           description: Optional wallet address used for on-chain approval checks
         safetyMode:
           $ref: '#/components/schemas/SwapSafetyMode'
-          description: Agent-supplied USD estimate — unlocks volume fee discounts (>=10k = 35bps, >=100k = 25bps)
+          description: Agent-supplied USD estimate; the server independently derives trade value for routing tiers (>=10k = 40bps, >=100k = 35bps, >=1m = 20bps; default 50bps)
         simulationId:
           type: string
           description: Fresh successful simulation_id from POST /v1/simulate
@@ -1219,3 +1305,5 @@ components:
         activeAgents:
           type: integer
           description: Unique agent addresses that have swapped
+
+x-farmdash-capability-truth: {"spot.USER_SIGNED":{"status":"operational","prerequisite":"Healthy execution governor, quote provider, RPC and durable receipt store; customer signs and submits."},"spot.BOUNDED_AUTONOMOUS":{"status":"operational","prerequisite":"Owner-signed EVM grant, exact simulation/calldata binding, durable budget and customer-local signer authority."},"futures.USER_SIGNED":{"status":"operational","prerequisite":"Venue account ownership, local action signature, builder approval, risk/research gates and durable order control."},"futures.BOUNDED_AUTONOMOUS":{"status":"operational","prerequisite":"Authenticated owner-bound futures policy, authorized local API-wallet signature, durable nonce/budget/order controls."},"solana.USER_SIGNED":{"status":"operational","prerequisite":"Native Jupiter/RPC route, durable preparation and finality store; customer signs and broadcasts."},"solana.BOUNDED_AUTONOMOUS":{"status":"operational","prerequisite":"Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority."},"ERC4337_SERVER_SUBMISSION":{"status":"preparation_only","prerequisite":"Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration."},"GENERIC_SERVER_INTENT_EXECUTION":{"status":"preparation_only","prerequisite":"Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier."},"MEE":{"status":"preparation_only","prerequisite":"Production coordinator and authoritative source/destination receipt verifier."},"ACP":{"status":"deployment_prerequisite","prerequisite":"AcpReadinessService paidWorkflowReady, evaluator/client identities, migrations, funding/finality workers and Base RPC."}}

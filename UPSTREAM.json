@@ -1,128 +1,152 @@
 {
   "$comment": "Provenance lock. Mirrored from canonical FarmDash production truth. Do not hand-edit mirrored files; re-run the sync from the canonical source instead.",
   "source_repository": "hububstudio/farmdashbeta",
-  "source_sha": "f5a5614875183ab893ed77eecd1f6eaffe571ca9",
-  "sync_timestamp": "2026-09-29T04:40:13.088Z",
-  "mcp_tool_count": 84,
-  "mirrored_file_count": 27,
+  "source_sha": "45196127e861f55fa3fb0e295dc4580a6bdfe4ad",
+  "sync_timestamp": "2026-10-28T06:50:58.003Z",
+  "mcp_tool_count": 94,
+  "mirrored_file_count": 33,
   "not_mirrored_reason": {
-    "mcp-server/package.json": "distribution adaptation: canonical prebuild/postbuild reference ../scripts/*, absent here",
-    "mcp-server/tsconfig.json": "distribution adaptation",
+    "mcp-server/package.json": "distribution adaptation: standalone scripts (tsc build, introspection smoke, parity guard) without monorepo hooks",
+    "mcp-server/tsconfig.json": "distribution adaptation: standalone tsconfig",
     "mcp-server/scripts/smoke-introspection.mjs": "public-only smoke harness",
-    "mcp-server/src/tool-contracts.ts": "canonical-only: not imported by the MCP server build; referenced only by the private monorepo test suite and lib/api/agent/workflow-compiler.ts",
-    "mcp-server/README.md": "public adaptation: mirror installability banner prepended to the canonical README body",
-    "mcp-server/LICENSE": "distribution adaptation: CRLF line endings",
-    "mcp-server/package-lock.json": "distribution adaptation: CRLF line endings",
-    "mcp-server/.gitignore": "canonical-only: superseded by this repository root .gitignore"
+    "mcp-server/scripts/verify-upstream-parity.mjs": "public-only provenance and byte-parity guard",
+    "mcp-server/README.md": "public adaptation: standalone installation guidance and public repository links",
+    "mcp-server/LICENSE": "distribution adaptation",
+    "mcp-server/package-lock.json": "distribution adaptation: standalone lockfile",
+    "mcp-server/.gitignore": "canonical-only: superseded by repository root .gitignore"
   },
   "mirrored": {
+    "mcp-server/src/api-client.ts": {
+      "sha256": "a79b2bad6bd22ea7fcb9d00693df0e374ba384f9b943907f4345faabb917e1d8",
+      "source": "mcp-server/src/api-client.ts"
+    },
+    "mcp-server/src/execution-truth.generated.ts": {
+      "sha256": "3a3419cfa2f827686916cc9081bd0c73201c1d3c580c45a69488167e1e997daa",
+      "source": "mcp-server/src/execution-truth.generated.ts"
+    },
+    "mcp-server/src/executionModeSelection.generated.ts": {
+      "sha256": "652f7b36ce625ab54de2778cf47f5487023ba4c79269fbf36da89a3c515383ea",
+      "source": "mcp-server/src/executionModeSelection.generated.ts"
+    },
+    "mcp-server/src/futures-policy.ts": {
+      "sha256": "430e452514c43105efbf090d4c8b28830a44bea2eb26d9a3f91cf24e8e8bbd00",
+      "source": "mcp-server/src/futures-policy.ts"
+    },
     "mcp-server/src/index-base.ts": {
-      "sha256": "bf5736a3cda90962a17fd196af45edb4cfa24c212cf93dc475fed11bc01256cf",
+      "sha256": "8fa8f64152a5258f3877934933f684ff0eb41e66a918a319bc97f73aa692e1f5",
       "source": "mcp-server/src/index-base.ts"
     },
     "mcp-server/src/index.ts": {
       "sha256": "88b3e60f47967442136e2ae8c167e9d8f8beb193f287ead1ad57915c36a074e6",
       "source": "mcp-server/src/index.ts"
     },
-    "mcp-server/src/api-client.ts": {
-      "sha256": "a3ebbdbce9ccc822e994decc85f4970307602b66607ddc9589404b45b2862440",
-      "source": "mcp-server/src/api-client.ts"
+    "mcp-server/src/installation-identity.ts": {
+      "sha256": "c7bff2a900e41250d068da1c04d81dd946ae55aeeda7248b1ab0b54ec04f10ed",
+      "source": "mcp-server/src/installation-identity.ts"
     },
     "mcp-server/src/tool-capabilities.generated.ts": {
-      "sha256": "122222b8d324750d1514f2bb208add075e6158e742c8e7603af300f73cef4be9",
+      "sha256": "5f19a599982b3a0603c19cc54bd6e1f0dafe5904d160ae03442df45c706370f2",
       "source": "mcp-server/src/tool-capabilities.generated.ts"
     },
+    "mcp-server/src/tool-contracts.ts": {
+      "sha256": "f293884476eb532b42af95ac94cc090eb5051f7c5930b28eb03c1676bddc67eb",
+      "source": "mcp-server/src/tool-contracts.ts"
+    },
+    "mcp-server/server.json": {
+      "sha256": "cb7bb11a2c390d9a2a5a46b467d454783a05351e995e5187aae94def5dd34f1d",
+      "source": "mcp-server/server.json"
+    },
+    "FARMDASH_AGENT_OPERATING_MODEL.md": {
+      "sha256": "12349735dcf631e4035e7b269917b154e9c056ac2bbfcafb35ef7cb9546b2c64",
+      "source": "public/openclaw-skills/FARMDASH_AGENT_OPERATING_MODEL.md"
+    },
     "farmdash-autonomous-operator/SKILL.md": {
-      "sha256": "3b67abf700bab873c9044baf1696e5aa4947458fa3b3a60dc3369b5b28f135a0",
+      "sha256": "a01ef90312203ffec00ec87555dfb184248987bd1aa715d6540662fa6f33658d",
       "source": "public/openclaw-skills/farmdash-autonomous-operator/SKILL.md"
     },
     "farmdash-autonomous-operator/SKILL.json": {
-      "sha256": "c83618e9fd041945b50b7b40375b85d026225f604a4da1d8fef048cc6e9a9a59",
+      "sha256": "a00bfa170de583f87d43bbd45707b4e6389d08d4692741fb65c16cb60787052a",
       "source": "public/openclaw-skills/farmdash-autonomous-operator/SKILL.json"
     },
     "farmdash-camp-guard/SKILL.md": {
-      "sha256": "a14942376ce13866b796c43df756942bbc9c981d6caccde87cd4f65a4ac5652c",
+      "sha256": "c1c6332a482bc2de82bfc746955698ecbabcd31a2e39ec3a854d1a2c4b90672c",
       "source": "public/openclaw-skills/farmdash-camp-guard/SKILL.md"
     },
     "farmdash-camp-guard/SKILL.json": {
-      "sha256": "4285d2da25889ce65b6d2f8dcde4ffe3a655712a41fa9d40ed77a196071799d3",
+      "sha256": "e97bcb1b3cad58dc2c7a46991f4c99352488522814d39ececec8743f42a2e412",
       "source": "public/openclaw-skills/farmdash-camp-guard/SKILL.json"
     },
     "farmdash-futures-strategist/SKILL.md": {
-      "sha256": "3ac48378f9b21e1c9a942fb4c4178b9fd8672058880205f61e83cb735e58a592",
+      "sha256": "cb51f0665eaaf732a3e174d53aec612909adc06865e6ff071da91a3e4c25de6b",
       "source": "public/openclaw-skills/farmdash-futures-strategist/SKILL.md"
     },
     "farmdash-futures-strategist/SKILL.json": {
-      "sha256": "0fbc234f77dc1e1bef768b042d86f15fa562b72e3ff9e24cf7036d98b3f655b0",
+      "sha256": "29948e39fc45794f24e181ec0ad101db855fe996b573b798c760242ec149b960",
       "source": "public/openclaw-skills/farmdash-futures-strategist/SKILL.json"
     },
     "farmdash-futures-strategist/openapi.yaml": {
-      "sha256": "6713d3e5878449bb248ed8adadcb93a1d0f8930253493286623e38362733fb68",
+      "sha256": "38c9ee9ff85507bffd5f6f069cd14f9c66f5f35ddcae151b548078721bb74468",
       "source": "public/openclaw-skills/farmdash-futures-strategist/openapi.yaml"
     },
     "farmdash-hedge-warden/SKILL.md": {
-      "sha256": "d5e63d29b48b9cfcb478bb1cf43559803a9887e29f3362c8de582f8577eee4f1",
+      "sha256": "e5459d3c8d438aba2a19c0c39169b9ad8875e504247d4e4a1c42e75a147ecef2",
       "source": "public/openclaw-skills/farmdash-hedge-warden/SKILL.md"
     },
     "farmdash-hedge-warden/SKILL.json": {
-      "sha256": "ea215bff742ffe8728646c538c52786adb1890c1c08136eb0b66ed2f68b05513",
+      "sha256": "c517b4a5af490769096107bff18b0b56124db9914a9c2f3d91fdfa75994e03bd",
       "source": "public/openclaw-skills/farmdash-hedge-warden/SKILL.json"
     },
     "farmdash-ledger-keeper/SKILL.md": {
-      "sha256": "4e670cfbc3e625fb8293200b2f0bec8c2738ed1302bc21d7f53f150d87de4588",
+      "sha256": "74692036e52772ce3d4dcdf756fdf1491c81b692720346540c00ac2ee8d24d50",
       "source": "public/openclaw-skills/farmdash-ledger-keeper/SKILL.md"
     },
     "farmdash-ledger-keeper/SKILL.json": {
-      "sha256": "d90facbadea80180e48860deab14030b11533e92e7c9d52daf3612d999cc7329",
+      "sha256": "a5223236a96d10d77cef6bd49461bbd8b65a9060682e4a974b1ed92e884bfc92",
       "source": "public/openclaw-skills/farmdash-ledger-keeper/SKILL.json"
     },
     "farmdash-signal-architect/SKILL.md": {
-      "sha256": "cf59975171ec0f91bbe6bd855f0997d65cfb7e56b6017e23c5ee62502dc4ee08",
+      "sha256": "bd6fb1e196500c199f7c52d8302b67280506f9e3731036b6ca339e37aee92164",
       "source": "public/openclaw-skills/farmdash-signal-architect/SKILL.md"
     },
     "farmdash-signal-architect/SKILL.json": {
-      "sha256": "1199163fa3de5f0f3d9d21a0b06f00543156673b0a131ccd5e5b17f55117df27",
+      "sha256": "0284a9b6c1b319825de7f6a2578387e34f6838f5516b9418768ace6237430d23",
       "source": "public/openclaw-skills/farmdash-signal-architect/SKILL.json"
     },
     "farmdash-signal-architect/openapi.yaml": {
-      "sha256": "d5334eeebc92993af9c55e8e0c11f889a6f44fa2500c40aa873e3fa5aee1226d",
+      "sha256": "9c339af1203cf63fb0022251e54793dd5cda81f4cf95767cd5f69fd76193aaa8",
       "source": "public/openclaw-skills/farmdash-signal-architect/openapi.yaml"
     },
     "farmdash-supply-master/SKILL.md": {
-      "sha256": "4df9fcb3891ab03acaefe7b1430d745e95400f7b15a495c95a37affd5b5d274f",
+      "sha256": "e2964a3295997aa25bcb245436e99223301daa0806e307d11095954f0eccdba6",
       "source": "public/openclaw-skills/farmdash-supply-master/SKILL.md"
     },
     "farmdash-supply-master/SKILL.json": {
-      "sha256": "30f07c8d831c459f826bfd124808a82cee7452d96b2b50d056b6d87d259ff316",
+      "sha256": "4f5fb96965a988bdc503eab09245f1a207d904a378944d180125fa6ec3be975d",
       "source": "public/openclaw-skills/farmdash-supply-master/SKILL.json"
     },
     "farmdash-trail-intelligence/SKILL.md": {
-      "sha256": "7ead2d8e3caab4c971a3812dd6f17f46c6143d3c8ade35c80814f3561c3f256c",
+      "sha256": "d83a0dc249fa8305d7d4aec0c87c60a40b8ef0bce7731c25143312d57d37264a",
       "source": "public/openclaw-skills/farmdash-trail-intelligence/SKILL.md"
     },
     "farmdash-trail-intelligence/SKILL.json": {
-      "sha256": "076c7d63478bb4d69d59d1c3c32f24dcc27af3d0751d4cb0242deed04d0acd71",
+      "sha256": "578c0fe4ff6a712a919fb15005d9711731e12fa1ae78d81bbd87225ba6c0de4f",
       "source": "public/openclaw-skills/farmdash-trail-intelligence/SKILL.json"
     },
     "farmdash-trail-marshal/SKILL.md": {
-      "sha256": "81a84b20b379d0efc64ff366239bf49b1b678b3dad77e0265143050798314440",
+      "sha256": "a67d974ee9c75d17fb38b37b735fd887df1dd9c7825f7785daee31b11fe423be",
       "source": "public/openclaw-skills/farmdash-trail-marshal/SKILL.md"
     },
     "farmdash-trail-marshal/SKILL.json": {
-      "sha256": "52aa527d08a0d33086cd5c9227434847192428fbf7a0b6606913e98ccb36947d",
+      "sha256": "f343f6e1ff5330a9401cddc1a8a3ad09a3df92e85dcfd6adf8ccf32b0b5b5ad8",
       "source": "public/openclaw-skills/farmdash-trail-marshal/SKILL.json"
     },
     "farmdash-wagon-steward/SKILL.md": {
-      "sha256": "0d464f3e80b49f2a16c39dc395e387fed32f818d3ee7a80812b99f0fdfebfa47",
+      "sha256": "e6d0e5617752d43c8143520eb16e1b21b80af5809955edab5cd545ae1e9c1532",
       "source": "public/openclaw-skills/farmdash-wagon-steward/SKILL.md"
     },
     "farmdash-wagon-steward/SKILL.json": {
-      "sha256": "5c97f5ddcb0f578af300fc580a1ecdca9933288af4500b0ca3402472a389297c",
+      "sha256": "fb5e4cd9b508d580c84fcda8ff2df87f1a6c4eef785e95084ad933746c5d034f",
       "source": "public/openclaw-skills/farmdash-wagon-steward/SKILL.json"
-    },
-    "mcp-server/server.json": {
-      "sha256": "79ee853602d1e3873bcf4276212838960e1e2fd44ef2b39094f91c6c7d39d121",
-      "source": "mcp-server/server.json"
     }
   },
   "source_repo": "hububstudio/farmdashbeta"

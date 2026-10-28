@@ -17,8 +17,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { FuturesPolicySchema } from './futures-policy.js';
 import { createApiFetch, errorPayload } from './api-client.js';
+import { getInstallationId } from './installation-identity.js';
 import { getMcpToolCapability } from './tool-capabilities.generated.js';
+import { MCP_EXECUTION_MODE_SELECTION } from './executionModeSelection.generated.js';
+import { getToolAnnotations } from './tool-contracts.js';
 
 /* Config */
 
@@ -29,6 +33,10 @@ const apiFetch = createApiFetch({
   apiKey: API_KEY,
   scoutGrant: process.env.FARMDASH_SCOUT_GRANT ?? '',
   skillId: process.env.FARMDASH_SKILL_ID ?? '',
+  // If state persistence is unavailable, undefined deliberately omits analytics; startup continues.
+  installationId: getInstallationId(),
+  clientVersion: process.env.FARMDASH_CLIENT_VERSION ?? '5.0.0',
+  skillVersion: process.env.FARMDASH_SKILL_VERSION ?? '',
 });
 const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
 const TOKEN_CONTRACT_GUIDANCE = 'ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match.';
@@ -44,7 +52,7 @@ const SIGNATURE_SCHEMA = z.object({
 // A constructed ZodObject instead emits { properties: {}, additionalProperties: false }
 // with identical argument-stripping parse behavior, so paramless tools register
 // with this marker and their published contract is explicitly closed.
-const PARAMLESS_SCHEMA = z.object({});
+const PARAMLESS_SCHEMA = z.object({}).strict();
 
 function textResult(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
@@ -105,73 +113,11 @@ function appendSessionQuery(path: string, params: Record<string, any>, extra: Re
 const server = new McpServer({
   name: 'farmdash-agent-os',
   version: '5.0.0',
+}, {
+  maxToolInputElements: 100,
 });
 
-const STATE_CHANGING_TOOLS = new Set([
-  'create_intent',
-  'policy_check_intent',
-  'simulate_intent',
-  'request_human_approval',
-  'submit_signed_approval',
-  'prepare_intent',
-  'execute_approved_intent',
-  'confirm_execution',
-  'run_workflow',
-  'execute_swap',
-  'confirm_swap',
-  'execute_perp_order',
-  'cancel_perp_order',
-  'create_session',
-  'session_heartbeat',
-  'patch_farming_context',
-  'configure_autopilot',
-  'autopilot_cycle',
-  'pause_autopilot',
-  'resume_autopilot',
-  'grant_session_key',
-  'revoke_session_key',
-  'execute_cycle_actions',
-  'create_mee_intent',
-  'submit_mee_intent',
-  'prepare_virtuals_tender_v2',
-  'authorize_virtuals_tender_v2',
-  'cancel_virtuals_tender',
-  'bind_virtuals_tender_job',
-  'reserve_virtuals_tender_funding_v2',
-  'record_virtuals_tender_funding_v2',
-  'evaluate_virtuals_tender',
-  'hire_virtuals_specialist',
-]);
-
-const DESTRUCTIVE_OR_FINANCIAL_TOOLS = new Set([
-  'execute_approved_intent',
-  'execute_swap',
-  'execute_perp_order',
-  'cancel_perp_order',
-  'pause_autopilot',
-  'revoke_session_key',
-  'execute_cycle_actions',
-  'submit_mee_intent',
-  'cancel_virtuals_tender',
-  'record_virtuals_tender_funding_v2',
-  'evaluate_virtuals_tender',
-  'hire_virtuals_specialist',
-]);
-
-function toolAnnotations(name: string) {
-  const changesState = STATE_CHANGING_TOOLS.has(name);
-  return {
-    title: `FarmDash ${name}`,
-    readOnlyHint: !changesState,
-    destructiveHint: DESTRUCTIVE_OR_FINANCIAL_TOOLS.has(name),
-    // Idempotency is independent of state-changing: a durable mutation can be
-    // replay-safe. Source it from the generated canonical contract rather than
-    // re-deriving it from a hand-maintained tool-name set (the two disagree for
-    // every canonically-IDEMPOTENT mutation that mutates state).
-    idempotentHint: getMcpToolCapability(name).idempotent,
-    openWorldHint: true,
-  };
-}
+const toolAnnotations = getToolAnnotations;
 
 // Keep the existing strongly typed registrations while attaching MCP-standard
 // annotations to every tool listing. These are hints, never authorization.
@@ -179,7 +125,8 @@ const registerToolWithoutAnnotations = server.tool.bind(server) as (...args: any
 (server as unknown as { tool: (...args: any[]) => unknown }).tool = (name: string, ...args: any[]) => {
   const callback = args.pop();
   const capability = getMcpToolCapability(name);
-  const capabilityLabel = `[Capability: ${capability.availability}; tier: ${capability.tier}; API: ${capability.api_route}; authority: /api/v1/agent/status]`;
+  const mockLabel = capability.mock_supported === undefined ? '' : `; mock_supported: ${capability.mock_supported}`;
+  const capabilityLabel = `[Capability: ${capability.availability}; tier: ${capability.tier}${mockLabel}; API: ${capability.api_route}; authority: /api/v1/agent/status]`;
   // An empty raw shape serializes as an open object schema in tools/list
   // (no additionalProperties). Register paramless tools through registerTool
   // with the closed marker so they publish { properties: {}, additionalProperties: false }.
@@ -484,7 +431,7 @@ server.tool(
 
 server.tool(
   'get_trail_heat',
-  'Canonical Trail Heat: fetch DeFiLlama-backed quantitative scores (0-100) with per-number evidence states, components, editorial separation and registry resolution from /v1/trail-heat. Takes no parameters.',
+  'Canonical Trail Heat: fetch DeFiLlama-backed quantitative scores (0-100) with per-number evidence states, components, editorial separation and registry resolution from /v1/trail-heat. Aggregate responses also include live agent recommendations; canonical score leads and only owner-confirmed, non-wallet-bound FarmDash referral routes are eligible for the near-equivalent-quality tiebreaker. Takes no parameters.',
   {},
   async () => {
     try {
@@ -541,8 +488,8 @@ server.tool(
   {
     fromChainId: z.number().int(),
     toChainId: z.number().int(),
-    fromToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE),
-    toToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE),
+    fromToken: z.string().min(1).max(128).describe('Resolver-supported symbol, native identifier, token address, or chain-qualified asset; discovery resolves canonical assets server-side.'),
+    toToken: z.string().min(1).max(128).describe('Resolver-supported symbol, native identifier, token address, or chain-qualified asset; discovery resolves canonical assets server-side.'),
     fromAmount: z.string().regex(BASE_UNIT_AMOUNT).describe('Amount in token base units.'),
     protocol: z.enum(['lifi', 'relay']).optional(),
   },
@@ -586,11 +533,11 @@ server.tool(
 
 server.tool(
   'get_agent_events',
-  'Real-time stream of protocol events: new airdrops, snapshots, program changes, and TVL spikes. Takes no parameters.',
-  {},
-  async () => {
+  'Poll Pioneer+ tenant-bound agent events using the owning authenticated session (sessionId, agentAddress, and sessionToken); no Scout or mock preview. Returns recent event records, not a public real-time stream.',
+  { ...SessionCredentialSchemas },
+  async (params) => {
     try {
-      const data = await apiFetch('/v1/agent/events');
+      const data = await apiFetch(appendSessionQuery('/v1/agent/events', params), { sessionToken: params.sessionToken });
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
       return {
@@ -747,7 +694,7 @@ server.tool(
 server.tool(
   'get_token_prices',
   'Get live USD prices by symbol or by network:address token pairs.',
-  { symbols: z.string().optional(), tokens: z.array(z.string()).optional() },
+  { symbols: z.string().optional(), tokens: z.array(z.string().max(128)).max(50).optional() },
   async (params) => {
     try {
       if (!params.symbols && (!params.tokens || params.tokens.length === 0)) {
@@ -796,7 +743,7 @@ server.tool(
   'Build a Trail Marshal quality gate for a named workflow. Does not execute steps.',
   {
     workflowId: z.string(),
-    installedSkills: z.array(z.string()).optional(),
+    installedSkills: z.array(z.string().max(128)).max(50).optional(),
     agentAddress: z.string().regex(EVM_ADDRESS).optional(),
   },
   async (params) => {
@@ -823,7 +770,7 @@ server.tool(
     sessionId: z.string(),
     agentAddress: z.string().regex(EVM_ADDRESS),
     sessionToken: z.string(),
-    installedSkills: z.array(z.string()).optional(),
+    installedSkills: z.array(z.string().max(128)).max(50).optional(),
   },
   async (params) => {
     try {
@@ -861,6 +808,34 @@ server.tool(
   },
 );
 
+server.tool(
+  'select_execution_continuation',
+  'Select a server-issued execution continuation as read-only context. Returns canonical next_operation parameters and missing prerequisites; it makes no quote, preparation, admission, debit, signing, or submission call and grants no execution authority. Unknown or expired IDs fail closed.',
+  { continuationId: z.string().uuid() },
+  async ({ continuationId }) => apiToolResult(() => apiFetch('/v1/agent/continuation', {
+    method: 'POST', body: JSON.stringify({ continuationId }),
+  })),
+);
+
+/* 3b. FarmDash Payment Kernel (Phase A) */
+
+server.tool(
+  'get_payments_bootstrap',
+  'Free, provider-free payment bootstrap terms: how an agent holding only native Base ETH obtains metered access, including native-ETH payment intents, FarmDash prepaid credit, and the single-use execution-bootstrap grant. This tool is read-only. It contacts no swap provider, performs no mutation, and grants no execution authority. Issuing an intent or a grant requires an explicit authenticated POST with a server-issued, purpose-specific signature challenge, which this tool does not perform.',
+  {},
+  async () => {
+    try {
+      const data = await apiFetch('/v1/payments/bootstrap');
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
 /* 4. FarmDash Signal Architect (v4.0.0) */
 
 server.tool(
@@ -869,8 +844,8 @@ server.tool(
   {
     fromChainId: z.number().int(),
     toChainId: z.number().int(),
-    fromToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE),
-    toToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE),
+    fromToken: z.string().min(1).max(128).describe('Resolver-supported symbol, native identifier, token address, or chain-qualified asset; discovery resolves canonical assets server-side.'),
+    toToken: z.string().min(1).max(128).describe('Resolver-supported symbol, native identifier, token address, or chain-qualified asset; discovery resolves canonical assets server-side.'),
     fromAmount: z.string().regex(BASE_UNIT_AMOUNT),
     protocol: z.enum(['lifi', 'relay']).optional(),
     walletAddress: z.string().regex(EVM_ADDRESS).optional(),
@@ -881,7 +856,11 @@ server.tool(
     healthFactor: z.number().optional(),
     liquidationBufferPct: z.number().optional(),
     safetyMode: z.enum(['strict', 'balanced']).optional(),
+    continuationId: z.string().uuid().optional(),
     idempotencyKey: z.string().min(1).max(128).optional(),
+    executionTrialProof: z.object({ issuedAt: z.number().int().positive(), signature: z.string().min(1) }).optional().describe('Locally signed commercial owner challenge; no transaction or delegation authority.'),
+    executionMode: z.enum(['USER_SIGNED', 'BOUNDED_AUTONOMOUS']).optional(),
+    sessionId: z.string().optional(), sessionToken: z.string().optional(), grantId: z.string().optional(),
   },
   async (params) => {
     try {
@@ -899,6 +878,10 @@ server.tool(
             slippage: params.slippage,
             protocol: params.protocol,
             idempotencyKey: params.idempotencyKey,
+            continuationId: params.continuationId,
+            executionTrialProof: params.executionTrialProof,
+            executionMode: params.executionMode,
+            sessionId: params.sessionId, sessionToken: params.sessionToken, grantId: params.grantId,
           }),
         });
         return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
@@ -911,6 +894,7 @@ server.tool(
       qs.set('toToken', params.toToken);
       qs.set('fromAmount', params.fromAmount);
       if (params.protocol) qs.set('protocol', params.protocol);
+      if (params.continuationId) qs.set('continuationId', params.continuationId);
       if (params.walletAddress) qs.set('walletAddress', params.walletAddress);
       if (params.toAddress) qs.set('toAddress', params.toAddress);
       if (params.slippage !== undefined) qs.set('slippage', params.slippage.toString());
@@ -1012,7 +996,7 @@ server.tool(
   'optimize_portfolio',
   'Get unranked catalog research candidates. Returns WAIT analysis-only: exact pool identity, wallet eligibility, policy, costs and stay-put comparison remain required. Campaign confirmation does not establish safety.',
   {
-    currentProtocols: z.array(z.string()),
+    currentProtocols: z.array(z.string().max(128)).max(50),
     riskPreference: z.enum(['conservative', 'balanced', 'aggressive']),
     chains: z.array(z.string()).optional(),
     budget: z.enum(['low', 'medium', 'high']).optional(),
@@ -1171,10 +1155,14 @@ server.tool(
     agentAddress: z.string().regex(EVM_ADDRESS),
     accountAddress: z.string().regex(EVM_ADDRESS).optional(),
     riskMultiplier: z.number().min(0.1).max(1).optional(),
+    idempotencyKey: z.string().regex(/^[\x21-\x7e]{1,128}$/).optional(),
+    executionTrialProof: z.object({ issuedAt: z.number().int().positive(), signature: z.string().min(1) }).optional(),
+    executionMode: z.enum(['USER_SIGNED', 'BOUNDED_AUTONOMOUS']).optional(),
+    grantId: z.string().optional(), sessionId: z.string().optional(), sessionToken: z.string().optional(),
   },
   async (params) => {
     try {
-      const data = await apiFetch('/v1/agent/futures/analyze-strategy', { method: 'POST', body: JSON.stringify(params) });
+      const data = await apiFetch('/v1/agent/futures/analyze-strategy', { method: 'POST', sessionToken: params.sessionToken, body: JSON.stringify(params) });
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
       return {
@@ -1210,8 +1198,34 @@ server.tool(
 );
 
 server.tool(
+  'prepare_perp_order',
+  'Prepare an exact zero-custody Hyperliquid order for local EIP-712 signing. FarmDash returns the action, typed data, nonce, expiry and intent hash but never signs or submits. New-risk preparation requires a fresh execution-ready analysis; reduce-only preparation remains authority-bound at execution.',
+  {
+    agentAddress: z.string().regex(EVM_ADDRESS),
+    accountAddress: z.string().regex(EVM_ADDRESS).optional(),
+    coin: z.string(),
+    isBuy: z.boolean(),
+    size: z.string(),
+    price: z.string(),
+    orderType: z.enum(['limit_gtc', 'limit_ioc', 'limit_alo', 'market_ioc', 'stop_loss', 'take_profit']),
+    reduceOnly: z.boolean().optional(),
+    leverage: z.number().positive().max(5).optional(),
+    nonce: z.number().int().positive().optional(),
+    expiresAt: z.number().int().positive().optional(),
+    executionMode: z.enum(['USER_SIGNED', 'BOUNDED_AUTONOMOUS']).default('USER_SIGNED'),
+    executionTrialId: z.string().min(1).optional(),
+    continuationId: z.string().uuid().optional(),
+    grantId: z.string().optional(), sessionId: z.string().optional(), sessionToken: z.string().optional(),
+  },
+  async (params) => apiToolResult(() => apiFetch('/v1/agent/futures/prepare-order', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  })),
+);
+
+server.tool(
   'execute_perp_order',
-  'Compatibility: submit a pre-signed EIP-712 Hyperliquid order after a 60-second parameter-bound research gate. `market_ioc` is a signed, price-protected IOC limit order with a live 100 bps adverse-price cap, never an unbounded market order; its outcome distinguishes full, partial, and zero fill, and an IOC resting response is unknown/inconsistent. For delegated API wallets, set accountAddress to the venue-verified equity owner used during analysis. FarmDash recovers the exact L1 signer, rejects an agentAddress mismatch, and preflights the owner maxBuilderFee. The signed action must disclose builder f=1 (0.1 bp/0.001% of filled notional), and expiresAt is venue-signed as expiresAfter. Venue nonce authority is network + signer + nonce across account/vault contexts; durable replay control fails closed before submission.',
+  'USER_SIGNED requires fresh human approval. BOUNDED_AUTONOMOUS requires a valid owner-signed futures policy, authenticated session, and a local API-wallet signature on every action; rollout remains preparation_only. Compatibility: submit a pre-signed EIP-712 Hyperliquid order after a 60-second parameter-bound research gate. `market_ioc` is a signed, price-protected IOC limit order with a live 100 bps adverse-price cap, never an unbounded market order; its outcome distinguishes full, partial, and zero fill, and an IOC resting response is unknown/inconsistent. For delegated API wallets, set accountAddress to the venue-verified equity owner used during analysis. FarmDash recovers the exact L1 signer, rejects an agentAddress mismatch, and preflights the owner maxBuilderFee. The signed action must disclose builder f=1 (0.1 bp/0.001% of filled notional), and expiresAt is venue-signed as expiresAfter. Venue nonce authority is network + signer + nonce across account/vault contexts; durable replay control fails closed before submission.',
   {
     agentAddress: z.string().regex(EVM_ADDRESS),
     accountAddress: z.string().regex(EVM_ADDRESS).optional(),
@@ -1224,13 +1238,16 @@ server.tool(
     reduceOnly: z.boolean().optional(),
     leverage: z.number().positive().optional(),
     signedAction: z.any().optional().describe('If supplied, must include the signed FarmDash builder term { b: treasury, f: 1 }; f is tenths of a basis point.'),
+    executionTrialId: z.string().min(1).optional(),
     nonce: z.number().int().positive(),
     expiresAt: z.number().int().positive(),
     intentHash: z.string(),
+    executionMode: z.enum(['USER_SIGNED', 'BOUNDED_AUTONOMOUS']).default('USER_SIGNED'),
+    grantId: z.string().optional(), sessionId: z.string().optional(), sessionToken: z.string().optional(),
   },
   async (params) => {
     try {
-      const data = await apiFetch('/v1/agent/futures/execute-order', { method: 'POST', body: JSON.stringify(params) });
+      const data = await apiFetch('/v1/agent/futures/execute-order', { method: 'POST', sessionToken: params.sessionToken, body: JSON.stringify(params) });
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
       return {
@@ -1243,7 +1260,7 @@ server.tool(
 
 server.tool(
   'cancel_perp_order',
-  'Cancel stale or resting Hyperliquid orders with a venue-signed expiresAfter and FarmDash intent hash. For a delegated API wallet, accountAddress identifies the verified equity owner and is included as the signed vault/subaccount routing address when required. `accepted` is an application acknowledgement, not final venue cancellation: reconcile every requested ID through /api/v1/agent/futures/reconcile-order before dependent actions. Mixed errors are partial rejection; malformed or timeout outcomes are unknown. Venue nonce authority is network + signer + nonce across account/vault contexts; durable replay control fails closed before submission.',
+  'USER_SIGNED requires fresh human approval; BOUNDED_AUTONOMOUS requires futures.cancel scope, a valid owner-signed policy and authenticated session, but not unused entry budget. Local venue signatures are required in both modes. Cancel stale or resting Hyperliquid orders with a venue-signed expiresAfter and FarmDash intent hash. For a delegated API wallet, accountAddress identifies the verified equity owner and is included as the signed vault/subaccount routing address when required. `accepted` is an application acknowledgement, not final venue cancellation: reconcile every requested ID through /api/v1/agent/futures/reconcile-order before dependent actions. Mixed errors are partial rejection; malformed or timeout outcomes are unknown. Venue nonce authority is network + signer + nonce across account/vault contexts; durable replay control fails closed before submission.',
   {
     agentAddress: z.string().regex(EVM_ADDRESS),
     accountAddress: z.string().regex(EVM_ADDRESS).optional(),
@@ -1257,10 +1274,12 @@ server.tool(
     nonce: z.number().int().positive(),
     expiresAt: z.number().int().positive(),
     intentHash: z.string(),
+    executionMode: z.enum(['USER_SIGNED', 'BOUNDED_AUTONOMOUS']).default('USER_SIGNED'),
+    grantId: z.string().optional(), sessionId: z.string().optional(), sessionToken: z.string().optional(),
   },
   async (params) => {
     try {
-      const data = await apiFetch('/v1/agent/futures/cancel-order', { method: 'POST', body: JSON.stringify(params) });
+      const data = await apiFetch('/v1/agent/futures/cancel-order', { method: 'POST', sessionToken: params.sessionToken, body: JSON.stringify(params) });
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
       return {
@@ -1361,9 +1380,9 @@ server.tool(
   'compare_yields',
   'Research: compare DeFi yield pools by APY, TVL depth, stablecoin exposure, IL risk, and sustainability score.',
   {
-    chains: z.array(z.string()).optional(),
-    assets: z.array(z.string()).optional(),
-    projects: z.array(z.string()).optional(),
+    chains: z.array(z.string().max(128)).max(50).optional(),
+    assets: z.array(z.string().max(128)).max(50).optional(),
+    projects: z.array(z.string().max(128)).max(50).optional(),
     riskPreference: z.enum(['conservative', 'balanced', 'aggressive']).optional(),
     minTvlUsd: z.number().positive().optional(),
     stableOnly: z.boolean().optional(),
@@ -1472,7 +1491,7 @@ server.tool(
 
 server.tool(
   'agent_onboard',
-  'First-run contract: fetch live feature readiness, tier gates, error semantics, and the onboarding capability map before selecting tools. This never enables execution. Takes no parameters.',
+  'First-run contract: fetch live feature readiness, tier gates, error semantics, execution-mode selection (USER_SIGNED default vs opt-in BOUNDED_AUTONOMOUS), and the onboarding capability map before selecting tools. Before entering any wallet-changing execution workflow, query current execution authority with get_execution_authority for the active persisted FarmDash session: if an active valid bounded delegation already exists for that session, report its policy bounds instead of re-prompting; a different/new agentSessionId does not inherit another session’s grant and remains USER_SIGNED (Standard FarmDash), and you must explicitly obtain user choice/consent before requesting a one-time scoped delegation for BOUNDED_AUTONOMOUS (Autonomous FarmDash, EOA_V1_OWNER_LOCAL_SIGNER where sessionPublicKey == ownerAddress). This never enables execution. Takes no parameters.',
   {},
   async () => {
     try {
@@ -1480,10 +1499,15 @@ server.tool(
         apiFetch('/v1/agent/status'),
         apiFetch('/v1/agent/onboard'),
       ]);
+      const onboardingRecord = asRecord(onboarding);
+      const executionModeSelection =
+        onboardingRecord.execution_mode_selection ?? MCP_EXECUTION_MODE_SELECTION;
       const data = {
         ok: true,
         first_run_contract: '/api/v1/agent/status',
-        instruction: 'Select only tools whose backing feature and deployment prerequisites are available. Do not infer execution capability from tool registration.',
+        instruction:
+          'Select only tools whose backing feature and deployment prerequisites are available. Do not infer execution capability from tool registration. Before entering any wallet-changing execution workflow: (1) query current execution authority via get_execution_authority for the active persisted FarmDash session; (2) if an active valid bounded delegation already exists for that persisted session, discover and report its policy bounds rather than repeatedly asking the user (a bounded EVM grant remains scoped to its agentSessionId — a different or new agentSessionId does not inherit another session’s grant and remains USER_SIGNED / CREATE_DELEGATION); (3) if no bounded delegation exists for the current session, USER_SIGNED (Standard FarmDash) remains the default; (4) explain that the user can alternatively sign one bounded delegation to enable ongoing autonomous operation ("Sign once and let your agent operate autonomously within the limits you set.") bounded by chains, protocols/router contracts, assets, allowed actions, per-action value, cumulative budget, gas, slippage, validity/expiry, and revocation, where operational EOA V1 (current_signer_model: EOA_V1_OWNER_LOCAL_SIGNER, separate_session_signer_supported: false) requires sessionPublicKey == ownerAddress with the authorized owner EOA signing in the customer’s local agent runtime, FarmDash never receives or stores the private key, and separate delegated session-key signers belong to the not-yet-operational smart-account/ERC-4337 path; (5) before creating that delegation, explicitly obtain user choice/consent — never infer BOUNDED_AUTONOMOUS consent from an API key, subscription payment, x402 payment, session creation, prior FarmDash usage, optimization request, position monitoring request, or generic "do this for me" instruction.',
+        execution_mode_selection: executionModeSelection,
         status,
         onboarding,
       };
@@ -1606,7 +1630,7 @@ server.tool(
     agentAddress: z.string().regex(EVM_ADDRESS),
     sessionToken: z.string(),
     since: z.string().optional(),
-    types: z.array(z.string()).optional(),
+    types: z.array(z.string().max(128)).max(50).optional(),
     limit: z.number().int().min(1).max(200).optional(),
   },
   async (params) => {
@@ -1661,8 +1685,8 @@ server.tool(
     sessionId: z.string(),
     agentAddress: z.string().regex(EVM_ADDRESS),
     sessionToken: z.string(),
-    strategies: z.array(z.string()),
-    assets: z.array(z.string()),
+    strategies: z.array(z.string().max(128)).max(50),
+    assets: z.array(z.string().max(128)).max(50),
     riskPreference: z.enum(['conservative', 'balanced', 'aggressive']).optional(),
     maxEquityPct: z.number().positive().max(0.8).optional(),
     rebalanceIntervalMin: z.number().int().positive().optional(),
@@ -1704,7 +1728,7 @@ server.tool(
     sessionId: z.string(),
     agentAddress: z.string().regex(EVM_ADDRESS),
     sessionToken: z.string(),
-    accountState: z.any(),
+    accountState: z.any().optional(),
   },
   async (params) => {
     try {
@@ -1778,8 +1802,8 @@ server.tool(
     sessionPublicKey: z.string(),
     validAfter: z.string().describe('ISO timestamp'),
     validUntil: z.string().describe('ISO timestamp'),
-    allowedProtocols: z.array(z.string()),
-    allowedAssets: z.array(z.string()),
+    allowedProtocols: z.array(z.string().max(128)).max(50),
+    allowedAssets: z.array(z.string().max(128)).max(50),
     maxValuePerTx: z.number(),
     maxTotalValue: z.number(),
     chainId: z.number(),
@@ -1853,6 +1877,249 @@ server.tool(
 );
 
 server.tool(
+  'get_execution_authority',
+  'Query execution authority configuration (USER_SIGNED vs BOUNDED_AUTONOMOUS), zero-custody confirmation, and active delegation status.',
+  {
+    executionDomain: z.enum(['spot', 'futures']).default('spot'),
+    sessionToken: z.string().optional(),
+    ownerAddress: z.string().regex(EVM_ADDRESS).optional().describe('Wallet owner EVM address'),
+    sessionId: z.string().optional().describe('Agent session identifier; required for futures'),
+    grantId: z.string().optional(),
+  },
+  async (params) => {
+    try {
+      const query = new URLSearchParams();
+      if (params.ownerAddress) query.set('ownerAddress', params.ownerAddress);
+      if (params.sessionId) query.set('sessionId', params.sessionId);
+      const data = params.executionDomain === 'futures'
+        ? await apiFetch('/v1/agent/authority', { method: 'POST', sessionToken: params.sessionToken, body: JSON.stringify({ action: 'get_futures_authority', sessionId: params.sessionId, grantId: params.grantId }) })
+        : await apiFetch(query.size ? `/v1/agent/authority?${query.toString()}` : '/v1/agent/authority');
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
+  'request_execution_delegation',
+  'Request an exact EIP-712 / ERC-8196 bounded delegation payload for user wallet approval. The user signs one scoped delegation so their agent runtime can execute within those bounds.',
+  {
+    executionDomain: z.enum(['spot', 'futures']).default('spot'),
+    sessionToken: z.string().optional(),
+    policy: FuturesPolicySchema.optional().describe('Exact owner-signed futures policy when executionDomain=futures'),
+    ownerAddress: z.string().regex(EVM_ADDRESS).optional().describe('User wallet owner address'),
+    agentSessionId: z.string().optional().describe('Agent session identifier'),
+    sessionPublicKey: z.string().optional().describe('Public key / address of the agent local signer'),
+    chainId: z.number().int().positive().optional().describe('EVM Chain ID'),
+    allowedProtocols: z.array(z.string().max(128)).max(50).optional().describe('Allowlisted protocol router addresses'),
+    allowedAssets: z.array(z.string().max(128)).max(50).optional().describe('Allowlisted token addresses'),
+    allowedActions: z.array(z.string().max(128)).max(50).optional().describe('Allowed action types, e.g. ["SWAP"]'),
+    maxValuePerTx: z.number().positive().optional().describe('Maximum value per transaction in USD'),
+    maxTotalValue: z.number().positive().optional().describe('Maximum total cumulative spend in USD'),
+    maxGasUsd: z.number().positive().optional().describe('Maximum gas in USD'),
+    maxValuePerTxCents: z.number().int().positive().optional().describe('Deprecated legacy alias: Maximum value per transaction in cents'),
+    maxTotalValueCents: z.number().int().positive().optional().describe('Deprecated legacy alias: Maximum total cumulative spend in cents'),
+    maxGasUsdCents: z.number().int().positive().optional().describe('Deprecated legacy alias: Maximum gas in cents'),
+    maxSlippageBps: z.number().int().positive().optional().describe('Maximum allowed slippage in basis points'),
+    validAfter: z.string().optional().describe('ISO timestamp for grant validity start'),
+    validUntil: z.string().optional().describe('ISO timestamp for grant validity expiration'),
+  },
+  async (params) => {
+    try {
+      const body: Record<string, unknown> = params.executionDomain === 'futures'
+        ? { action: 'request_futures_policy', policy: params.policy }
+        : { ...params, action: 'request_delegation' };
+      if (body.maxValuePerTx === undefined && typeof body.maxValuePerTxCents === 'number') {
+        body.maxValuePerTx = body.maxValuePerTxCents / 100;
+      }
+      if (body.maxTotalValue === undefined && typeof body.maxTotalValueCents === 'number') {
+        body.maxTotalValue = body.maxTotalValueCents / 100;
+      }
+      if (body.maxGasUsd === undefined && typeof body.maxGasUsdCents === 'number') {
+        body.maxGasUsd = body.maxGasUsdCents / 100;
+      }
+      const data = await apiFetch('/v1/agent/authority', {
+        method: 'POST',
+        sessionToken: params.sessionToken,
+        body: JSON.stringify(body),
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
+  'register_execution_delegation',
+  'Register a user-signed bounded delegation grant. The agent runtime gains bounded autonomous execution authority within signed policy limits.',
+  {
+    executionDomain: z.enum(['spot', 'futures']).default('spot'),
+    sessionToken: z.string().optional(),
+    policy: FuturesPolicySchema.optional(),
+    ownerAddress: z.string().regex(EVM_ADDRESS).optional().describe('User wallet owner address'),
+    signature: z.string().regex(HEX_SIGNATURE).describe('EIP-712 signature over bounded delegation typed data'),
+    delegation: z.object({
+      ownerAddress: z.string().regex(EVM_ADDRESS),
+      agentSessionId: z.string(),
+      sessionPublicKey: z.string(),
+      chainId: z.number(),
+      allowedProtocols: z.array(z.string().max(128)).max(50),
+      allowedAssets: z.array(z.string().max(128)).max(50),
+      allowedActions: z.array(z.string().max(128)).max(50),
+      maxValuePerTx: z.number(),
+      maxTotalValue: z.number(),
+      maxGasUsd: z.number().optional(),
+      maxSlippageBps: z.number().optional(),
+      validAfter: z.string(),
+      validUntil: z.string(),
+      nonce: z.string(),
+      policyHash: z.string().optional(),
+    }).optional().describe('The exact spot delegation parameters that were signed'),
+  },
+  async (params) => {
+    try {
+      const data = await apiFetch('/v1/agent/authority', {
+        method: 'POST',
+        sessionToken: params.sessionToken,
+        body: JSON.stringify(params.executionDomain === 'futures' ? { action: 'register_futures_policy', policy: params.policy, signature: params.signature } : { ...params, action: 'register_delegation' }),
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
+  'revoke_execution_authority',
+  'Revoke active bounded execution authority for an owner or agent session.',
+  {
+    executionDomain: z.enum(['spot', 'futures']).default('spot'),
+    sessionToken: z.string().optional(),
+    grantId: z.string().describe('ID of the grant to revoke'),
+    sessionId: z.string().optional(),
+    ownerAddress: z.string().regex(EVM_ADDRESS).optional().describe('Wallet owner address'),
+    agentSessionId: z.string().optional().describe('Agent session identifier'),
+    reason: z.string().optional().describe('Reason for revocation'),
+  },
+  async (params) => {
+    try {
+      const data = await apiFetch('/v1/agent/authority', {
+        method: 'POST',
+        sessionToken: params.sessionToken,
+        body: JSON.stringify(params.executionDomain === 'futures' ? { action: 'revoke_futures_policy', sessionId: params.sessionId ?? params.agentSessionId, grantId: params.grantId } : { ...params, action: 'revoke' }),
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
+  'prepare_autonomous_swap',
+  'Prepare an autonomous spot swap within signed delegation bounds from authoritative quote and simulation records. FarmDash verifies 13 policy invariants, locks an atomic budget reservation, and computes the locked calldata digest. The agent signs and broadcasts in its local runtime.',
+  {
+    intentId: z.string().describe('Authoritative swap intent ID from get_swap_quote'),
+    simulationId: z.string().describe('Authoritative preflight simulation ID from simulate_swap_intent'),
+    agentSessionId: z.string().describe('Authenticated agent session ID'),
+    ownerAddress: z.string().regex(EVM_ADDRESS).describe('Wallet owner EVM address'),
+    sessionPublicKey: z.string().describe('Agent local signer public address (must equal ownerAddress for EOA V1)'),
+    grantId: z.string().optional().describe('Active delegation grant ID (optional; looked up automatically if omitted)'),
+    fromToken: z.string().optional().describe('Optional input token symbol or address'),
+    toToken: z.string().optional().describe('Optional output token symbol or address'),
+    amount: z.string().optional().describe('Optional input amount in token base units'),
+    chainId: z.number().int().positive().optional().describe('Optional EVM Chain ID'),
+    slippageBps: z.number().int().min(1).max(500).optional().describe('Optional slippage tolerance in basis points'),
+    action: z.string().optional().default('SWAP').describe('Action type, defaults to SWAP'),
+    protocol: z.string().optional().describe('Target protocol router address'),
+  },
+  async (params) => {
+    try {
+      const { action: swapAction, ...swapParams } = params;
+      const data = await apiFetch('/v1/agent/authority', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'prepare_autonomous_swap', swapAction, ...swapParams }),
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
+  'confirm_autonomous_swap',
+  'Submit on-chain transaction hash for independent RPC receipt verification and economic reconciliation.',
+  {
+    reservationId: z.string().describe('Active reservation ID from prepare_autonomous_swap'),
+    txHash: z.string().describe('On-chain transaction hash for public RPC receipt verification'),
+    agentSessionId: z.string().describe('Authenticated agent session ID'),
+    ownerAddress: z.string().regex(EVM_ADDRESS).optional().describe('Wallet owner EVM address'),
+    grantId: z.string().optional().describe('Grant ID'),
+    intentId: z.string().optional().describe('Intent ID'),
+    status: z.enum(['confirmed', 'failed', 'ambiguous']).optional().describe('Optional client execution status hint'),
+    errorReason: z.string().optional().describe('Error reason if execution failed or was ambiguous'),
+  },
+  async (params) => {
+    try {
+      const data = await apiFetch('/v1/agent/authority', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'confirm_autonomous_swap', ...params }),
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
+  'release_autonomous_reservation',
+  'Release an active autonomous budget reservation if signing or broadcast is aborted before on-chain submission.',
+  {
+    sessionId: z.string().describe('Authenticated agent session ID'),
+    reservationId: z.string().describe('Active budget reservation ID to release'),
+    ownerAddress: z.string().regex(EVM_ADDRESS).describe('User wallet owner address'),
+    reason: z.string().optional().describe('Reason for aborting or releasing reservation'),
+  },
+  async (params) => {
+    try {
+      const data = await apiFetch('/v1/agent/authority', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'release_autonomous_reservation', ...params }),
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
   'get_cycle_status',
   'Poll the status of an asynchronous autopilot cycle job.',
   {
@@ -1911,7 +2178,7 @@ server.tool(
         chainId: z.number(),
         targetProtocol: z.string(),
         action: z.string(),
-        params: z.record(z.any()),
+        params: z.record(z.string(), z.any()),
         estimatedGasUsd: z.number().optional(),
       }),
     ),
@@ -2038,11 +2305,11 @@ server.tool(
     capitalUsd: z.number().positive().describe('Total capital to allocate in USD'),
     riskPreference: z.enum(['conservative', 'balanced', 'aggressive']).optional().describe('Risk tolerance (default: balanced)'),
     timeHorizonDays: z.number().int().min(7).max(365).optional().describe('Simulation horizon in days (default: 90)'),
-    protocols: z.array(z.string()).optional().describe('Specific protocol IDs to investigate'),
+    protocols: z.array(z.string().max(128)).max(50).optional().describe('Specific protocol IDs to investigate'),
     poolIdentities: z.array(z.object({ protocolId: z.string(), poolId: z.string(), chain: z.string(), assetAddresses: z.array(z.string()).min(1) })).optional().describe('Exact upstream chain, pool ID and underlying asset addresses'),
     costs: z.object({ gas: z.number().nonnegative().nullable().optional(), slippage: z.number().nonnegative().nullable().optional(), bridge: z.number().nonnegative().nullable().optional(), exit: z.number().nonnegative().nullable().optional(), platform: z.number().nonnegative().nullable().optional(), subscription: z.number().nonnegative().nullable().optional(), perCall: z.number().nonnegative().nullable().optional() }).optional().describe('Editable scenario costs in USD; missing mandatory costs force WAIT'),
     stayPutApy: z.number().nonnegative().optional().describe('Editable stay-put baseline APY assumption'),
-    scenarioApy: z.record(z.number().nonnegative()).optional().describe('Editable APY assumptions by protocol; excluded from observed yield'),
+    scenarioApy: z.record(z.string(), z.number().nonnegative()).optional().describe('Editable APY assumptions by protocol; excluded from observed yield'),
   },
   async (params) => {
     try {
@@ -2198,12 +2465,12 @@ server.tool(
   'Submit an exact V2 EIP-712 signature produced by the customer ACP wallet. FarmDash first verifies deployment readiness and all committed providers; it still cannot create or fund jobs.',
   {
     sessionId: z.string().min(1).max(200), agentAddress: z.string().regex(EVM_ADDRESS), sessionToken: z.string().min(32).max(256),
-    tenderId: AcpTenderIdSchema, nonce: z.string().regex(/^\d{10,20}$/),
+    tenderId: AcpTenderIdSchema, providerSelectionId: z.string().uuid(), nonce: z.string().regex(/^\d{10,20}$/),
     expiresAt: z.string().datetime(), signature: z.string().max(16_386).regex(/^0x[0-9a-fA-F]+$/),
   },
   async (params) => apiToolResult(() => apiFetch('/v1/agent/virtuals-acp', {
     method: 'POST', sessionToken: params.sessionToken,
-    body: JSON.stringify(withSessionBody(params, { action: 'authorize_tender_v2', params: { tenderId: params.tenderId, nonce: params.nonce, expiresAt: params.expiresAt, signature: params.signature } })),
+    body: JSON.stringify(withSessionBody(params, { action: 'authorize_tender_v2', params: { tenderId: params.tenderId, providerSelectionId: params.providerSelectionId, nonce: params.nonce, expiresAt: params.expiresAt, signature: params.signature } })),
   })),
 );
 

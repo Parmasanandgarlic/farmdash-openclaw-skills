@@ -15,6 +15,20 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Autonomous Operator
 
+## Scout execution capacity is not autonomy
+
+Scout's independently configured daily pools cover spot and futures lifecycles per capital owner, shared with USER_SIGNED execution and reset at UTC midnight. Read `scout_trial.daily_limit` on a current continuation for its domain; this metadata is informational and admission remains authoritative. Forward a stable operation identity and the server-returned `executionTrialId` where applicable. Valid delegation, authenticated session, exact owner/signer/scope, local signatures, policy budgets and live readiness remain separate requirements. The allowance cannot enable preparation_only futures dispatch. It never waives trading fees or gives FarmDash keys. Unknown submission holds capacity until venue reconciliation. After exhaustion, Pioneer is the primary continuation; eligible x402 remains available, and authority-validated risk reduction/cancel/reconcile is not execution-trial paywalled.
+
+## Futures Execution Mode Contract
+
+- **USER_SIGNED** requires fresh human approval for every order/cancel and a local Hyperliquid EIP-712 venue signature.
+- **BOUNDED_AUTONOMOUS** may run without per-order human confirmation only under a valid owner-signed futures grant, current API-wallet venue authority, and all session, binding, scope, risk, budget, builder and replay checks. A local venue signature remains required on every action.
+- Read futures bounded readiness in the generated canonical capability table and live status. Track spot and futures authority independently; spot delegation, paid access, generic policy and session token never authorize futures. Do not infer domain readiness from a global mode label.
+- Read futures state via `POST /api/v1/agent/authority`, `action: get_futures_authority`, `sessionId`, `sessionToken`; revoke with `action: revoke_futures_policy`, `grantId`, `sessionId`, `sessionToken`. Authority MCP tools select `executionDomain: futures`; default spot tools keep spot semantics. Forward `executionMode`, `grantId`, `sessionId`, `sessionToken` to the existing Futures Strategist execute/cancel surfaces without handling its keys.
+- Scopes are `futures.open`, `futures.reduce`, `futures.close`, `futures.cancel`, `futures.protective_order`. Proven reduction/cancel/protection can survive exhausted new-risk capacity or a risk-increase breaker: a budget exception, never an authority bypass. Still require valid venue delegation, grant, identities, session, market/action, expiry/revocation, local signature, builder and replay checks; ambiguity does not prove reduction.
+- Futures Strategist signs venue actions locally. The Operator coordinates but never owns keys. Research/accounting skills remain nonsigners even when an executor's grant exists.
+- Limits are admission checks, not guaranteed loss ceilings, profits or positive expected value. Keep ambiguous liabilities held until venue reconciliation; do not resubmit unknown outcomes or start dependent legs from acknowledgement alone.
+
 > Use this skill when running supervised sessions: persistent multi-skill context, bounded autopilot loops, circuit breakers, and recovery — never key custody.
 
 > [!NOTE]
@@ -23,14 +37,14 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 > [!IMPORTANT]
 > **ZERO-CUSTODY CRITICAL BOUNDARY & EXECUTION GATING**
-> This skill manages persistent agent sessions, control loops, intent routing, and optional bounded autonomy. It does NOT hold, request, or transmit private keys, seed phrases, or mnemonics. A session token alone is not execution authority. However, `autopilot_cycle` can execute eligible actions when the user has separately created an active, scoped, time-limited, revocable session-key grant and the autonomous executor is available.
+> This skill manages persistent agent sessions, control loops, intent routing, and optional bounded autonomy. It does NOT hold, request, or transmit private keys, seed phrases, or mnemonics. A session token alone is not execution authority. `autopilot_cycle` does not prove submission or settlement. Read the generated canonical capability table and live domain status: an active, scoped, time-limited, revocable session-key grant never enables a disabled execution mode. USER_SIGNED remains supported.
 > 
 > **Separate Approval Step Requirement:**
 > Without an active execution grant, state-changing actions require a separate user-signed execution step. With a grant, the initial EIP-712 authorization—not a chat message—defines allowed chains, protocols/assets, per-transaction value, total value, and validity window. Never describe configuration, a context patch, or a session token as equivalent to that grant.
 
 Autonomous Operator keeps a multi-skill agent coherent across turns. It owns session state, shared FarmingContext, event snapshots, heartbeats, delegation checks, and autopilot configuration.
 
-It does not hold private keys. It may coordinate supervised actions or invoke the bounded executor only inside an independently verified active grant.
+It does not hold private keys. It may coordinate supervised actions. Invoking a bounded executor requires both an independently verified active grant and an operational domain execution-mode gate; read current readiness from the generated canonical capability table and live status.
 
 Syndicate is the intended operator tier for production control loops: 50k requests/day, webhooks through Signal Architect, unrestricted CORS, and advanced session/control tooling for teams and serious agents.
 
@@ -61,7 +75,7 @@ The Autonomous Operator is no longer a simple linear state machine. It now opera
 
 ### 4. Act (Execute & Observe)
 * Route the intent to Signal Architect (spot) or Futures Strategist (perps).
-* Wait for the user's local EIP-191/EIP-712 signature.
+* Delegate local signing to the owning executor under the step's mode. USER_SIGNED requires fresh human approval; bounded futures require a distinct owner futures grant plus every runtime, authority and quantitative check.
 * `execute_approved_intent`: Record the broadcast.
 * `get_receipt`: Observe the durable lifecycle receipt. A receipt records the reported outcome/status fields in its contract; it is not automatically an 11-field forensic attestation or proof of economic settlement.
 
@@ -95,13 +109,52 @@ Reads recent agent events as a JSON snapshot. Use this before planning and after
 Checks whether the user's Hyperliquid API wallet delegation is in place for autonomous perps.
 
 ### `configure_autopilot`
-Configure bounded autonomous cycles. Respect user allowlists, risk limits, and execution confirmations. (Syndicate tier required for activation).
+Configure bounded autonomous cycles. Respect user allowlists, risk limits, and execution confirmations. Syndicate tier and configuration do not grant BOUNDED_AUTONOMOUS authority or bypass domain runtime gates.
 
 ### `autopilot_cycle`
-Run bounded autonomous cycles. Respect user allowlists, risk limits, and execution confirmations. (Syndicate tier required).
+Run a bounded decision cycle subject to Syndicate tier and runtime gates. A cycle result is not submission or settlement. A grant or paid tier cannot bypass independently verified execution authority and domain readiness.
 
 ### `agent_onboard`
 One-call setup guide and capability map for autonomous operation.
+
+### Spot Execution Authority (USER_SIGNED vs BOUNDED_AUTONOMOUS)
+
+Spot and futures use the same two mode names but have separate grants, signers and readiness. The following lifecycle describes spot only:
+1. **USER_SIGNED**: FarmDash prepares the transaction; the user's wallet approves and signs each transaction individually.
+2. **BOUNDED_AUTONOMOUS (domain-gated)**: The agent-local architecture uses one scoped, revocable EIP-712 delegation and a local signer. Registration and preparation do not establish runtime readiness. Read `execution_capabilities.execution_domains.spot.BOUNDED_AUTONOMOUS.status` from `/api/v1/agent/status` and fail closed unless it is operational and all request gates pass. USER_SIGNED remains supported.
+
+**Zero Key Custody Invariant**: FarmDash NEVER receives, holds, transmits, or persists user private keys, seed phrases, or mnemonics. The agent runtime retains local signer authority. FarmDash acts purely as the intelligence, policy check, simulation, and transaction preparation control plane.
+
+#### Bounded Autonomy Execution Lifecycle & Safety Boundaries
+
+This is the architectural lifecycle, not current execution readiness. Do not proceed to agent-local signing or broadcast while BOUNDED_AUTONOMOUS is `preparation_only`; a valid grant, discovered tool, or paid tier cannot override that gate.
+
+1. **Delegation Registration**: The user signs an EIP-712 / ERC-8196 bounded delegation grant defining allowed chains, protocols, tokens, max per-tx spend, total budget, expiry, and cooldowns (`register_execution_delegation`).
+2. **Authority Discovery**: The agent discovers its active delegation and policy limits via `get_execution_authority`.
+3. **Autonomous Preparation**: The agent invokes `prepare_autonomous_swap`. FarmDash evaluates all 13 policy invariants, verifies fresh simulation, creates an atomic budget reservation, and digests the calldata.
+4. **Agent-Local Signing & Broadcast**: The agent signs the transaction locally using its private key (zero-custody). The agent broadcasts the raw signed transaction to the blockchain RPC.
+5. **Ambiguous Broadcast Handling (`held_ambiguous`)**: If network error or RPC timeout occurs during broadcast, the state transitions to `held_ambiguous`. The reserved budget remains held and unreleased until on-chain receipt confirmation or explicit timeout reconciliation. The agent MUST NOT re-broadcast or duplicate the transaction while held.
+6. **Confirmation & Receipt**: Upon successful broadcast, the agent calls `confirm_autonomous_swap` with the transaction hash to commit budget and emit a durable receipt.
+
+**Distinction from ERC-4337 Server Submission**: Bounded autonomy is an agent-local-signer architecture. It is NOT ERC-4337 server-side bundler submission. Their readiness rows differ; read the generated canonical table. A configured bundler never proves tenant/account or session-key authorization, and public UserOperation forwarding remains fail-closed until that boundary is qualified.
+
+### `get_execution_authority`
+Query authority for the selected domain: default spot retains spot delegation semantics; use executionDomain: futures for the distinct futures policy and its independently checked readiness.
+
+### `request_execution_delegation`
+Request an exact EIP-712 / ERC-8196 bounded delegation payload for user wallet approval. Binds owner, session, signer key, chains, protocols, assets, actions, per-transaction limits, total budget, gas bounds, and expiration.
+
+### `register_execution_delegation`
+Register a user-signed bounded delegation grant within signed policy limits. Registration is not runtime readiness and does not authorize automated signing or broadcast while the domain gate is closed or local signer authority is missing.
+
+### `revoke_execution_authority`
+Revoke active bounded execution authority immediately across all serverless instances.
+
+### `prepare_autonomous_swap`
+Prepare an autonomous spot swap within signed delegation bounds. FarmDash checks 13 policy invariants, runs a fresh simulation, locks an atomic budget reservation, and computes the calldata digest. Customer-local signing and broadcast additionally require actual signer authority and every live domain gate. A grant never creates on-chain authority.
+
+### `confirm_autonomous_swap`
+Submit execution confirmation and on-chain transaction hash for economic reconciliation and receipt generation.
 
 ### ClawHub attribution
 This skill's canonical ClawHub slug is `farmdash-autonomous-operator`. On every FarmDash API request (REST, OpenAPI, or MCP transport where headers are supported), send `X-ClawHub-Skill: farmdash-autonomous-operator`. Analytics-only and optional; requests without it still work. The value is always exactly the skill slug, never a wallet address, API key, or user ID.
@@ -187,7 +240,7 @@ If the Operator resumes a session (`create_session` or `session_heartbeat`) and 
 * The session token is a capability. Never display it in normal user-facing prose.
 * A context patch is state, not permission.
 * A workflow plan is not a user confirmation.
-* If risk status is halted, do not call execution tools.
+* If risk status is halted, stop new risk. Proven futures reduction/cancel/protection may remain eligible only under all authority checks and an operational domain gate; preparation_only is still non-executable.
 * If event freshness is stale, re-run the sense phase before proposing action.
 * Never bypass the OODA loop. Do not jump from Observe directly to Act without Orient and Decide phases.
 * Never multiply heterogeneous heuristic scores into a synthetic confidence or execution permission.
@@ -199,7 +252,7 @@ If the Operator resumes a session (`create_session` or `session_heartbeat`) and 
 Size every `grant_session_key` to the smallest chains, protocols/assets, per-transaction value, total value, and validity window the plan needs. Verify via `session_key_status` before `execute_cycle_actions`; halt on absent, expired, revoked, out-of-allowlist, over-cap, or unavailable-executor states. Book profit by revoking or narrowing grants after the objective is met, never by widening them.
 
 ## Disclaimers
-Autonomous operation can compound mistakes if risk limits are weak. Keep budgets bounded, log every decision, and require explicit user confirmation for state-changing operations.
+Autonomous operation can compound mistakes. Keep budgets bounded, log decisions, and apply the per-step mode: fresh human confirmation in USER_SIGNED; a distinct owner grant and all checks in operational bounded futures. Read current domain readiness from the generated table and live status.
 
 ## FarmDash Resources
 
@@ -238,5 +291,39 @@ Autonomous operation can compound mistakes if risk limits are weak. Keep budgets
 - `simulate_mee_intent`: Simulate a created MEE intent and stop when costs, risk, or net edge fail policy.
 - `submit_mee_intent`: Submit a separately signed, successfully simulated MEE intent only when the live capability gate is available.
 - `get_mee_intent_status`: Read authoritative MEE intent status; pending or submitted is not settled.
+- `get_execution_authority`: Query execution authority mode (USER_SIGNED vs BOUNDED_AUTONOMOUS), zero-custody confirmation, and active delegation status.
+- `request_execution_delegation`: Request an exact EIP-712 / ERC-8196 bounded delegation payload for user wallet approval.
+- `register_execution_delegation`: Register a user-signed bounded delegation grant for autonomous execution inside policy bounds.
+- `revoke_execution_authority`: Revoke active bounded execution authority for an owner or agent session.
+- `prepare_autonomous_swap`: Prepare an autonomous spot swap within signed delegation bounds with atomic budget reservation.
+- `confirm_autonomous_swap`: Submit execution confirmation and transaction hash for economic reconciliation and receipt generation.
+- `release_autonomous_reservation`: Safely release an autonomous budget reservation prior to broadcast when local signing or submission is aborted.
+
+### Canonical capability readiness
+
+Generated from shared/capability-truth.ts; read live status for deployment and per-request gates. Implementation readiness is not funded-production proof, commercial admission or signer authority.
+
+| Capability | Status | Required runtime/authority prerequisite |
+|---|---|---|
+| spot.USER_SIGNED | operational | Healthy execution governor, quote provider, RPC and durable receipt store; customer signs and submits. |
+| spot.BOUNDED_AUTONOMOUS | operational | Owner-signed EVM grant, exact simulation/calldata binding, durable budget and customer-local signer authority. |
+| futures.USER_SIGNED | operational | Venue account ownership, local action signature, builder approval, risk/research gates and durable order control. |
+| futures.BOUNDED_AUTONOMOUS | operational | Authenticated owner-bound futures policy, authorized local API-wallet signature, durable nonce/budget/order controls. |
+| solana.USER_SIGNED | operational | Native Jupiter/RPC route, durable preparation and finality store; customer signs and broadcasts. |
+| solana.BOUNDED_AUTONOMOUS | operational | Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority. |
+| ERC4337_SERVER_SUBMISSION | preparation_only | Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration. |
+| GENERIC_SERVER_INTENT_EXECUTION | preparation_only | Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier. |
+| MEE | preparation_only | Production coordinator and authoritative source/destination receipt verifier. |
+| ACP | deployment_prerequisite | AcpReadinessService paidWorkflowReady, evaluator/client identities, migrations, funding/finality workers and Base RPC. |
 
 <!-- farmdash-canonical-links:end -->
+
+<!-- installation-attribution:start -->
+
+### Optional installation attribution
+
+Generate a random UUIDv4 locally once per installation (for example, `crypto.randomUUID()`); persist only that random analytics ID in your application's own local state and reuse it across requests and skills. Never copy an example ID or generate a new ID for every request. Send optional `X-FarmDash-Installation-ID`; keep `X-ClawHub-Skill: farmdash-autonomous-operator` and optionally `X-FarmDash-Skill-Version: 2.1.2`. Controlled SDKs accept explicit `installationId`; the MCP stdio runtime persists only its analytics ID, with `FARMDASH_INSTALLATION_ID` override. No generic SDK writes files for you.
+
+This is untrusted analytics only. The server stores a domain-separated salted installation hash, not the raw ID. An installation is not a person, principal or wallet. These headers cannot authenticate, alter quota/payment/Scout trials, establish wallet ownership, create delegation or authorize transactions. Missing headers remain fully compatible. Do not send API keys, signatures, grants, payment proofs, wallet data or session tokens as attribution. First-touch acquisition and event-touch assistance are reported separately; a download is not proven activation or revenue.
+
+<!-- installation-attribution:end -->

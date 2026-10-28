@@ -48,6 +48,9 @@ export interface ApiFetchConfig {
   userAgent?: string;
   scoutGrant?: string;
   skillId?: string;
+  installationId?: string;
+  clientVersion?: string;
+  skillVersion?: string;
 }
 
 export interface ApiFetchOptions {
@@ -83,6 +86,12 @@ export function createApiFetch(config: ApiFetchConfig) {
       'User-Agent': config.userAgent ?? 'farmdash-mcp-server/5.0.0',
     };
     if (config.apiKey) headers.Authorization = `Bearer ${config.apiKey}`;
+    if (config.installationId && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(config.installationId)) {
+      headers['X-FarmDash-Installation-ID'] = config.installationId.toLowerCase();
+      headers['X-FarmDash-Client'] = 'mcp';
+    }
+    if (config.clientVersion && /^[A-Za-z0-9._+-]{1,64}$/.test(config.clientVersion)) headers['X-FarmDash-Client-Version'] = config.clientVersion;
+    if (config.skillVersion && /^[A-Za-z0-9._+-]{1,64}$/.test(config.skillVersion)) headers['X-FarmDash-Skill-Version'] = config.skillVersion;
     if (scoutGrant) headers['X-FarmDash-Scout-Grant'] = scoutGrant;
     if (config.skillId && /^[a-zA-Z0-9-]{1,128}$/.test(config.skillId)) headers['X-ClawHub-Skill'] = config.skillId;
     if (opts.sessionToken) headers['X-FarmDash-Session-Token'] = opts.sessionToken;
@@ -97,7 +106,12 @@ export function createApiFetch(config: ApiFetchConfig) {
         headers,
         body: opts.body,
         signal: controller.signal,
+        redirect: 'manual',
       });
+      if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400 && response.status !== 304)) {
+        try { void response.body?.cancel().catch(() => undefined); } catch { /* Security failure must remain terminal. */ }
+        throw new McpApiError('redirect_policy_blocked', 'FarmDash requests do not follow redirects.', 0, false, adapterRequestId);
+      }
       const requestId = responseRequestId(response, adapterRequestId);
       const contentType = response.headers.get('content-type') ?? '';
 

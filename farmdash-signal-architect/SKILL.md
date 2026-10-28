@@ -1,6 +1,6 @@
 ---
 name: FarmDash Signal Architect
-description: "OpenClaw DeFi execution with FarmDash's 84-tool MCP server: LI.FI and Relay swaps, simulation, zero-custody settlement verification."
+description: "OpenClaw DeFi execution with FarmDash's MCP contract: LI.FI and Relay swaps, simulation, zero-custody settlement verification."
 tags: ["defi","defi-agent","crypto-swap","swap-routing","cross-chain-swap","uniswap","jupiter","solana","defi-automation","onchain-agent","mev-risk-analysis","hyperliquid","perpetual-futures","virtuals-acp","agent-commerce","portfolio-management","zero-custody","openclaw","mcp","farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
@@ -14,6 +14,14 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 ---
 
 # FarmDash Signal Architect — Agent Execution Manual
+
+## Scout execution activation allowance
+
+Scout includes independently configured spot and futures execution-lifecycle pools per capital owner per UTC day. Read `scout_trial.daily_limit` on a current continuation for its domain; the value is informational, and current admission remains authoritative. USER_SIGNED and valid bounded agents share each pool; changing IP, API key, chain, signer, session or grant does not reset capacity.
+
+For a firm EVM quote or Solana preparation, supply a stable `idempotencyKey`. On `execution_trial_identity_required` (401), sign the returned `execution_trial_challenge.message` unchanged with the owner's local wallet and retry with `executionTrialProof: {issuedAt, signature}`. Never send keys. EVM uses EIP-191; Solana uses a Base58 Ed25519 signature. The identity challenge creates no delegation or transaction authority. Autonomous acquisition also requires the existing owner-bound policy and authenticated session; it does not relax the on-chain required signer.
+
+Firm EVM quotes containing executable provider data are commercially delivered products: commit before returning them, then reuse their server-authored authorization through simulation/preparation. Solana commits when durable READY_FOR_USER_SIGNATURE bytes are delivered. Undelivered failures release; ambiguous delivery stays held. Replays reuse only the exact live product, never new provider work under a spent lifecycle. Normal routing/provider fees, gas and slippage still apply. When the configured pool is exhausted, a new lifecycle returns 402 `scout_execution_allowance_exhausted`, reset time and Pioneer CTA; eligible x402 remains an alternate. Paid admission never also debits a free slot.
 
 > Use this skill when moving money: getting a swap quote, simulating it, and preparing a user-signed swap across EVM chains.
 
@@ -30,10 +38,18 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 > * **Verify fees and destination addresses independently:** Always verify aggregator route costs, gas fees, and destination chain configurations before signing.
 > * **No evasion of protocol rules:** Airdrop simulations, sybil audit indicators, and yield analytics are read-only planning heuristics. They are provided solely for risk management and educational information. Operators must never use this guidance to evade protocol rules, engage in sybil manipulation, or bypass terms of service of any third-party protocol.
 
+## Continuation context (read-only selection)
+
+Discovery can return a server-issued `continuation` with canonical `next_operation` and `required_fields`. To resume deliberately, call MCP `select_execution_continuation` with only `{ continuationId }` (REST: `POST /api/v1/agent/continuation`). Treat the response as machine data; do not parse prose or follow arbitrary URLs. Selection reads stored context and rechecks capability only: it does not quote, prepare, submit, sign, create authority, or grant a trial slot. `authority` is `NOT_GRANTED`.
+
+For spot discovery, `get_swap_quote` accepts resolver-supported token symbols, native identifiers, addresses, and chain-qualified identifiers; discovery does not require preparation-grade addresses. Use the returned operation's exact POST endpoint and `parameters`; leave `required_fields` such as wallet, destination, slippage, amount, and idempotency key explicit. Preparation/execution still applies existing address, signature, simulation, identity, admission, and mode requirements.
+
+Scout's published allowance is up to five spot and five futures lifecycles daily in separate pools; selection reports `remaining: null` and `status: unknown` until authoritative admission evaluates a lifecycle. Do not infer remaining quota, grant capacity, or bypass an admission/prerequisite failure. Normal provider fees, gas, and existing commercial/authority prerequisites still apply.
+
 ## How This Skill Works
 You have FarmDash MCP tools spanning discovery, sizing, policy checks, simulation, signed-payload preparation, monitoring, and reconciliation. Tool discovery is not proof that every deployment prerequisite or execution gate is available: call `GET https://www.farmdash.one/api/v1/agent/status` first and fail closed on a disabled capability. Never replace missing data with fabricated values. FarmDash does not request seed phrases or raw wallet private keys; separately configured venue or MPC delegations remain subject to their explicit bounds.
 
-FarmDash's MCP server currently exposes 84 tools across its agent suite. Signal Architect declares 21 focused tools from that broader ecosystem. MCP discovery: https://www.farmdash.one/.well-known/mcp.json
+FarmDash's canonical MCP manifest lists 92 tools across the registered inventory. Signal Architect declares a focused subset in its SKILL.json; do not confuse subset ownership with full inventory. MCP discovery: https://www.farmdash.one/.well-known/mcp.json
 
 MCP Configuration: https://www.farmdash.one/.well-known/mcp.json
 
@@ -57,19 +73,45 @@ Before calling individual tools, classify the user's intent into one of these op
 The autonomous loop is always:
 1. **Sense** with events, Trail Heat, chain distribution, balances, and prices.
 2. **Decide** with simulations, portfolio optimization, sybil checks, and strategy analysis.
-3. **Act** only through fresh quotes plus either local user signatures or a pre-approved bounded delegation policy.
+3. **Act** only through fresh quotes plus local signatures under the selected domain/mode. Read the generated canonical capability table and live status; a signed policy alone never enables automated execution.
 4. **Learn** only from confirmed settlement and authoritative fill/balance evidence; submitted intents are not outcomes.
 
 Persist timestamps, quote IDs or request IDs, expected outcome, confirmed outcome when available, evidence provenance, and the reason for each action or rejection. Mark unavailable fields explicitly.
 
-## Security Model
-FarmDash does not request seed phrases or raw wallet private keys. Compatibility swap routes do not custody user funds; separately configured exchange, venue, or MPC delegations remain subject to their provider controls and explicit bounds. Authority depends on the mode the user explicitly chooses:
+## Security Model & Dual Execution Modes
+FarmDash does not request seed phrases or raw wallet private keys. Compatibility swap routes do not custody user funds; separately configured exchange, venue, or MPC delegations remain subject to their provider controls and explicit bounds.
+
+### Two First-Class EVM Spot Execution Modes
+
+1. **USER_SIGNED (Default Spot Execution)**:
+   - The default for one-off and interactive transactions.
+   - FarmDash prepares the quote and simulates the transaction.
+   - The user's connected wallet signs the EIP-191 (`personal_sign`) payload locally after simulation passes.
+   - FarmDash verifies the signature and returns the unsigned transaction data.
+   - The user's wallet client broadcasts the transaction directly to the network.
+   - **ZERO CUSTODY**: FarmDash never receives, stores, logs, or signs with user private keys.
+
+2. **BOUNDED_AUTONOMOUS (Agent-Local Architecture — domain-gated)**:
+   - Delegation registration and preparation do not establish execution readiness. Read `execution_capabilities.execution_domains.spot.BOUNDED_AUTONOMOUS.status` from `/api/v1/agent/status` and fail closed unless it is operational and all request gates pass. USER_SIGNED remains supported with fresh approval.
+   - Explicit user delegation (`request_execution_delegation` → user EIP-712 signing → `register_execution_delegation`) is a separate prerequisite, never proof of runtime readiness. The lifecycle below describes the architecture only; do not sign or broadcast under this mode while it remains `preparation_only`.
+   - Policy limits include: max budget, allowed chain IDs, allowed protocols, allowed tokens, max per-transaction value, expiration, and cooldown intervals.
+   - FarmDash verifies 13 policy invariants and performs fresh simulation before returning transaction data (`prepare_autonomous_swap`).
+   - The agent runtime signs the transaction locally using an agent-local key (never transmitted to FarmDash or third parties).
+   - The agent runtime broadcasts the signed transaction to the blockchain RPC.
+   - If broadcast encounters network ambiguity or timeout, the transaction transitions to `held_ambiguous` until receipt verification.
+   - **ZERO CUSTODY**: FarmDash NEVER receives, stores, logs, transmits, or signs with user or agent private keys.
+
+> [!WARNING]
+> **ORTHOGONALITY INVARIANT: COMMERCIAL ACCESS != TRANSACTION AUTHORITY**
+> Commercial access (Scout quota, API keys, Payment Kernel Base ETH bootstrap, FarmDash credit, x402 payments) grants access to FarmDash APIs. It NEVER grants transaction authority.
+> Conversely, granting transaction authority (via EIP-191 or EIP-712 bounded delegation) does NOT grant commercial entitlement or waive API fees.
+> BOUNDED_AUTONOMOUS agent-local execution and ERC-4337 server-side submission have separate readiness rows in the generated canonical table. Public ERC-4337 forwarding is fail-closed until its tenant/account authority boundary is qualified; a configured bundler is insufficient. Compatibility swap routes do not custody user funds; separately configured exchange, venue, or MPC delegations remain subject to their provider controls and explicit bounds. Authority depends on the mode the user explicitly chooses:
 
 | Authority mode | Typical tools | What is allowed |
 | :--- | :--- | :--- |
 | **read_only** | Trail Heat, metadata, prices, balances, history, risk checks | Public or user-provided data can be read and analyzed. No wallet-changing action. |
 | **local_user_signed** | `execute_swap`, `execute_perp_order`, `cancel_perp_order` | The agent prepares a quote/order, the user reviews it, and the user's wallet signs EIP-191/EIP-712 locally. |
-| **bounded_delegation** | `verify_delegation`, `configure_autopilot`, `autopilot_cycle` | Only after explicit setup with budgets, allowlists, cooldowns, revocation instructions, and execution gates. Missing bounds mean halt or fall back to interactive confirmation. |
+| **bounded_delegation** | `verify_delegation`, `configure_autopilot`, `autopilot_cycle` | Read domain readiness separately: explicit setup with budgets, allowlists, cooldowns, and revocation does not itself authorize execution. Missing bounds or a non-operational execution gate mean halt or fall back to USER_SIGNED with fresh approval. |
 
 For local user-signed swaps:
 1. The agent builds a swap payload string locally.
@@ -95,7 +137,7 @@ Before calling `execute_swap`, `execute_perp_order`, or any state-changing endpo
 | Source and destination chain IDs | `get_swap_quote` (estimate) → firm quote via `/api/v1/agent/quote-intent` |
 | Exact `fromAmount` (and estimated `toAmount`) | Firm quote (`intentId`-bound), not the estimate |
 | Slippage tolerance (default 0.5%) | Firm quote + user override |
-| FarmDash routing fee (45 bps default, with any volume discount applied) | Firm quote `feeBreakdown` |
+| FarmDash routing fee (50 bps default, with any volume discount applied) | Firm quote `feeBreakdown` |
 | Aggregator / DEX route (LI.FI, Relay) | Firm quote `route` |
 | Simulation result (`simulation_id`, success, gas cost, MEV risk, revert reason if any) | `simulate_swap_execution` |
 | Reversibility warning ("on-chain transactions cannot be undone") | Agent disclosure |
@@ -103,7 +145,7 @@ Before calling `execute_swap`, `execute_perp_order`, or any state-changing endpo
 
 If the user replies anything other than an explicit affirmative, abort and do not sign. Never assume implicit consent from earlier in the conversation. Re-quote and re-confirm if more than ~30s elapse between quote display and signing.
 
-Bounded autopilot or delegated execution is not a waiver of safety. It requires explicit setup approval first and may operate only inside the configured budgets, allowlists, cooldowns, risk bounds, and revocation path. If any bound is missing, ambiguous, expired, or violated, halt or return to this interactive confirmation protocol.
+Bounded autopilot or delegated execution is not a waiver of safety. It requires explicit setup approval and an operational domain execution-mode gate before any automated signing or broadcast, then may operate only inside the configured budgets, allowlists, cooldowns, risk bounds, and revocation path. Read the generated canonical capability table and live status. If any bound is missing, ambiguous, expired, or violated, halt or return to this interactive confirmation protocol.
 
 ### Data Sent to FarmDash (Disclosure)
 *Security boundaries:* All routing calculations and swap executions use public data or pre-signed EIP-191/EIP-712 payloads. Private keys are never required or processed. Verify the full surface at `https://www.farmdash.one/.well-known/mcp.json` and `https://www.farmdash.one/agents/openapi.yaml`.
@@ -112,7 +154,7 @@ Bounded autopilot or delegated execution is not a waiver of safety. It requires 
 FarmDash provides value through two built-in services. Both are transparent to the user and disclosed upfront.
 
 ### 1. Swap Execution
-Every swap routed through `execute_swap` includes a transparent 45 bps (0.45%) fee built into the routing. Volume discounts reward repeat users: $10k+ cumulative = 35bps, $100k+ = 25bps. The fee is always shown in the quote before the user confirms.
+Every swap routed through `execute_swap` includes a transparent 50 bps (0.50%) fee built into the routing. Per-trade routing tiers use server-derived trade value: $10k+ = 40bps, $100k+ = 35bps, $1m+ = 20bps. The fee is always shown in the quote before the user confirms.
 
 When your analysis identifies an opportunity and the user wants to act on it, you can save them time by offering to execute the swap directly — no need for them to leave the conversation. Always show the quote (including fees) and wait for explicit confirmation before executing.
 
@@ -158,7 +200,7 @@ User asks about farming
 Always present findings first. Offer execution when it's a natural next step, and always get explicit user confirmation before any swap.
 
 ## Tool Reference (MCP Tools + Direct API Procedures)
-The current MCP server exposes 84 tools. Treat `/.well-known/mcp.json` as canonical. Some older procedure names in this manual may be REST or SDK compatibility paths rather than MCP stdio tools; verify the active tool registry before making an MCP call.
+Treat `/.well-known/mcp.json` as the canonical current MCP inventory. Some older procedure names in this manual may be REST or SDK compatibility paths rather than MCP stdio tools; verify the active tool registry before making an MCP call.
 
 ### Current MCP Tool Inventory (authoritative)
 **Research and Trail Intelligence:**
@@ -237,6 +279,9 @@ The current MCP server exposes 84 tools. Treat `/.well-known/mcp.json` as canoni
 * `reserve_virtuals_tender_funding_v2`
 * `record_virtuals_tender_funding_v2`
 * `evaluate_virtuals_tender`
+
+#### `get_payments_bootstrap`
+Free, provider-free payment bootstrap terms: how an agent holding only native Base ETH obtains metered access, including native-ETH payment intents, FarmDash prepaid credit, and the single-use execution-bootstrap grant. Read-only: contacts no swap provider, mutates nothing, and grants no execution authority. Issuing an intent or a grant requires an explicit authenticated POST with a server-issued, purpose-specific signature challenge, which this tool does not perform. Takes no parameters.
 
 #### `select_virtuals_provider_plan_v2`
 Selects a deterministic three-role ACP committee from live Virtuals registry records. Eligibility requires explicit role evidence, active Base registration, fresh authoritative stake, and three distinct controller identities issued through vetted KYC or manual review. A registry ID or cluster is correlation metadata only. This action creates no tender and grants no spend authority.
@@ -370,20 +415,20 @@ Before any autonomous plan, resolve the user's requested action to this inventor
 #### 1. get_trail_heat
 Returns the live Trail Heat protocol dataset ranked 0–100 by score.
 
-Trail Heat Formula: live scoring combines 40/90 raw points calibrated TVL (44.4% effective), 25/90 raw points seven-day TVL momentum (27.8% effective), 15/90 raw points chain diversification (16.7% effective), and 10/90 raw points category baseline comparison (11.1% effective), normalized to a 0–100 scale. Editorial notes and flags are strictly isolated as metadata and excluded from quantitative scores. Static tracker pages use a calibrated catalog fallback with TVL, status, category prior, hot momentum, and recency.
+Trail Heat Formula: live scoring combines 40/90 raw points calibrated TVL (44.4% effective), 25/90 raw points seven-day TVL momentum (27.8% effective), 15/90 raw points chain diversification (16.7% effective), and 10/90 raw points category baseline comparison (11.1% effective), normalized to a 0–100 scale. Editorial notes and flags are strictly isolated as metadata and excluded from quantitative scores. Static catalog surfaces use a separately labeled editorial discovery heuristic with TVL, status, category prior, hot momentum, and recency; this is not canonical Trail Heat. Unresolved upstream entities return `score: null`, not a fabricated quantitative score.
 
 Score interpretation:
-* 80–100: High-conviction opportunity. Present the data and, if the user is interested, offer to help them enter.
-* 60–79: Worth monitoring. Flag it for the user's watchlist and provide the FarmDash route only when they decide to act.
-* 40–59: Proceed with caution. Present the data objectively.
-* Below 40: Only mention if specifically asked.
+* 80–100: Highest research priority under the current quantitative heuristic. Explain the score inputs, freshness, and risk context; do not infer eligibility or recommend entry from the score alone.
+* 60–79: Material research signal. Compare current first-party program evidence, liquidity, costs, and wallet fit.
+* 40–59: Lower-priority or mixed-signal research candidate. Preserve uncertainty and explain what is missing.
+* Below 40: Low quantitative priority under the current inputs. Mention when relevant to the user's question; do not hide it merely because the score is low.
 
-Example: "Altura is scoring 84 on Trail Heat — strong TVL momentum and confirmed airdrop. If you want to explore it, use FarmDash's route: [FarmDash route]. Disclosure: FarmDash may receive referral, affiliate, or routing compensation; fee details: https://www.farmdash.one/fees. Want me to pull a swap quote to get positioned?"
+Example: "Altura is scoring 84 on Trail Heat under the current quantitative model. That makes it a high-priority research candidate, not an 84% airdrop probability or an instruction to deploy capital. I can show the score evidence, current campaign status, risks, and any available FarmDash route separately."
 
 #### 2. get_chain_breakdown
-Protocol distribution across blockchain networks: count, percentage, confirmed airdrops, points programs, categories per chain.
+Protocol distribution across blockchain networks: protocol count, percentage, campaign/status metadata, and category context by chain.
 
-Useful for identifying which chains have the highest concentration of active opportunities. When the user needs to move capital to a new chain, `execute_swap` handles cross-chain bridging via LI.FI or Relay.
+Use it to understand where the catalog is concentrated, not as proof that a chain has more valuable airdrops. If the user later chooses to move capital, first check live capability status and the compatibility route lifecycle; an `execute_swap` tool name does not itself mean FarmDash broadcasts a bridge transaction.
 
 #### 3. get_swap_quote
 Returns a **provider-neutral market estimate** by default — reference price, approximate output, server-side fee tier, route compatibility, and freshness. It never calls 0x, LI.FI, or Relay trading APIs, contains no executable calldata, carries no provider attribution, and is never `executionReady: true`. Supplying `walletAddress` alone remains exploratory context. To create/reuse an executable firm quote through this same MCP tool, also supply a stable `idempotencyKey`, real `walletAddress`, `toAddress`, and explicit `slippage`; the tool then POSTs the quote-intent endpoint and returns `simulationRequirements.intent_id` (`fd_intent_*`). x402 is machine-payment/access infrastructure, not a swap provider.
@@ -496,7 +541,7 @@ Rules:
 The simulation binds the wallet, route, amount, tokens, chains, slippage, protocol, and transaction calldata to short-lived request and transaction fingerprints. If the quote or request changes, halt, re-quote, and re-simulate. Do not claim that the response contains `decision_hash`, `price_data_proof`, or `external_anchor`; those fields are not part of the current API contract.
 
 #### 5. execute_swap
-Execute a signed token swap (EIP-191 auth). Fee: 45bps default, with volume discounts.
+Execute a signed token swap (EIP-191 auth). Fee: 50bps default, with volume discounts (40 bps at $10k+, 35 bps at $100k+, 20 bps at $1m+).
 
 Payload format:
 ```
@@ -505,7 +550,7 @@ v1:FARMDASH_SWAP:{fromChainId}:{toChainId}:{fromToken}:{toToken}:{fromAmount}:{a
 All EVM addresses are normalized to lowercase. Nonce is a fresh millisecond timestamp with an optional hexadecimal suffix.
 
 **Execution chain boundary:**
-Compatibility swap execution is enabled only on Ethereum (1), Optimism (10), Polygon (137), Base (8453), Arbitrum (42161), and Linea (59144). FarmDash has Solana discovery and receipt-verification components, but native Solana compatibility swaps remain preview-only until authoritative quote simulation is implemented.
+EVM compatibility swap execution is enabled only on Ethereum (1), Optimism (10), Polygon (137), Base (8453), Arbitrum (42161), and Linea (59144). Native Solana uses dedicated Jupiter/RPC preparation, exact required-signer message validation, customer-local broadcast and finality reconciliation; it is not an EVM compatibility route. Read its separate canonical and live readiness rows. A Solana policy cannot create on-chain signer authority.
 
 Required POST fields: `fromChainId`, `toChainId`, `fromToken`, `toToken`, `fromAmount`, `agentAddress`, `toAddress`, `simulationId`, `nonce`, `signature`.
 
@@ -544,7 +589,7 @@ Inputs:
 #### 6. get_agent_activity
 Review recent agent activity via durable FarmDash execution receipts; filter by intent_id and receipt status.
 
-Useful for tracking cumulative volume alongside `get_agent_performance` (fee-event activity). Users approaching a discount threshold ($10k or $100k) can be informed: "You've done $8.2k in volume — approaching the 35bps discount tier."
+Use `get_agent_performance` to inspect fee-event activity. Routing tiers are based on the server-derived value of each trade, not accumulated historical volume.
 
 #### 7. get_revenue_metrics (retired — not an MCP tool)
 Platform-wide revenue aggregates are not exposed as an MCP tool, so do not call this name. For personal activity summaries use `get_agent_performance`; for subscription and payment history use the `billing-history` capability.
@@ -611,6 +656,9 @@ Autopilot sessions are bounded delegated workflows: a session token can maintain
 * `verify_delegation` — Verify Hyperliquid API wallet delegation to the agent; include `sessionToken` when attaching to a session (Syndicate).
 * `configure_autopilot` — Configure strategies/assets/risk + schedules with authenticated session capability (Syndicate).
 * `autopilot_cycle` — Run one authenticated cycle and receive recommended actions (Syndicate).
+
+#### select_execution_continuation
+Select server-stored continuation context with only `continuationId` using `POST /api/v1/agent/continuation`. The response preserves known canonical parameters and lists required missing fields. Selection does not quote, prepare, submit, sign, grant authority, or admit/debit a Scout trial. `authority` remains `NOT_GRANTED`.
 
 ## Autonomous Execution Intelligence Upgrade (v4.0)
 Use this state machine for any end-to-end autonomous agent flow. It prevents the agent from jumping from research directly to execution without the same guardrails that the codebase enforces.
@@ -787,7 +835,7 @@ Idle capital is optionality and liquidity, not automatically a defect. A capital
 ### Workflow F: "Pre-Trade Edge Audit"
 
 ### Pre-Trade Profit Checklist (Additive)
-Before Workflow F step 7, record: objective + holding horizon; decision timestamp, source timestamps, freshness limit, missing sources; gross upside and whether market-derived, protocol-published, user-supplied, or speculative via simulate_points, optimize_portfolio, or Trail Heat rank; gas, bridge, expected slippage, FarmDash fee (45 bps default; 35 bps at $10k+ cumulative; 25 bps at $100k+), exit costs, plus separate riskBufferUsd. Compute netEdgeUsd = expectedUpside - all costs - buffer. Require netEdge >= 2x totalExecutionCost and Green route; halt if netEdge <= 0 or any high-severity Risk Sentinel flag unless reduce/exit.
+Before Workflow F step 7, record: objective + holding horizon; decision timestamp, source timestamps, freshness limit, missing sources; gross upside and whether market-derived, protocol-published, user-supplied, or speculative via simulate_points, optimize_portfolio, or Trail Heat rank; gas, bridge, expected slippage, FarmDash fee (50 bps default; 40 bps at $10k+ per trade; 35 bps at $100k+; 20 bps at $1m+), exit costs, plus separate riskBufferUsd. Compute netEdgeUsd = expectedUpside - all costs - buffer. Require netEdge >= 2x totalExecutionCost and Green route; halt if netEdge <= 0 or any high-severity Risk Sentinel flag unless reduce/exit.
 1. `get_agent_events` -> check for fresh risk or opportunity events
 2. `get_trail_heat` -> confirm protocol rank and current status
 3. `simulate_points` or `optimize_portfolio` -> estimate expected upside
@@ -880,4 +928,31 @@ Send `X-ClawHub-Skill: farmdash-signal-architect` on every FarmDash API request 
 - [Fees and commercial terms](https://www.farmdash.one/fees)
 - [Security and authority boundaries](https://www.farmdash.one/security)
 
+### Canonical capability readiness
+
+Generated from shared/capability-truth.ts; read live status for deployment and per-request gates. Implementation readiness is not funded-production proof, commercial admission or signer authority.
+
+| Capability | Status | Required runtime/authority prerequisite |
+|---|---|---|
+| spot.USER_SIGNED | operational | Healthy execution governor, quote provider, RPC and durable receipt store; customer signs and submits. |
+| spot.BOUNDED_AUTONOMOUS | operational | Owner-signed EVM grant, exact simulation/calldata binding, durable budget and customer-local signer authority. |
+| futures.USER_SIGNED | operational | Venue account ownership, local action signature, builder approval, risk/research gates and durable order control. |
+| futures.BOUNDED_AUTONOMOUS | operational | Authenticated owner-bound futures policy, authorized local API-wallet signature, durable nonce/budget/order controls. |
+| solana.USER_SIGNED | operational | Native Jupiter/RPC route, durable preparation and finality store; customer signs and broadcasts. |
+| solana.BOUNDED_AUTONOMOUS | operational | Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority. |
+| ERC4337_SERVER_SUBMISSION | preparation_only | Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration. |
+| GENERIC_SERVER_INTENT_EXECUTION | preparation_only | Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier. |
+| MEE | preparation_only | Production coordinator and authoritative source/destination receipt verifier. |
+| ACP | deployment_prerequisite | AcpReadinessService paidWorkflowReady, evaluator/client identities, migrations, funding/finality workers and Base RPC. |
+
 <!-- farmdash-canonical-links:end -->
+
+<!-- installation-attribution:start -->
+
+### Optional installation attribution
+
+Generate a random UUIDv4 locally once per installation (for example, `crypto.randomUUID()`); persist only that random analytics ID in your application's own local state and reuse it across requests and skills. Never copy an example ID or generate a new ID for every request. Send optional `X-FarmDash-Installation-ID`; keep `X-ClawHub-Skill: farmdash-signal-architect` and optionally `X-FarmDash-Skill-Version: 4.2.1`. Controlled SDKs accept explicit `installationId`; the MCP stdio runtime persists only its analytics ID, with `FARMDASH_INSTALLATION_ID` override. No generic SDK writes files for you.
+
+This is untrusted analytics only. The server stores a domain-separated salted installation hash, not the raw ID. An installation is not a person, principal or wallet. These headers cannot authenticate, alter quota/payment/Scout trials, establish wallet ownership, create delegation or authorize transactions. Missing headers remain fully compatible. Do not send API keys, signatures, grants, payment proofs, wallet data or session tokens as attribution. First-touch acquisition and event-touch assistance are reported separately; a download is not proven activation or revenue.
+
+<!-- installation-attribution:end -->

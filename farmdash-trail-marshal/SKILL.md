@@ -15,6 +15,16 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Trail Marshal
 
+## Futures Execution Mode Contract
+
+- Select the execution domain and mode per execution step, not once for the entire workflow. **USER_SIGNED** requires fresh human approval for every order/cancel and a local Hyperliquid EIP-712 venue signature.
+- **BOUNDED_AUTONOMOUS** may run without per-order human confirmation only under a valid owner-signed futures grant, current API-wallet venue authority, and all session, binding, scope, policy, risk, budget, builder and replay checks. Every action still requires local venue signing.
+- Read futures bounded readiness in the generated canonical table and live status. A tracked mode, workflow record, paid tier or registered grant is not execution readiness. Keep spot authority separate; generic session policy and spot delegation do not grant futures authority.
+- Discover via `POST /api/v1/agent/authority`, `action: get_futures_authority`, `sessionId`, `sessionToken`; revoke through `action: revoke_futures_policy`, `grantId`, `sessionId`, `sessionToken`. Authority MCP tools select `executionDomain: futures`. Hand `executionMode`, `grantId`, `sessionId`, `sessionToken` to the existing futures execute/cancel surfaces; do not create new tool aliases.
+- Scope each step as `futures.open`, `futures.reduce`, `futures.close`, `futures.cancel`, or `futures.protective_order`. The server proves reduction from authoritative position state and exact signed semantics. Proven reduce/close/cancel/protection may survive exhausted new-risk capacity: a budget exception, never an authority bypass. Grant, venue delegation, identity, session, market/action, expiry/revocation, signature, builder and replay checks remain mandatory.
+- Futures Strategist signs venue actions locally. Trail Marshal and Autonomous Operator coordinate but never own keys; Camp Guard checks evidence and Hedge Warden plans. Research/accounting skills remain nonsigners.
+- Risk/loss bounds are admission checks, not guaranteed loss ceilings; never promise profits or positive expected value. Reconcile ambiguous submissions before any dependent step; never blind-retry.
+
 > Use this skill when running a multi-step DeFi goal: pick a named, confirmation-gated recipe instead of improvising the sequence at runtime.
 
 > **Security Posture.** Guarded orchestration only. Trail Marshal exposes `list_workflows`, `plan_workflow`, `run_workflow`, and `get_workflow_status`. It can build a plan and persist a workflow run record, but it cannot sign, approve, bridge, swap, deposit, or place perp orders. Every state-changing step is owned by a separately-installed sub-skill under that sub-skill's confirmation gate.
@@ -75,7 +85,14 @@ Use this before telling the user a workflow is executable.
 
 Creates a guarded workflow run record for a live session. Inputs are `workflowId`, `sessionId`, `agentAddress`, `sessionToken`, and optional `installedSkills`.
 
-Important: `run_workflow` does not run execution tools. If a workflow includes `execute_swap`, `resolve_defi_intent`, or `execute_perp_order`, the run status becomes `awaiting_confirmation` and the owning execution skill must still present fresh data and obtain explicit user approval.
+Important: `run_workflow` records a plan, not execution. Its compatibility `awaiting_confirmation` status does not select mode or create authority. The owning executor must verify fresh data and the step's domain/mode: USER_SIGNED approval, or a valid bounded grant with all checks. Read futures bounded readiness independently from the generated table and live status.
+
+
+### Execution Mode Tracking per Action
+When planning or tracking a workflow run (`plan_workflow` / `run_workflow`), Trail Marshal records the explicit execution mode for every executable step:
+- `USER_SIGNED`: Default interactive flow requiring per-step user confirmation and local EIP-191/EIP-712 signature.
+- `BOUNDED_AUTONOMOUS`: Agent-local architecture under an active, scoped domain delegation grant. A tracked mode or registered grant is not execution readiness. Read `/api/v1/agent/status` and fail closed while the domain execution-mode gate is non-operational; USER_SIGNED remains supported with fresh approval.
+- `preparation_only` is a capability status, not a third executionMode. Informational/unsupported steps must remain non-executable. Query futures independently through its distinct authority contract.
 
 ### `get_workflow_status`
 
@@ -178,7 +195,7 @@ If a recipe skips SENSE, it is unsafe. If it skips VERIFY, the agent never impro
 ### Multi-Leg Execution Disclosure
 Tell the user multi-leg execution is non-atomic unless the adapter proves otherwise, and state leg order, maximum unhedged time, partial-fill handling, abort conditions, and unwind before the first signature. Trail Marshal cannot pre-confirm anything; each confirmation happens in the owning sub-skill's quote path, and `delta_neutral_setup` stays research-only until a paired adapter exists.
 
-Trail Marshal cannot pre-confirm anything. Each user confirmation in a recipe happens at the moment the user's *separate* sub-skill presents its quote — not in Trail Marshal's call path. If asked to run a recipe without intermediate review, the agent should refuse and explain the contract.
+Trail Marshal cannot pre-confirm anything or manufacture a grant. USER_SIGNED confirmation happens in the owning execution sub-skill's fresh quote path. Operational bounded futures may omit intermediate human review only under the separate owner futures grant and all checks; during preparation_only, refuse automated execution. Catalog confirmation counts are supervised defaults, never grants.
 
 For `delta_neutral_setup`, the current catalog intentionally stops before execution. Neither `execute_swap` nor `execute_perp_order` can atomically bind both legs, and standalone `funding_arb` execution is analysis-only. A future paired adapter must bind both legs, maximum basis/slippage, timeout, partial-fill policy, and unwind before this workflow becomes executable.
 
@@ -286,4 +303,31 @@ Send `X-ClawHub-Skill: farmdash-trail-marshal` on every FarmDash API request —
 - [Fees and commercial terms](https://www.farmdash.one/fees)
 - [Security and authority boundaries](https://www.farmdash.one/security)
 
+### Canonical capability readiness
+
+Generated from shared/capability-truth.ts; read live status for deployment and per-request gates. Implementation readiness is not funded-production proof, commercial admission or signer authority.
+
+| Capability | Status | Required runtime/authority prerequisite |
+|---|---|---|
+| spot.USER_SIGNED | operational | Healthy execution governor, quote provider, RPC and durable receipt store; customer signs and submits. |
+| spot.BOUNDED_AUTONOMOUS | operational | Owner-signed EVM grant, exact simulation/calldata binding, durable budget and customer-local signer authority. |
+| futures.USER_SIGNED | operational | Venue account ownership, local action signature, builder approval, risk/research gates and durable order control. |
+| futures.BOUNDED_AUTONOMOUS | operational | Authenticated owner-bound futures policy, authorized local API-wallet signature, durable nonce/budget/order controls. |
+| solana.USER_SIGNED | operational | Native Jupiter/RPC route, durable preparation and finality store; customer signs and broadcasts. |
+| solana.BOUNDED_AUTONOMOUS | operational | Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority. |
+| ERC4337_SERVER_SUBMISSION | preparation_only | Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration. |
+| GENERIC_SERVER_INTENT_EXECUTION | preparation_only | Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier. |
+| MEE | preparation_only | Production coordinator and authoritative source/destination receipt verifier. |
+| ACP | deployment_prerequisite | AcpReadinessService paidWorkflowReady, evaluator/client identities, migrations, funding/finality workers and Base RPC. |
+
 <!-- farmdash-canonical-links:end -->
+
+<!-- installation-attribution:start -->
+
+### Optional installation attribution
+
+Generate a random UUIDv4 locally once per installation (for example, `crypto.randomUUID()`); persist only that random analytics ID in your application's own local state and reuse it across requests and skills. Never copy an example ID or generate a new ID for every request. Send optional `X-FarmDash-Installation-ID`; keep `X-ClawHub-Skill: farmdash-trail-marshal` and optionally `X-FarmDash-Skill-Version: 1.1.2`. Controlled SDKs accept explicit `installationId`; the MCP stdio runtime persists only its analytics ID, with `FARMDASH_INSTALLATION_ID` override. No generic SDK writes files for you.
+
+This is untrusted analytics only. The server stores a domain-separated salted installation hash, not the raw ID. An installation is not a person, principal or wallet. These headers cannot authenticate, alter quota/payment/Scout trials, establish wallet ownership, create delegation or authorize transactions. Missing headers remain fully compatible. Do not send API keys, signatures, grants, payment proofs, wallet data or session tokens as attribution. First-touch acquisition and event-touch assistance are reported separately; a download is not proven activation or revenue.
+
+<!-- installation-attribution:end -->

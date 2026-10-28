@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.hububstudio/farmdash-agent-os",
   "title": "FarmDash Agent OS",
-  "description": "Zero-custody DeFi intelligence MCP server: 84 tools for Trail Heat, risk, yield, and gated swaps.",
+  "description": "Zero-custody DeFi intelligence MCP server for Trail Heat, risk, yield, and gated swaps.",
   "repository": {
     "url": "https://github.com/Parmasanandgarlic/farmdash-openclaw-skills",
     "source": "github",

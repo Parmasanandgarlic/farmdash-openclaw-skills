@@ -2,9 +2,9 @@
 
 # FarmDash MCP Server (source distribution)
 
-FarmDash Agent OS MCP Server (v5.0.0) - 84 tools for DeFi intelligence, protocol risk analysis, yield strategy simulation, and policy-bounded zero-custody workflows via [Model Context Protocol](https://modelcontextprotocol.io).
+FarmDash Agent OS MCP Server (v5.0.0) provides 94 capability-labeled DeFi research, risk, simulation, and zero-custody workflow tools via [Model Context Protocol](https://modelcontextprotocol.io). The authoritative canonical catalog is generated from registrations in `src/index-base.ts` and the committed runtime schema snapshot.
 
-> Registry status (verified 2026-09-29): `@farmdash/mcp-server` is **not published** on the public npm registry — `npm view @farmdash/mcp-server` returns `E404` from `registry.npmjs.org`. Use the source installation below. Do not present a registry quickstart unless a future release is independently visible on npm.
+> **Current capability contract:** Read the generated table below and [canonical execution truth](https://www.farmdash.one/execution-truth.json), then check live `/api/v1/agent/status`. Operational implementation readiness is not funded production proof or authorization. USER_SIGNED requires customer-local signing; bounded execution additionally requires a domain-specific owner policy and agent-local signature, authenticated exact-principal binding, simulation, budget, replay and reconciliation checks. FarmDash never receives the customer key.
 
 ## Quick Start
 
@@ -13,6 +13,7 @@ git clone https://github.com/Parmasanandgarlic/farmdash-openclaw-skills.git
 cd farmdash-openclaw-skills/mcp-server
 npm ci
 npm run build
+npm run smoke
 ```
 
 ## Client Configuration
@@ -72,48 +73,48 @@ Add to `.cline/mcp_settings.json`:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `FARMDASH_API_KEY` | No | unset | Leave unset to run as a free Scout client. Set it only to a paid Pioneer/Syndicate bearer token, issued at `/api/v1/agent/api-key`. Any non-empty value is sent verbatim as `Authorization: Bearer <value>`, so do not pass a placeholder string. |
+| `FARMDASH_API_KEY` | No | unset | Omit for Scout. Set only a real paid bearer token via secure client configuration; any non-empty value is sent as an Authorization credential. Never use placeholders or wallet keys. |
 | `FARMDASH_BASE_URL` | No | `https://www.farmdash.one/api` | Override the API base URL. |
 
-Scout mode is the fastest path: build the MCP server from source and leave `FARMDASH_API_KEY` unset. When Scout reaches 30 requests per 24 hours, FarmDash returns a 402 response with route-specific x402 payment details. The configured default overage is 0.01 USDC; premium reports and compute-heavy routes publish their own price in the 402 response.
+Leave `FARMDASH_API_KEY` unset for Scout. Eligible free routes have 30 requests per 24 hours per IP; catalog responses can be truncated/masked, and premium routes may require payment before quota is exhausted. Qualifying route-specific paid access controls full data. Parse the live 402 price/asset/network/proof and obey STOP_RETRYING; published 0.01 USDC default overage is not a universal price. The current repository default for session-control capacity is 0.02 USDC. Payment is not authority.
 
 Two further optional variables exist for advanced integrations: `FARMDASH_SCOUT_GRANT` (an onboarding grant, normally attached in memory after `agent_onboard` returns one) and `FARMDASH_SKILL_ID` (OpenClaw skill attribution). Neither is needed for a normal client.
 
-## Tool Highlights (84 Total)
+## Tool Highlights (94 Total)
 
-This section groups the principal tools. The authoritative count is the 84 `server.tool(...)` registrations in `src/index.ts`; MCP clients can retrieve the complete runtime catalog through tool discovery. Run `agent_onboard` first: it fetches the live `/api/v1/agent/status` readiness contract before returning onboarding guidance.
+This section groups principal canonical tools; it is not an inventory sum. Canonical registrations in `src/index-base.ts` and the committed schema snapshot define the 94-tool catalog. Inspect installed `tools/list` through tool discovery to retrieve the complete runtime catalog. `agent_onboard` reads live readiness before returning guidance; onboarding is not wallet authority or a required skill-registration step.
 
-### Protocol Risk Analyzer (1 tool) — NEW in v5.0
+### Protocol Risk Analyzer — NEW in v5.0
 
 | Tool | Tier | Description |
 |------|------|-------------|
 | `analyze_protocol_risk` | Pioneer+ | Deep risk analysis combining DeFiLlama on-chain signals with Trail Heat. Returns risk grade, TVL concentration, momentum decay, chain diversification, and historical trend signals. |
 
-### Yield Strategy Simulator (1 tool) — NEW in v5.0
+### Yield Strategy Simulator — NEW in v5.0
 
 | Tool | Tier | Description |
 |------|------|-------------|
-| `simulate_yield_strategy` | Pioneer+ | Advanced portfolio simulation allocating capital across 81+ protocols using live DeFiLlama pool data and Trail Heat scoring. Returns projected allocations, yields, diversification score, and risk metrics. |
+| `simulate_yield_strategy` | Pioneer+ | Advanced portfolio simulation modeling allocations across the canonical protocol catalog using live DeFiLlama pool data and Trail Heat scoring. Returns projected allocations, yields, diversification score, and risk metrics. |
 
-### Trail Heat Query (1 tool) — NEW in v5.0
-
-| Tool | Tier | Description |
-|------|------|-------------|
-| `query_trail_heat` | Pioneer+ | Programmatic Trail Heat query with advanced filtering (score range, status, category, chain, hot), sorting, and pagination across 81+ protocols. |
-
-### Signal Architect (7 principal tools)
+### Trail Heat Query — NEW in v5.0
 
 | Tool | Tier | Description |
 |------|------|-------------|
-| `get_trail_heat` | Scout+ | Ranked protocol dataset (81+ protocols, 0-100 scoring) with optional filtering |
+| `query_trail_heat` | Pioneer+ | Programmatic Trail Heat query with advanced filtering (score range, status, category, chain, hot), sorting, and pagination across the canonical protocol catalog. |
+
+### Signal Architect
+
+| Tool | Tier | Description |
+|------|------|-------------|
+| `get_trail_heat` | Scout+ | Evidence-labeled ranked protocol dataset (0-100 scoring; catalog heuristics and live quantitative scores are distinct) with optional filtering |
 | `get_chain_breakdown` | Scout+ | Protocol distribution by blockchain |
-| `get_swap_quote` | Any | Preview swap quote with fee breakdown, routing, and wallet-bound simulation intent |
+| `get_swap_quote` | Any | Provider-neutral preview or explicit firm wallet-bound quote-intent, according to request mode; preview is not executable |
 | `simulate_swap_execution` | Any | Mandatory pre-execution simulation for a quote intent |
 | `find_capital_route` | Any | Lower-level live route quote preview across explicit token and chain inputs |
 | `execute_swap` | Any (EIP-191) | Validate the signed, simulated request and return the exact transaction payload; FarmDash does not broadcast it |
 | `confirm_swap` | Session-bound | Verify the canonical-chain receipt and exact server-committed fee fields |
 
-### Agent Intelligence (11 principal tools)
+### Agent Intelligence
 
 | Tool | Tier | Description |
 |------|------|-------------|
@@ -129,13 +130,13 @@ This section groups the principal tools. The authoritative count is the 84 `serv
 | `get_token_prices` | Any | Live spot prices (up to 25 tokens) |
 | `get_agent_performance` | Pioneer+ | FarmDash fee-event activity, costs, protocol diversity, and Trail Cred context; not realized P&L, win rate, or execution quality |
 
-### Futures Strategist (7 tools)
+### Futures Strategist
 
 Commercial access buys API capacity only; it never creates Hyperliquid signing authority. Scout is 30 requests / 24h, Pioneer is 1,500 / day, and Syndicate is 50,000 / day. Eligible x402 payments unlock one request under the route's published policy.
 
 | Tool | Access | Description |
 |------|--------|-------------|
-| `scan_funding_rates` | Scout preview; Pioneer+ or the default-overage x402 for full response | Hyperliquid vs Binance/Bybit funding-rate arbitrage |
+| `scan_funding_rates` | Scout preview; Pioneer+ or its route-specific x402 for full response | Hyperliquid vs Binance/Bybit funding-rate arbitrage |
 | `scan_market_conditions` | Scout+ | Technical indicators (EMA, RSI, MACD, ATR, BB, ADX) |
 | `get_futures_account` | Pioneer+ or wallet-portfolio x402 | Positions, margin, equity, PnL, liquidation prices |
 | `analyze_futures_strategy` | Pioneer+ or futures-strategy x402 | Full research pipeline; new-risk execution gate is valid for 60 seconds |
@@ -143,7 +144,7 @@ Commercial access buys API capacity only; it never creates Hyperliquid signing a
 | `execute_perp_order` | Scout capacity or paid capacity + EIP-712 authority | Forwards a user-signed Hyperliquid order; FarmDash never signs |
 | `cancel_perp_order` | Scout capacity or paid capacity + EIP-712 authority | Forwards a user-signed cancellation; no prior FarmDash order required |
 
-### Virtuals ACP Tender Coordination (10 tools)
+### Virtuals ACP Tender Coordination
 
 | Tool | Tier | Description |
 |------|------|-------------|
@@ -180,12 +181,34 @@ Gate:    execute_swap requires a fresh successful simulate_swap_execution result
 
 ```
 Signing: EIP-712 typed data (Hyperliquid domain)
-Gate:    analyze_futures_strategy must be called within 5 minutes
+Gate:    New-risk research evidence has a 60-second validity window; reduce-only exemptions do not bypass authority
 ```
 
 ### Virtuals ACP Tender (EIP-712)
 
 New integrations use the V2 sequence: `select_virtuals_provider_plan_v2`, `prepare_virtuals_tender_v2`, `authorize_virtuals_tender_v2`, customer-local job creation, `bind_virtuals_tender_job`, `reserve_virtuals_tender_funding_v2`, customer-local funding, `record_virtuals_tender_funding_v2`, and `evaluate_virtuals_tender`. The exact V2 approval binds task, disclosure, evidence, provider-plan, economic-policy, evaluator, cap, nonce, and expiry commitments. FarmDash is a separately registered evaluator and can settle only jobs that independently verify to the customer client, committed provider, confirmed funding ledger, structured V2 evidence, deterministic simulation gate, and canonical Base receipts. `hire_virtuals_specialist` is a legacy V1 compatibility path and V1 creation is disabled by default.
+
+## Capability prerequisites
+
+<!-- capability-truth:start -->
+<!-- Generated by scripts/generate-capability-truth.mjs. -->
+| Capability | Canonical status |
+| --- | --- |
+| spot.USER_SIGNED | operational |
+| spot.BOUNDED_AUTONOMOUS | operational |
+| futures.USER_SIGNED | operational |
+| futures.BOUNDED_AUTONOMOUS | operational |
+| solana.USER_SIGNED | operational |
+| solana.BOUNDED_AUTONOMOUS | operational |
+| ERC4337_SERVER_SUBMISSION | preparation_only |
+| GENERIC_SERVER_INTENT_EXECUTION | preparation_only |
+| MEE | preparation_only |
+| ACP | deployment_prerequisite |
+<!-- capability-truth:end -->
+
+Generic execution and MEE retain their verifier/coordinator prerequisites; a configured bundler cannot qualify ERC-4337 public tenant authority by itself. ACP V2 remains deployment-prerequisite gated; inspect its exact live readiness checks before treating the sequence described here as a paid service. Webhooks require their migration, `WEBHOOK_ENCRYPTION_KEY`, `CRON_SECRET`, and the scheduled durable worker. Commercial capacity and execution authority are separate.
+
+Sessions are Pioneer+ or eligible x402 capacity, with separate target-bound session authentication. Source-contract states are active/paused and terminal halted/expired; heartbeat expiry is 24 hours. Pause leaves positions in place. Close/kill await grant revocation; session controls are not venue delegation or owner policy.
 
 ## Guardrails (Server-Enforced)
 
@@ -205,18 +228,22 @@ The Futures Strategist enforces hard limits that cannot be overridden:
 |------|-------|------------|--------------|
 | **Scout** | Free | 30 req/24h | Swap quotes, top 3 Trail Heat, market conditions |
 | **Pioneer** | $39.99/mo USDC | 1,500/day | Full dataset, sybil audits, strategy analysis, balances |
-| **Syndicate** | $199/mo USDC | 50K/day | Order execution, webhooks, batch operations, volume discounts |
+| **Syndicate** | $199/mo USDC | 50,000/day | High-volume capacity; signed order/cancel capacity is also available to Scout; webhook delivery remains deployment-prerequisites-gated |
+
+## Providers and execution chains
+
+LI.FI and Relay are enabled/configured/firm_quote_ready. 0x is operator-paused, disabled, and excluded from primary/fallback; OKX is quarantined. x402 is a payment/access rail, never a swap provider. EVM compatibility chains are Ethereum 1, Optimism 10, Polygon 137, Base 8453, Arbitrum 42161, and Linea 59144; private submission is unsupported. Status labels are not funded transaction proofs.
 
 ## Fee Model
 
-- **Swap fee** (combined routing target; LI.FI 25 bps platform component deducted, not stacked; gas/slippage excluded): 50 bps under $10K, 45 bps at $10K+, 40 bps at $100K+, 30 bps at $1M+
+- **Swap fee** (combined routing target; LI.FI 25 bps platform component deducted, not stacked; gas/slippage excluded): 50 bps under $10K, 40 bps at $10K+, 35 bps at $100K+, 20 bps at $1M+
 - **Treasury**: `0xb0Ed0d7bca24BBaD635B977C2efbE06742e33377`
 
 ## What's New in v5.0
 
 - **`analyze_protocol_risk`** — Deep risk analysis pulling live DeFiLlama signals (TVL, momentum, chain diversification, 30-day historical trends) combined with Trail Heat scoring. Returns composite risk grade (low/moderate/elevated/high/critical) with actionable danger/warning/info signals.
-- **`simulate_yield_strategy`** — Advanced portfolio simulation combining Wagon Steward wallet intelligence with Supply Master yield data. Allocates capital across 81+ protocols, projects yields, calculates diversification scores, and flags high-risk concentrations.
-- **`query_trail_heat`** — Programmatic Trail Heat query endpoint with advanced filtering (score range, status, category, chain, hot flag), sorting (score/tvl/name/change7d), and pagination. Makes the 81+ protocol coverage feel alive for agents.
+- **`simulate_yield_strategy`** — Advanced portfolio simulation combining Wagon Steward wallet intelligence with Supply Master yield data. Models allocations across the canonical protocol catalog, projects yields, calculates diversification scores, and flags high-risk concentrations.
+- **`query_trail_heat`** — Programmatic Trail Heat query endpoint with advanced filtering (score range, status, category, chain, hot flag), sorting (score/tvl/name/change7d), and pagination. Retains methodology/freshness labels instead of presenting catalog heuristics as guaranteed live data.
 - **Enhanced `get_trail_heat`** — Now accepts optional `protocolId`, `category`, `top`, and `hot` filter parameters for quick filtered queries without switching to `query_trail_heat`.
 
 ## Architecture
@@ -224,7 +251,7 @@ The Futures Strategist enforces hard limits that cannot be overridden:
 - **Transport**: stdio (client spawns process, communicates via stdin/stdout)
 - **Runtime**: Node.js (ES2022, ESM)
 - **Dependencies**: `@modelcontextprotocol/sdk`, `zod` (runtime validation)
-- **Error handling**: Dust Storm pattern — graceful degradation, never crashes
+- **Error handling**: Dust Storm pattern — typed degraded failures; never label missing financial data as success
 - **Timeout**: 15s default per API call (25s for yield simulation)
 
 ## Development
@@ -238,11 +265,16 @@ npm run start    # Run server directly
 ## Links
 
 - [FarmDash Agents Hub](https://www.farmdash.one/agents)
-- [Signal Architect OpenAPI](https://www.farmdash.one/agents/swap/openapi.yaml)
-- [Futures Strategist OpenAPI](https://www.farmdash.one/agents/futures/openapi.yaml)
+- [Signal Architect OpenAPI (54 primary operations)](https://www.farmdash.one/agents/swap/openapi.yaml)
+- [Futures Strategist OpenAPI (12 operations)](https://www.farmdash.one/agents/futures/openapi.yaml)
+- [Canonical OpenAPI Suite (75 total operations across 4 documents)](https://www.farmdash.one/agents/openapi.yaml)
 - [Agent Report](https://www.farmdash.one/agent-report.md)
 - [llms.txt](https://www.farmdash.one/llms.txt)
 
 ## License
 
 MIT
+
+### Redirect security
+
+Configure `FARMDASH_BASE_URL` as the final API origin, normally `https://www.farmdash.one/api`. The MCP client rejects redirects, including same-origin redirects, with a non-retryable `redirect_policy_blocked` error. A custom `fetchImpl` is trusted transport code and must honor the standard Fetch `redirect: "manual"` option; a replacement that ignores it can send data before the client can inspect the response.

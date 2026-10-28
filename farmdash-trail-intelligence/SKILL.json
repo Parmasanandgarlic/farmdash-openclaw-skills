@@ -34,8 +34,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -46,8 +46,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -57,9 +57,22 @@
       "description": "Real-time stream of protocol events: new airdrops, upcoming snapshots, program changes, TVL spikes.\r\n\r\nEvent-to-information mapping (no mandatory close):\r\n\r\n| Event Type | Agent Response |\r\n| :--- | :--- |\r\n| New airdrop announced | Surface it. Run further research if the user asks. Do not assume entry is appropriate |\r\n| Snapshot in <48h | Surface the deadline and let the user weigh it. Eligibility checks if requested |\r\n| Multiplier increase | Recalculate simulations if asked. Disclose that program rules can change again |\r\n| TVL spike | Flag dilution risk for existing holders. No automatic \"add more\" suggestion |\r\n| Program ending soon | Inform the user. Exiting is a user decision, not a default close | Takes no parameters.",
       "inputSchema": {
         "type": "object",
-        "properties": {},
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          }
+        },
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -71,20 +84,20 @@
         "type": "object",
         "properties": {
           "addresses": {
+            "minItems": 1,
+            "maxItems": 10,
             "type": "array",
             "items": {
               "type": "string",
               "pattern": "^0x[a-fA-F0-9]{40}$"
-            },
-            "minItems": 1,
-            "maxItems": 10
+            }
           }
         },
         "required": [
           "addresses"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "risk"
@@ -101,11 +114,13 @@
           },
           "txCount": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "daysActive": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "walletBalanceUsd": {
             "type": "number",
@@ -113,13 +128,17 @@
           },
           "uniqueContracts": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "isCexFundingOnly": {
             "type": "boolean"
           },
           "protocolPoints": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "number"
             }
@@ -134,8 +153,8 @@
           "isCexFundingOnly",
           "protocolPoints"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -147,9 +166,11 @@
         "type": "object",
         "properties": {
           "currentProtocols": {
+            "maxItems": 50,
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 128
             }
           },
           "riskPreference": {
@@ -179,8 +200,8 @@
           "currentProtocols",
           "riskPreference"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -195,14 +216,14 @@
             "type": "string"
           },
           "days": {
+            "default": 30,
             "type": "integer",
             "minimum": 1,
-            "maximum": 365,
-            "default": 30
+            "maximum": 365
           }
         },
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -224,8 +245,8 @@
         "required": [
           "address"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -240,14 +261,16 @@
             "type": "string"
           },
           "tokens": {
+            "maxItems": 50,
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 128
             }
           }
         },
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -266,8 +289,8 @@
         "required": [
           "protocolId"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -286,8 +309,8 @@
         "required": [
           "protocolId"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "risk"
@@ -299,20 +322,26 @@
         "type": "object",
         "properties": {
           "fromChainId": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           },
           "toChainId": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           },
           "fromToken": {
             "type": "string",
-            "pattern": "^0x[a-fA-F0-9]{40}$",
-            "description": "ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match."
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Resolver-supported symbol, native identifier, token address, or chain-qualified asset; discovery resolves canonical assets server-side."
           },
           "toToken": {
             "type": "string",
-            "pattern": "^0x[a-fA-F0-9]{40}$",
-            "description": "ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match."
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Resolver-supported symbol, native identifier, token address, or chain-qualified asset; discovery resolves canonical assets server-side."
           },
           "fromAmount": {
             "type": "string",
@@ -334,8 +363,8 @@
           "toToken",
           "fromAmount"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -351,15 +380,15 @@
             "description": "Protocol ID (e.g. \"hyperliquid\", \"etherfi\")"
           },
           "includeHistorical": {
-            "type": "boolean",
-            "description": "Include 30-day historical TVL trend analysis (default: true)"
+            "description": "Include 30-day historical TVL trend analysis (default: true)",
+            "type": "boolean"
           }
         },
         "required": [
           "protocolId"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "risk"
@@ -376,28 +405,31 @@
             "description": "Total capital to allocate in USD"
           },
           "riskPreference": {
+            "description": "Risk tolerance (default: balanced)",
             "type": "string",
             "enum": [
               "conservative",
               "balanced",
               "aggressive"
-            ],
-            "description": "Risk tolerance (default: balanced)"
+            ]
           },
           "timeHorizonDays": {
+            "description": "Simulation horizon in days (default: 90)",
             "type": "integer",
             "minimum": 7,
-            "maximum": 365,
-            "description": "Simulation horizon in days (default: 90)"
+            "maximum": 365
           },
           "protocols": {
+            "description": "Specific protocol IDs to investigate",
+            "maxItems": 50,
             "type": "array",
             "items": {
-              "type": "string"
-            },
-            "description": "Specific protocol IDs to investigate"
+              "type": "string",
+              "maxLength": 128
+            }
           },
           "poolIdentities": {
+            "description": "Exact upstream chain, pool ID and underlying asset addresses",
             "type": "array",
             "items": {
               "type": "object",
@@ -412,11 +444,11 @@
                   "type": "string"
                 },
                 "assetAddresses": {
+                  "minItems": 1,
                   "type": "array",
                   "items": {
                     "type": "string"
-                  },
-                  "minItems": 1
+                  }
                 }
               },
               "required": [
@@ -424,12 +456,11 @@
                 "poolId",
                 "chain",
                 "assetAddresses"
-              ],
-              "additionalProperties": false
-            },
-            "description": "Exact upstream chain, pool ID and underlying asset addresses"
+              ]
+            }
           },
           "costs": {
+            "description": "Editable scenario costs in USD; missing mandatory costs force WAIT",
             "type": "object",
             "properties": {
               "gas": {
@@ -509,29 +540,30 @@
                   }
                 ]
               }
-            },
-            "additionalProperties": false,
-            "description": "Editable scenario costs in USD; missing mandatory costs force WAIT"
+            }
           },
           "stayPutApy": {
+            "description": "Editable stay-put baseline APY assumption",
             "type": "number",
-            "minimum": 0,
-            "description": "Editable stay-put baseline APY assumption"
+            "minimum": 0
           },
           "scenarioApy": {
+            "description": "Editable APY assumptions by protocol; excluded from observed yield",
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {
               "type": "number",
               "minimum": 0
-            },
-            "description": "Editable APY assumptions by protocol; excluded from observed yield"
+            }
           }
         },
         "required": [
           "capitalUsd"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -543,71 +575,72 @@
         "type": "object",
         "properties": {
           "minScore": {
+            "description": "Minimum heuristic score (0-100)",
             "type": "integer",
             "minimum": 0,
-            "maximum": 100,
-            "description": "Minimum heuristic score (0-100)"
+            "maximum": 100
           },
           "maxScore": {
+            "description": "Maximum heuristic score (0-100)",
             "type": "integer",
             "minimum": 0,
-            "maximum": 100,
-            "description": "Maximum heuristic score (0-100)"
+            "maximum": 100
           },
           "status": {
+            "description": "Filter by protocol status",
             "type": "string",
             "enum": [
               "Confirmed Airdrop",
               "Points Program",
               "Speculative",
               "Completed"
-            ],
-            "description": "Filter by protocol status"
+            ]
           },
           "category": {
-            "type": "string",
-            "description": "Filter by category (e.g. Perps, Dex, Lending, L2, Restaking)"
+            "description": "Filter by category (e.g. Perps, Dex, Lending, L2, Restaking)",
+            "type": "string"
           },
           "chain": {
-            "type": "string",
-            "description": "Filter by chain name (e.g. Ethereum, Arbitrum, Solana)"
+            "description": "Filter by chain name (e.g. Ethereum, Arbitrum, Solana)",
+            "type": "string"
           },
           "hot": {
-            "type": "boolean",
-            "description": "Only hot/trending protocols"
+            "description": "Only hot/trending protocols",
+            "type": "boolean"
           },
           "sortBy": {
+            "description": "Sort field (default: discovery heuristic score)",
             "type": "string",
             "enum": [
               "score",
               "tvl",
               "name",
               "change7d"
-            ],
-            "description": "Sort field (default: discovery heuristic score)"
+            ]
           },
           "sortOrder": {
+            "description": "Sort order (default: desc)",
             "type": "string",
             "enum": [
               "asc",
               "desc"
-            ],
-            "description": "Sort order (default: desc)"
+            ]
           },
           "limit": {
+            "description": "Max results per page (default: 25)",
             "type": "integer",
             "minimum": 1,
-            "maximum": 100,
-            "description": "Max results per page (default: 25)"
+            "maximum": 100
           },
           "offset": {
+            "description": "Pagination offset (default: 0)",
             "type": "integer",
             "minimum": 0,
-            "description": "Pagination offset (default: 0)"
+            "maximum": 9007199254740991
           }
         },
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "outputHints": [],
       "category": "read"
@@ -630,5 +663,55 @@
     "mcpDiscovery": "https://www.farmdash.one/.well-known/mcp.json",
     "fees": "https://www.farmdash.one/fees",
     "security": "https://www.farmdash.one/security"
+  },
+  "capability_truth": {
+    "spot.USER_SIGNED": {
+      "status": "operational",
+      "prerequisite": "Healthy execution governor, quote provider, RPC and durable receipt store; customer signs and submits."
+    },
+    "spot.BOUNDED_AUTONOMOUS": {
+      "status": "operational",
+      "prerequisite": "Owner-signed EVM grant, exact simulation/calldata binding, durable budget and customer-local signer authority."
+    },
+    "futures.USER_SIGNED": {
+      "status": "operational",
+      "prerequisite": "Venue account ownership, local action signature, builder approval, risk/research gates and durable order control."
+    },
+    "futures.BOUNDED_AUTONOMOUS": {
+      "status": "operational",
+      "prerequisite": "Authenticated owner-bound futures policy, authorized local API-wallet signature, durable nonce/budget/order controls."
+    },
+    "solana.USER_SIGNED": {
+      "status": "operational",
+      "prerequisite": "Native Jupiter/RPC route, durable preparation and finality store; customer signs and broadcasts."
+    },
+    "solana.BOUNDED_AUTONOMOUS": {
+      "status": "operational",
+      "prerequisite": "Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority."
+    },
+    "ERC4337_SERVER_SUBMISSION": {
+      "status": "preparation_only",
+      "prerequisite": "Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration."
+    },
+    "GENERIC_SERVER_INTENT_EXECUTION": {
+      "status": "preparation_only",
+      "prerequisite": "Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier."
+    },
+    "MEE": {
+      "status": "preparation_only",
+      "prerequisite": "Production coordinator and authoritative source/destination receipt verifier."
+    },
+    "ACP": {
+      "status": "deployment_prerequisite",
+      "prerequisite": "AcpReadinessService paidWorkflowReady, evaluator/client identities, migrations, funding/finality workers and Base RPC."
+    }
+  },
+  "installation_attribution": {
+    "header": "X-FarmDash-Installation-ID",
+    "optional": true,
+    "analytics_only": true,
+    "generation": "locally generated random UUIDv4, stable per installation, shared across skills",
+    "server_storage": "domain-separated salted hash only",
+    "authority": "none; cannot authenticate, grant quota/payment/trial capacity, own wallets, delegate or sign"
   }
 }

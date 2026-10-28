@@ -270,7 +270,7 @@ Inputs: current MCP uses `protocolId` (required). Legacy examples may say slug; 
 Do not invent admin-key structure, audit count, timelock, holder concentration, exploit history, oracle design, bridge dependencies, redemption liquidity, or governance facts when they are not in the response. Trail Heat measures opportunity momentum, not residual loss probability. A numeric score from this surface must never be translated into "low residual risk" without separately sourced evidence.
 
 #### find_capital_route
-**Current implementation contract (authoritative):** this is a route quote preview using `fromChainId`, `toChainId`, `fromToken`, `toToken`, `fromAmount` in base units, and optional `protocol` (`lifi`, `zerox`, `x402`, `okx`). It does not return deposit calldata or perform approvals. Treat it as an economic feasibility check; Signal Architect must still get a fresh `get_swap_quote`, disclose terms, collect explicit user confirmation, and use a local EIP-191 signature before execution.
+**Current implementation contract (authoritative):** this is a route quote preview using `fromChainId`, `toChainId`, `fromToken`, `toToken`, `fromAmount` in base units, and optional `protocol` (`lifi`, `relay`; 0x is operator-paused, x402 is payment infrastructure and never a swap provider, OKX is quarantined). It does not return deposit calldata or perform approvals. Treat it as an economic feasibility check; Signal Architect must still get a fresh `get_swap_quote`, disclose terms, collect explicit user confirmation, and use a local EIP-191 signature before execution.
 
 Given a source token/chain and destination token/chain, returns route economics for planning: estimated output, route provider, cost, timing, slippage assumptions, and constraints. It does not produce execution-ready approvals, deposits, or calldata.
 
@@ -582,4 +582,31 @@ Send `X-ClawHub-Skill: farmdash-trail-intelligence` on every FarmDash API reques
 - `simulate_yield_strategy`: Simulate yield-strategy economics for research. Simulation does not authorize or execute a transaction.
 - `query_trail_heat`: Query the Trail Heat research surface with explicit data-quality and confidence fields.
 
+### Canonical capability readiness
+
+Generated from shared/capability-truth.ts; read live status for deployment and per-request gates. Implementation readiness is not funded-production proof, commercial admission or signer authority.
+
+| Capability | Status | Required runtime/authority prerequisite |
+|---|---|---|
+| spot.USER_SIGNED | operational | Healthy execution governor, quote provider, RPC and durable receipt store; customer signs and submits. |
+| spot.BOUNDED_AUTONOMOUS | operational | Owner-signed EVM grant, exact simulation/calldata binding, durable budget and customer-local signer authority. |
+| futures.USER_SIGNED | operational | Venue account ownership, local action signature, builder approval, risk/research gates and durable order control. |
+| futures.BOUNDED_AUTONOMOUS | operational | Authenticated owner-bound futures policy, authorized local API-wallet signature, durable nonce/budget/order controls. |
+| solana.USER_SIGNED | operational | Native Jupiter/RPC route, durable preparation and finality store; customer signs and broadcasts. |
+| solana.BOUNDED_AUTONOMOUS | operational | Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority. |
+| ERC4337_SERVER_SUBMISSION | preparation_only | Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration. |
+| GENERIC_SERVER_INTENT_EXECUTION | preparation_only | Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier. |
+| MEE | preparation_only | Production coordinator and authoritative source/destination receipt verifier. |
+| ACP | deployment_prerequisite | AcpReadinessService paidWorkflowReady, evaluator/client identities, migrations, funding/finality workers and Base RPC. |
+
 <!-- farmdash-canonical-links:end -->
+
+<!-- installation-attribution:start -->
+
+### Optional installation attribution
+
+Generate a random UUIDv4 locally once per installation (for example, `crypto.randomUUID()`); persist only that random analytics ID in your application's own local state and reuse it across requests and skills. Never copy an example ID or generate a new ID for every request. Send optional `X-FarmDash-Installation-ID`; keep `X-ClawHub-Skill: farmdash-trail-intelligence` and optionally `X-FarmDash-Skill-Version: 3.1.3`. Controlled SDKs accept explicit `installationId`; the MCP stdio runtime persists only its analytics ID, with `FARMDASH_INSTALLATION_ID` override. No generic SDK writes files for you.
+
+This is untrusted analytics only. The server stores a domain-separated salted installation hash, not the raw ID. An installation is not a person, principal or wallet. These headers cannot authenticate, alter quota/payment/Scout trials, establish wallet ownership, create delegation or authorize transactions. Missing headers remain fully compatible. Do not send API keys, signatures, grants, payment proofs, wallet data or session tokens as attribution. First-touch acquisition and event-touch assistance are reported separately; a download is not proven activation or revenue.
+
+<!-- installation-attribution:end -->

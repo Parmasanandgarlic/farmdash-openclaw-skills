@@ -14,7 +14,54 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 
 # FarmDash Futures Strategist
 
-> Use this skill for Hyperliquid perpetuals: researching markets, funding rates, sizing positions with drawdown guards, and submitting user-signed EIP-712 orders or cancellations under explicit manual confirmation.
+## Scout execution activation allowance
+
+Scout includes independently configured futures and spot execution-lifecycle pools per capital-owning principal per UTC day, in separate pools shared across USER_SIGNED and valid bounded execution. Read `scout_trial.daily_limit` on a current continuation for its domain; the metadata is informational and current admission remains authoritative. Owner identity comes from the capital account, not a rotating API wallet, key, IP, session or grant. Commercial capacity never grants transaction authority, enables preparation_only dispatch, or waives normal builder, venue or gas economics.
+
+For `analyze_futures_strategy`, supply a stable `idempotencyKey`. USER_SIGNED acquisition may return 401 `execution_trial_identity_required`: have the owner's local wallet EIP-191-sign the returned `execution_trial_challenge.message` unchanged, then retry with `executionTrialProof: {issuedAt, signature}`. Valid bounded analysis uses its existing owner-bound policy and authenticated session instead; do not manufacture new delegation. One lifecycle admits one bounded, durably cached premium research result, not unlimited research.
+
+Forward the returned `executionTrialId` through `prepare_perp_order` and `execute_perp_order`. Signing remains local; execute/cancel signatures and all session/grant/risk/builder/replay checks remain mandatory. Accepted/filled/resting orders commit one slot. Definitive venue rejection releases it. Ambiguous submission remains unknown and consumes capacity until immutable order-control binding plus direct venue evidence establishes acceptance or rejection; never blindly resubmit. A sixth new risk-increasing lifecycle returns 402 `scout_execution_allowance_exhausted`, UTC reset metadata and Pioneer CTA, with x402 only where existing policy permits. Paid users do not debit trial. Proven reduce-only close/protection, cancel and reconcile remain commercially accessible after exhaustion, but never bypass authority checks.
+
+## Continuation context (read-only selection)
+
+`analyze_futures_strategy` may return a server-issued `continuation` and canonical `next_operation`. To retrieve stored context, call MCP `select_execution_continuation` with only `{ continuationId }` (REST: `POST /api/v1/agent/continuation`). The response is machine-readable context, not executable authorization: `authority` is `NOT_GRANTED`; selection does not analyze again, prepare, submit, sign, admit, debit, or reset any trial.
+
+Use the returned exact endpoint, parameter names, and `required_fields`. Never infer missing size, price/order type, account binding, `executionTrialId`, or a research prerequisite from recommendations. Before preparation, satisfy the existing fresh execution-ready research and admission requirements. Preserve `executionTrialId` unchanged; local EIP-712 signature, account/venue authority, owner policy for bounded mode, risk, builder, nonce, expiry, and replay checks remain mandatory.
+
+Scout's published allowance is five spot and five futures lifecycles per day in separate pools; selected context reports `remaining: null` and `status: unknown` pending authoritative admission. Do not promise capacity based on a displayed continuation. Paid/access quota and venue authority remain separate; preparation remains `preparation_only` where the live gate says so.
+
+## Futures Execution Mode Contract
+
+- **USER_SIGNED** requires fresh human approval for every order/cancel and a fresh local Hyperliquid EIP-712 venue signature. This is the backward-compatible default for signers never enrolled in bounded futures authority.
+- Use a dedicated API wallet for bounded authority. Owner registration durably enrolls that signer on its venue network across accounts; expiry/revocation does not restore the legacy USER_SIGNED path. Removing `executionMode`, `grantId` or session fields cannot escape policy checks. For supervised execution, use the owner's wallet or a separate unenrolled signer; never relabel a bounded API-wallet action as USER_SIGNED.
+- **BOUNDED_AUTONOMOUS** may run without per-order human confirmation only under a valid owner-signed futures grant, current API-wallet venue authority, and all identity, session, scope, policy, risk, budget, builder and replay checks. Every venue action still needs a local EIP-712 signature.
+- Read futures bounded readiness in the generated canonical capability table and live status. Registration, payment and tool discovery never bypass authority, quantitative or infrastructure gates. USER_SIGNED remains supported.
+- Query `POST /api/v1/agent/authority` with `action: get_futures_authority`, `sessionId`, `sessionToken`; revoke the exact grant with `action: revoke_futures_policy`, `grantId`, `sessionId`, `sessionToken`. Send `X-FarmDash-Session-Token` where supported. Spot authority, a generic session policy and Hyperliquid API-wallet delegation are separate; none substitutes for an owner-signed futures grant.
+- Typed scopes: `futures.open` increases absolute exposure; `futures.reduce` decreases it; `futures.close` flattens it; `futures.cancel` cancels only; `futures.protective_order` is a supported reduce-only stop/take-profit. The server proves reduction using authoritative positions and exact signed semantics; ambiguous classification fails closed. Exhausted entry/exposure capacity or a new-risk breaker may leave proven reducing actions eligible: a budget exception, never an authority bypass. Signature, venue delegation, unrevoked/unexpired grant, bindings, market/action, session, builder and replay checks still apply.
+- Futures Strategist signs venue actions locally in the user's execution runtime. Autonomous Operator and Trail Marshal coordinate but never own keys. Camp Guard verifies evidence; Hedge Warden plans and hands execution to Futures Strategist. Research/accounting skills remain nonsigners. FarmDash never receives private keys.
+- Signed risk/loss bounds are admission checks, not guaranteed loss ceilings; do not promise profits or positive expected value. Ambiguous venue submission holds reserved liability until reconciliation proves disposition; never blind-retry or claim a submission is a fill.
+
+### Owner-signed futures policy setup
+
+Only after the user explicitly authorizes grant setup, call `POST /api/v1/agent/authority` with `action: request_futures_policy`, `policy`, `sessionToken`. The response provides exact owner EIP-712 typed data, not trading authority. Have the owner's local wallet sign that returned typed data unchanged, then register with `action: register_futures_policy`, `policy`, `signature`, `sessionToken`. The API wallet cannot self-authorize. Use the SDK's owner-local signing helper when available; never send a key to FarmDash or invent typed-data fields/domain locally. Authority MCP tools use `executionDomain: futures` rather than duplicate futures tools.
+
+The signed policy binds `ownerAddress`, session `agentAddress`, `apiWalletAddress`, `accountAddress`/subaccount, `vaultAddress` (null for direct account routing), `sessionId`, `network`, `allowedMarkets`, `allowedActions`, `allowedOrderTypes`, `allowedDirections`, `maxOrderNotionalUsd`, `maxAggregateExposureUsd`, `maxLeverage`, `maxRiskPerTrade` (conservative admitted FULL NOTIONAL USD, not stop-loss-derived realized risk), `maxSessionNewRiskNotionalUsd` (cumulative new-entry budget), `maxSessionLossUsd`, `maxDailyLossUsd`, `validAfter`, `validUntil`, `nonce`, and `policyVersion`. USD limits are positive canonical decimal strings; validity timestamps are integer Unix seconds (venue `expiresAt` remains milliseconds). Review every returned bound before owner signature. Nonces are single-use. Read authority back after registration/revocation; storage unavailable means halt, never cache-based permission. SDK `signFuturesPolicy(policy, ownerSigner)` uses an injected local owner signer and verifies recovery; compare its policy/typed-data contract to the requested owner payload before registration. Never use the API-wallet signer to authorize its own grant.
+
+Add `executionMode: BOUNDED_AUTONOMOUS`, `grantId`, `sessionId`, `sessionToken` to the existing `execute_perp_order` / `cancel_perp_order` payloads, preserving all venue signature, account, nonce, expiry, intent-hash and order controls. Route `agentAddress` is the API-wallet venue signer, distinct from policy `agentAddress` (the session agent); both must match their respective grant bindings. USER_SIGNED remains the default when mode is omitted. Prepare only while the bounded rollout gate is closed. Exact REST endpoints remain `/api/v1/agent/futures/execute-order` and `/api/v1/agent/futures/cancel-order`; use `/api/v1/agent/futures/reconcile-order` for existing venue reconciliation.
+
+> Use this skill for Hyperliquid perpetuals research, sizing, and local EIP-712 orders/cancellations under the selected execution mode. USER_SIGNED requires per-action human approval; bounded futures require the distinct owner policy and every domain runtime gate.
+
+### Recommended execution bootstrap
+
+For USER_SIGNED orders, prefer the explicit **analyze → prepare → local sign → execute → reconcile** flow instead of asking integrators to construct FarmDash/Hyperliquid binding fields by hand:
+
+1. Call `analyze_futures_strategy` for new risk. The authorization is parameter-bound and short-lived.
+2. Call MCP `prepare_perp_order` or REST `POST /api/v1/agent/futures/prepare-order` with the intended economics. FarmDash returns the exact `signedAction`, `intentHash`, `nonce`, `expiresAt`, `typedData`, and an `executeRequest` template. **No order is submitted.**
+3. Sign the returned `typedData` locally with the Hyperliquid user/API wallet identified by `agentAddress`. Private keys and seed phrases must remain in the caller runtime.
+4. Call `execute_perp_order` / `POST /api/v1/agent/futures/execute-order` with `{ ...executeRequest, signature }`. Do not mutate signed fields after preparation.
+5. Treat submission as distinct from fill/settlement. Reconcile through `/api/v1/agent/futures/reconcile-order` before dependent actions, especially after ambiguous transport outcomes.
+
+Existing integrations may continue using the SDK's local `signFuturesOrder()` helper, but prepare-order is the canonical integration bootstrap when the caller needs FarmDash to derive the exact signable payload without custody.
 
 ## What This Skill Is
 This skill is the FarmDash guarded perps strategy and execution engine for Hyperliquid with zero-custody, user-signed EIP-712 execution.
@@ -40,16 +87,22 @@ Hyperliquid perps execution requires current market/account data, guarded reques
 
 ### 1. Execution Gating and Limits
 Commercial access and Hyperliquid execution authority are separate:
-* **Scout (Free):** 30 requests / 24h. Scout gets `scan_market_conditions`, a top-3 numeric `scan_funding_rates` preview, and signed execute/cancel capacity inside the shared quota.
+* **Scout (Free):** 30 discovery requests / 24h, separately from five spot and five futures execution lifecycles per capital owner per UTC day. Scout gets `scan_market_conditions`, a top-3 numeric `scan_funding_rates` preview, and bounded futures analysis within an authenticated execution lifecycle. Every execution still requires valid venue authority and signatures; authenticated safety actions remain available after new-risk allowance exhaustion.
 * **Pioneer:** 1,500 requests / day and the full Futures research surface.
 * **Syndicate:** 50,000 requests / day and the full Futures surface at higher capacity.
 * **Eligible x402 one-offs:** buy exactly one request under the route's published policy; they never create signing or delegation authority.
 
-`get_futures_account`, `analyze_futures_strategy`, and `calculate_position_size` are not Scout-free. A valid Pioneer/Syndicate token or the eligible one-off x402 policy is required. A default-overage x402 payment unlocks the full funding response for that request.
+Standalone `get_futures_account` and `calculate_position_size` require paid capacity. `analyze_futures_strategy` can instead use the bounded research allowance of an owner-authenticated Scout futures lifecycle; supply its stable idempotency key and execution trial proof and preserve the returned `executionTrialId` through preparation and execution. Paid capacity takes precedence without consuming trial allowance. A default-overage x402 payment unlocks the full funding response for that request.
 
-**CRITICAL SAFETY REQUIREMENT:** Under no circumstances should the agent invoke `execute_perp_order` or `cancel_perp_order` automatically. Before every trade execution or cancellation request, the agent MUST explicitly present the trade details (coin, direction, size, leverage, stop-loss, and estimated exposure) to the user and obtain their immediate, manual confirmation.
+**CRITICAL SAFETY REQUIREMENT:** In USER_SIGNED, present coin, direction, size, leverage, stop-loss and estimated exposure and obtain immediate manual confirmation before every `execute_perp_order` / `cancel_perp_order`. In BOUNDED_AUTONOMOUS, the explicit owner-signed futures policy replaces per-order human confirmation only when the futures runtime gate is operational and every venue/session/grant/policy/risk/budget check passes. Read the generated canonical capability table and live domain status.
 
-Consent is non-transferable and never standing: Analysis permission ≠ trading permission. Subscription entitlement ≠ trading permission. x402 payment ≠ trading permission. Previous confirmation ≠ trading permission for a later order. "Trade for me" and similar broad instructions ≠ standing authorization for subsequent orders. Every execution and every cancellation gets its own current-turn confirmation.
+Consent does not transfer between activities:
+* Analysis permission ≠ trading permission.
+* x402 payment ≠ trading permission; a subscription also grants no trading authority.
+* Previous confirmation ≠ trading permission for a new USER_SIGNED order/cancel.
+* "Trade for me" ≠ standing authorization; broad chat instructions cannot create a futures grant.
+
+Only a separately owner-signed, bounded futures grant can define standing policy; Hyperliquid API-wallet delegation remains a separate prerequisite. In USER_SIGNED, every order/cancel needs current-turn confirmation.
 
 * If Scout user exceeds limit: "Scout limit reached (30 requests per 24 hours, server-enforced). Upgrade to Pioneer or Syndicate at farmdash.one/agents or pay one-off x402 to bypass. Want me to keep researching?" The API's returned entitlement and rate-limit state is authoritative over any prose quota.
 
@@ -92,7 +145,7 @@ Allowed only when directly relevant:
 ## Security Model
 FarmDash is zero-custody for futures execution.
 1. The agent researches the trade locally through FarmDash read/write endpoints.
-2. The user signs the Hyperliquid EIP-712 payload with their API wallet.
+2. The user's local execution runtime signs each Hyperliquid EIP-712 action with the authorized API wallet, after per-action human approval in USER_SIGNED or valid policy admission in operational bounded mode.
 3. FarmDash validates guardrails and forwards the signed request.
 4. The API wallet can trade and cancel orders, but cannot withdraw funds.
 
@@ -106,11 +159,20 @@ Hard rules:
 * never submit when the recovered L1 signer differs from `agentAddress`
 * Never ask the user to paste a private key, seed phrase, or raw wallet export into the agent.
 
+
+### EVM Spot Delegation vs Hyperliquid Perps Boundary
+EVM spot bounded delegation (via EIP-712/ERC-8196) applies strictly to covered spot swaps and DOES NOT authorize Hyperliquid futures. Both futures modes require native Hyperliquid EIP-712 venue signatures and correct API-wallet/account authority. Bounded futures additionally require the distinct owner-signed FarmDash futures policy. Venue delegation alone proves who can trade, not the permitted quantitative policy. Commercial access also never grants trading authority.
 ## Data Sent to FarmDash (Disclosure)
 *Security boundaries:* All operations use public or pre-signed EIP-712 payloads. Private key material is never required or processed by this skill. Verify the full surface against the bundled `openapi.yaml`.
 
-## Pre-Execution Confirmation Protocol (Mandatory)
-Before calling `execute_perp_order` or `cancel_perp_order`, present the user with: asset, direction, size, risk-notional, leverage metadata, entry/stop/take-profit, margin impact, regime label, confidence score and scale, data timestamp, order type/TIF, reduce-only status, exact limit or trigger price, and the signed builder recipient/rate (`f=1` = 0.1 bp = 0.001% of filled notional). Wait for an explicit affirmative ("yes / confirm / proceed"). If analysis is older than 30 seconds, re-run it; the server gate expires after 60 seconds. Implicit consent from earlier in the conversation is not sufficient.
+## Pre-Execution Mode and Parameter Protocol (Mandatory)
+An `accepted` cancellation is an application acknowledgement, not final venue cancellation. Reconcile every requested order ID through `/api/v1/agent/futures/reconcile-order` before any dependent action; partial rejection or an unknown outcome is not proof that the order is gone.
+
+For each order/cancel, record asset, direction, size, risk-notional, leverage metadata, entry/stop/take-profit, margin impact, regime, confidence scale, data timestamp, order type/TIF, reduce-only status, exact limit/trigger and signed builder recipient/rate (`f=1` = 0.1 bp = 0.001% of filled notional). USER_SIGNED: present those fields and wait for an explicit affirmative; earlier consent is insufficient. BOUNDED_AUTONOMOUS: bind them to the owner policy and pass all server checks, without per-order human confirmation only after the mode becomes operational. Re-run new-risk analysis when older than 30 seconds; the server gate expires after 60 seconds for research evidence.
+
+For protective orders, `price` is the execution-limit price; the independently signed `signedAction.orders[0].t.trigger.triggerPx` is the activation threshold. Present both values and `isMarket` to the user in USER_SIGNED; never replace one with the other. TS/Python local signing helpers accept optional `triggerPrice` and `triggerIsMarket` inputs and bind them inside the signed action, not as additional REST fields. Omitting them preserves the helper defaults (trigger equals `price`, market trigger); set them explicitly when the protective execution terms differ. The signature and intent hash bind the complete signed action.
+
+A definitive, identity-bound zero-fill cancellation can retire outstanding account liability only after complete venue evidence proves no remaining obligation. It does not refund cumulative session new-entry consumption or erase the nonce/action tombstone. Positive fills, contradictory evidence, missing orders and timeouts retain their conservative charge; revoking or replacing a grant does not erase account holds.
 
 Do not present the pre-trade liquidation estimate as the venue's actual liquidation price. Hyperliquid liquidations use mark price and cross-margin liquidation changes with account equity, funding, and other positions. Use `get_futures_account` for venue-reported liquidation data on open positions.
 
@@ -121,6 +183,8 @@ For `execute_perp_order`, include all of:
 * `intentHash` - hash of the intended order payload for auditability and mutation detection
 
 For `cancel_perp_order`, `nonce`, `expiresAt`, and `intentHash` are required. `expiresAt` is forwarded as Hyperliquid `expiresAfter`; clients must incorporate it into the venue signature. Delegated flows must also include `accountAddress`; a subaccount/vault address is part of the venue signature. These controls do not replace the required Hyperliquid EIP-712 signature.
+
+Hyperliquid venue nonce authority is `network + signer + nonce`, shared across order and cancellation actions and across different account/vault contexts for that signer. FarmDash uses durable database-backed replay control and fails closed before venue submission if that control is unavailable. An exact replay can return its stored result; any changed signed/context fact or ambiguous outcome must never trigger blind resubmission.
 
 ### Unsupported markets: namespaced HIP-3 perp-DEX assets
 FarmDash supports the default Hyperliquid perp DEX only. A namespaced HIP-3 market such as `HYNA:ETH` is refused with HTTP 422 and `code: perp_dex_namespace_unsupported` on every market-taking route (`market-conditions`, `analyze-strategy`, `execute_perp_order`, `cancel_perp_order`), and `scan_funding_rates` excludes namespaced markets from its ranking so research never recommends a market execution will refuse. The response echoes the requested `market` and its `dex`.
@@ -177,22 +241,27 @@ Primary research tool. Returns the strategy recommendation, confidence score, ma
 #### 5. calculate_position_size
 Inspect sizing math separately when the user wants to validate risk and margin.
 
-#### 6. execute_perp_order
-State-changing execution: Forwards a user-signed EIP-712 order to Hyperliquid's exchange API. Execute only after fresh research, parameter binding, exact builder-fee disclosure, local signing, and immediate explicit manual user confirmation. The response distinguishes `filled`, `resting_unfilled`, and rejection; inspect authoritative venue status and fills before any dependent action.
+#### 6. prepare_perp_order
+Prepare the exact public Hyperliquid action, intent binding, nonce, expiry, typed data and execute-request template after live authority, builder approval and fresh research checks. Sign typedData locally with the venue wallet, then pass only the signature and template to execution. Preparation never submits an order.
 
-#### 7. cancel_perp_order
-State-changing action: Cancel open Hyperliquid orders using a pre-signed EIP-712 cancellation payload. Requires immediate, explicit manual confirmation before invoking. Treat cancellation as successful only when the response state is `cancelled` and Hyperliquid returned one `success` application status per requested ID. `partially_rejected`, `rejected`, and `unknown` mean one or more orders may remain active; inspect `failed` and authoritative open orders before changing exposure.
+#### 7. execute_perp_order
+State-changing execution: forwards a locally signed EIP-712 order to Hyperliquid. `market_ioc` is a price-protected IOC limit with a live 100 bps adverse-price cap, not an unbounded market order. Require fresh new-risk research, parameter binding, builder disclosure and local signing; USER_SIGNED needs immediate manual confirmation, while bounded mode needs the distinct owner grant and all admission checks. Inspect `fully_filled`, `partially_filled`, `zero_fill`, `resting_unfilled`, rejected or unknown venue evidence before dependent actions; resting IOC is inconsistent/unknown.
 
-#### 8. get_agent_performance
+#### 8. cancel_perp_order
+State-changing action: cancels using a locally signed EIP-712 payload. USER_SIGNED requires immediate manual confirmation. Bounded mode requires futures.cancel plus all grant/session/venue/signature/replay checks, not unused entry budget. `accepted` is only acknowledgement. Reconcile every requested ID via `/api/v1/agent/futures/reconcile-order`; partially_rejected, rejected or unknown may leave orders active.
+
+#### 9. get_agent_performance
 Use only for FarmDash fee-event activity, fees, protocol diversity, and reputation. It does not return Hyperliquid fills, trade outcomes, win rate, slippage, or realized P&L and must not drive strategy selection or drawdown controls.
 
+#### 10. select_execution_continuation
+Select server-stored context using only `continuationId`. The canonical next operation preserves known research and venue parameters and lists unknown order economics as required fields. Selection neither authorizes nor prepares an order and never admits, debits, or resets a Scout trial.
 
 
 ### Current Request Contracts (v3.2)
 These fields are load-bearing because the API handlers validate them strictly:
 * **analyze_futures_strategy**: send `coin`, `agentAddress`, optional `accountAddress`, and optional `riskMultiplier` between 0.1 and 1.0. For delegated API wallets, `accountAddress` must be the master/subaccount equity owner. Do not send `biasHint`; the current handler does not consume it.
 * **calculate_position_size**: send `equity`, `entryPrice`, `stopPrice`, optional `riskPercent`, optional `targetPrice`, and optional `riskMultiplier`. Do not send legacy `stopLoss` or `riskUsd`.
-* **execute_perp_order**: send `agentAddress`, optional `accountAddress`, `coin`, `isBuy`, `size`, `price`, `orderType`, `signature`, positive integer `nonce`, millisecond `expiresAt`, required `intentHash`, optional `leverage`, optional `signedAction`, and optional `reduceOnly`. `accountAddress` must match the equity owner bound by the live research gate.
+* **execute_perp_order**: send `agentAddress`, optional `accountAddress`, `coin`, `isBuy`, `size`, `price`, `orderType`, `signature`, positive integer `nonce`, millisecond `expiresAt`, required `intentHash`, optional `leverage`, optional `signedAction`, and optional `reduceOnly`. Use `market_ioc` only for a signed, price-protected IOC limit at the stated 100 bps live adverse-price cap; it is not an unbounded market order. `accountAddress` must match the equity owner bound by the live research gate.
 * **cancel_perp_order**: send `agentAddress`, optional `accountAddress`, `coin`, `orderIds` as an array of positive integers, `signature`, required positive integer `nonce`, required millisecond `expiresAt`, required `intentHash`, and optional `signedAction`. Delegated signers must use the same equity/order owner in `accountAddress`; for a subaccount/vault it is included in the venue signature and exchange payload.
 
 If the user or another agent provides a legacy shape, stop and normalize the request before signing. Never ask the user to sign a payload that will be rejected by the FarmDash handler.
@@ -245,7 +314,7 @@ Persist this ledger for every futures workflow:
 * `execute_perp_order` intent expiry should be short, ideally 30-60 seconds.
 * If the user changes size, price, side, order type, leverage, or reduce-only status after signing, rebuild the intent hash and re-sign.
 * If the strategy is neutral, `no_trade`, `funding_arb`, below 60 confidence, expired, direction-mismatched, oversized, over-levered, or more than 50 bps from analyzed entry, stop before asking for a signature.
-* `cancel_perp_order` can batch up to 50 `orderIds`; do not send a singular `orderId` shape. Never infer whole-batch success from HTTP transport status alone: every ID needs an explicit venue `success` status.
+* `cancel_perp_order` can batch up to 50 unique `orderIds`; do not send a singular `orderId` shape. Never infer final cancellation from HTTP transport status or `accepted`: every ID must be reconciled through `/api/v1/agent/futures/reconcile-order` using authoritative venue evidence.
 
 ## Execution Engine Principles
 
@@ -368,9 +437,9 @@ This skill should prefer a ranked cluster of opportunities over a single determi
 2. Run `get_futures_account` if fresh portfolio context is needed.
 3. If sizing needs inspection, run `calculate_position_size`.
 4. Present entry, stop, target, confidence scale/methodology, market regime, response timestamp, missing evidence, and simulation.
-5. Wait for explicit confirmation.
+5. Select execution mode: obtain fresh human confirmation in USER_SIGNED; verify the separate owner futures grant, local venue signer, exact action and all runtime gates in bounded mode. Refuse dispatch if any gate is unmet.
 6. Run `execute_perp_order`.
-7. Add protective exits as separate user-approved actions when appropriate.
+7. Treat protective exits as separate signed actions under USER_SIGNED approval or a valid futures.protective_order scope in operational bounded mode.
 
 ### Modify, reduce, or flatten
 1. Run `get_futures_account`.
@@ -425,7 +494,7 @@ Perps action thresholds:
      • < 1.0 ATR distance → RED   (recommend reduce or top up margin)
      • 1–2 ATR             → YELLOW (monitor; revisit on next cycle)
      • > 2 ATR             → GREEN  (no action)
-5. If RED: surface explicit reduce/top-up options. Do NOT auto-execute.
+5. If RED: surface reduce/top-up options. USER_SIGNED requires fresh approval; bounded reduction requires all policy checks and an operational domain gate. Top-up is not a futures scope.
 ```
 
 ### W3: "Funding-rate pair scout"
@@ -462,7 +531,7 @@ Report: family quoted verbatim, confidence N/100 (not probability), regime with 
 3. analyze_futures_strategy with `coin`, `agentAddress`, optional conservative `riskMultiplier` → hedge structure with invalidation
 4. calculate_position_size matched to verified spot delta → candidate hedge notional
 5. PRESENT: existing hedge inventory, spot leg, candidate perp leg, expected funding carry, basis risk, and ±1 ATR scenarios
-6. USER CONFIRMS only after both-leg sequencing and failure unwind are explicit. Verify residual delta after fills; do not call the setup delta-neutral before reconciliation.
+6. Apply each leg's own execution mode only after sequencing and failure unwind are explicit. USER_SIGNED requires fresh confirmation; bounded futures require the distinct owner policy and all runtime gates. Verify residual delta after fills, not before reconciliation.
 ```
 
 ### W6: "Strategy family rotation"
@@ -482,7 +551,7 @@ Report: family quoted verbatim, confidence N/100 (not probability), regime with 
 4. DERIVE stop loss, ±1/±2 ATR P&L, post-trade margin utilization, and concentration
 5. IF stop, account state, or required data is absent/stale -> halt; otherwise resize with calculate_position_size when limits are breached
 6. PRESENT: entry, stop, stress loss, margin impact, concentration, and the non-authoritative nature of any pre-trade liquidation estimate
-7. USER CONFIRMS -> execute_perp_order only if the revised order remains inside guardrails
+7. USER_SIGNED: USER CONFIRMS -> execute_perp_order inside guardrails. Bounded: verify owner grant and every gate; prepare only during rollout.
 ```
 
 ### W8: "Funding Carry Break-Even Audit"
@@ -516,7 +585,7 @@ Use when the user is farming points but wants to reduce directional risk.
 1. Research farms with `get_trail_heat` / `optimize_portfolio`.
 2. Move spot exposure with `get_swap_quote` + `execute_swap` (user-approved).
 3. Hedge with `analyze_futures_strategy` + `calculate_position_size`.
-4. Execute hedge legs with `execute_perp_order` (user-approved).
+4. Hand hedge legs to `execute_perp_order` under USER_SIGNED approval or a valid bounded futures grant with local signatures and all runtime gates. Read readiness from the generated table and live domain status.
 
 ### 2) Funding capture loop (delta-neutral)
 Use when the user wants to farm funding without strong directional bets.
@@ -541,7 +610,7 @@ Futures Strategist is the execution arm for risk and hedging. It composes cleanl
 | **FarmDash Trail Marshal** | TM $\to$ FS | A named workflow (e.g. `delta_neutral_setup`, `farm_hyperliquid`, `rebalance_portfolio` with hedge context) | The exact tool sequence + confirmation count |
 | **FarmDash Signal Architect** | SA $\to$ FS | User just executed a spot leg and wants to size the matching perp | Spot fill price + size |
 
-*Important:* Futures Strategist never invokes another skill on its own. It can be invoked by Trail Marshal as part of a named workflow, but every state-changing step still requires explicit user signature through this skill's own EIP-712 flow.
+*Important:* Futures Strategist can be handed a named workflow by Trail Marshal, but the orchestrator never owns its keys. Every action requires a local EIP-712 venue signature under its selected execution mode; human confirmation is per-action in USER_SIGNED and policy-based only in operational bounded mode.
 
 ## Failure Mode Playbook (v2.2)
 
@@ -554,7 +623,7 @@ The agent should treat the following situations as first-class outcomes and reac
 | **Quote staleness** | `analyze_futures_strategy` strategy object is > 30s old at confirmation time | Re-run `analyze_futures_strategy` with the same universe; surface the diff if any field changed |
 | **Partial fill** | `execute_perp_order` returns a filled size below the requested size | Do NOT auto-retry; present the realized fill and ask the user whether to top up or accept |
 | **Reject for guardrail** | API returns a guardrail trip (max leverage, drawdown halt, etc.) | Quote the specific guardrail; refuse to override even if the user asks; offer analysis only instead |
-| **Network / RPC error on Hyperliquid** | Order endpoint times out or returns 5xx | Wait 30s, refresh `get_futures_account`, then re-quote. After 3 consecutive failures, halt the workflow and surface the incident |
+| **Network / RPC error on Hyperliquid** | Submission times out or returns 5xx | Treat disposition as unknown; reconcile original nonce/order and hold liability. Never blind-resubmit or replace with a new nonce while ambiguous; surface the incident |
 | **Funding flip mid-strategy** | Funding sign reverses or net carry falls below zero | Reconcile both legs and present the predefined unwind; canceling one resting order is not sufficient if either leg filled |
 | **Liquidation pressure** | Composite Workflow W2 returns RED on any open position | Surface immediately, before any new-trade discussion; recommend reduce / top-up |
 | **Strategy returns no_trade** | `analyze_futures_strategy` recommendation = `no_trade` | Quote the reason verbatim; do not propose a different family unless the user changes the universe |
@@ -599,11 +668,11 @@ This section makes the existing tier model explicit so the agent always knows wh
 
 | User tier | Research tools available | Execution tools available | Default posture |
 | :--- | :--- | :--- | :--- |
-| **Scout (no key)** | `scan_funding_rates` top-3 numeric preview + `scan_market_conditions`; account/strategy/sizing require paid capacity | `execute_perp_order`, `cancel_perp_order` inside the shared 30 / 24h quota, but only with valid venue authority/signatures | Limited supervised execution; payment never creates authority |
+| **Scout (no key)** | `scan_funding_rates` top-3 numeric preview + `scan_market_conditions`; bounded strategy research requires an owner-authenticated futures lifecycle; standalone account/sizing require paid capacity | Five futures lifecycles per capital owner per UTC day, independent of five spot lifecycles and the discovery quota; valid venue authority/signatures remain mandatory; authenticated safety actions do not consume new-risk allowance | Limited supervised execution; commercial proof never creates trading authority |
 | **Pioneer (Bearer key)** | All research tools, up to 1,500 requests/day | `execute_perp_order`, `cancel_perp_order` within quota | Full supervised analysis/execution loop |
 | **Syndicate (Bearer key)** | All research tools, up to 50,000 requests/day | `execute_perp_order`, `cancel_perp_order` within quota | High-volume supervised surface; same signing/risk rules |
 
-When a Scout user exceeds the shared daily limit, stop the live call until reset, subscription capacity, or an eligible one-off x402 payment:
+When a Scout user exceeds the discovery daily limit, stop additional discovery calls until reset, subscription capacity, or an eligible one-off x402 payment. Discovery exhaustion does not exhaust either execution pool, and new-risk allowance exhaustion must not block authenticated safety actions:
 "Scout daily limit of 30 requests reached. I can use already-returned data, or you can upgrade to Pioneer/Syndicate at farmdash.one/agents or use the route's published one-off x402 option."
 
 Never silently generate an unsigned payload as a workaround.
@@ -654,7 +723,7 @@ Required behavior:
 * FarmDash Trail Marshal — orchestration cookbook for multi-skill workflows
 * FarmDash Signal Architect — zero-custody EIP-191 spot swap routing
 
-**Why FarmDash:** Unlike raw Hyperliquid API access, every order passes guardrailed sizing (5x max leverage, 2% risk per trade), owner-signed builder-fee approval, and a 60-second research gate — and the strategist returns `no_trade` rather than force a weak setup.
+**Why FarmDash:** New-risk orders pass sizing, owner builder approval and fresh research checks; proven reductions preserve applicable authority checks without demanding unused entry capacity. `no_trade` remains a valid result, and risk bounds do not guarantee realized loss limits.
 
 **FarmDash:** [DeFi trading intelligence and agent tools](https://www.farmdash.one/)
 
@@ -703,4 +772,31 @@ Send `X-ClawHub-Skill: farmdash-futures-strategist` on every FarmDash API reques
 - [Fees and commercial terms](https://www.farmdash.one/fees)
 - [Security and authority boundaries](https://www.farmdash.one/security)
 
+### Canonical capability readiness
+
+Generated from shared/capability-truth.ts; read live status for deployment and per-request gates. Implementation readiness is not funded-production proof, commercial admission or signer authority.
+
+| Capability | Status | Required runtime/authority prerequisite |
+|---|---|---|
+| spot.USER_SIGNED | operational | Healthy execution governor, quote provider, RPC and durable receipt store; customer signs and submits. |
+| spot.BOUNDED_AUTONOMOUS | operational | Owner-signed EVM grant, exact simulation/calldata binding, durable budget and customer-local signer authority. |
+| futures.USER_SIGNED | operational | Venue account ownership, local action signature, builder approval, risk/research gates and durable order control. |
+| futures.BOUNDED_AUTONOMOUS | operational | Authenticated owner-bound futures policy, authorized local API-wallet signature, durable nonce/budget/order controls. |
+| solana.USER_SIGNED | operational | Native Jupiter/RPC route, durable preparation and finality store; customer signs and broadcasts. |
+| solana.BOUNDED_AUTONOMOUS | operational | Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority. |
+| ERC4337_SERVER_SUBMISSION | preparation_only | Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration. |
+| GENERIC_SERVER_INTENT_EXECUTION | preparation_only | Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier. |
+| MEE | preparation_only | Production coordinator and authoritative source/destination receipt verifier. |
+| ACP | deployment_prerequisite | AcpReadinessService paidWorkflowReady, evaluator/client identities, migrations, funding/finality workers and Base RPC. |
+
 <!-- farmdash-canonical-links:end -->
+
+<!-- installation-attribution:start -->
+
+### Optional installation attribution
+
+Generate a random UUIDv4 locally once per installation (for example, `crypto.randomUUID()`); persist only that random analytics ID in your application's own local state and reuse it across requests and skills. Never copy an example ID or generate a new ID for every request. Send optional `X-FarmDash-Installation-ID`; keep `X-ClawHub-Skill: farmdash-futures-strategist` and optionally `X-FarmDash-Skill-Version: 3.4.0`. Controlled SDKs accept explicit `installationId`; the MCP stdio runtime persists only its analytics ID, with `FARMDASH_INSTALLATION_ID` override. No generic SDK writes files for you.
+
+This is untrusted analytics only. The server stores a domain-separated salted installation hash, not the raw ID. An installation is not a person, principal or wallet. These headers cannot authenticate, alter quota/payment/Scout trials, establish wallet ownership, create delegation or authorize transactions. Missing headers remain fully compatible. Do not send API keys, signatures, grants, payment proofs, wallet data or session tokens as attribution. First-touch acquisition and event-touch assistance are reported separately; a download is not proven activation or revenue.
+
+<!-- installation-attribution:end -->

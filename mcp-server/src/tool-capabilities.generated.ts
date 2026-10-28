@@ -4,17 +4,37 @@ export interface McpToolCapability {
   feature_status_id: string;
   availability: string;
   tier: string;
+  mock_supported?: boolean;
   commercial_model?: string;
+  execution_domain?: 'futures';
+  execution_modes?: Record<'USER_SIGNED' | 'BOUNDED_AUTONOMOUS', { status: string; user_confirmation_required: boolean; local_venue_signature_required: boolean; owner_signed_futures_policy_required?: boolean; authenticated_session_required?: boolean }>;
+  execution_domain_selector?: { values: string[]; default: string; futures_bounded_status: string };
   idempotent: boolean;
   status_endpoint: string;
 }
 
 export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> = {
+  "get_payments_bootstrap": {
+    "api_route": "/api/v1/payments/bootstrap",
+    "feature_status_id": "payments.kernel_phase_a",
+    "availability": "available",
+    "tier": "scout",
+    "idempotent": true,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
+  },
   "agent_onboard": {
     "api_route": "/api/v1/agent/status",
     "feature_status_id": "agent_core.bootstrap",
     "availability": "available",
     "tier": "scout",
+    "idempotent": true,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
+  },
+  "select_execution_continuation": {
+    "api_route": "/api/v1/agent/continuation",
+    "feature_status_id": "agent_core.bootstrap",
+    "availability": "available",
+    "tier": "scout_preview_pioneer_full",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -174,7 +194,8 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/v1/agent/events",
     "feature_status_id": "protocol_intelligence.events",
     "availability": "available",
-    "tier": "scout_preview_pioneer_full",
+    "tier": "pioneer_plus",
+    "mock_supported": false,
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -182,7 +203,8 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/v1/agent/sybil-audit",
     "feature_status_id": "protocol_intelligence.sybil",
     "availability": "available",
-    "tier": "scout_preview_pioneer_full",
+    "tier": "pioneer_plus",
+    "mock_supported": false,
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -190,7 +212,8 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/v1/agent/simulate-points",
     "feature_status_id": "protocol_intelligence.points",
     "availability": "available",
-    "tier": "scout_preview_pioneer_full",
+    "tier": "pioneer_plus",
+    "mock_supported": false,
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -198,7 +221,8 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/v1/agent/historical-trailheat",
     "feature_status_id": "trail_heat.historical",
     "availability": "available",
-    "tier": "scout_preview_pioneer_full",
+    "tier": "pioneer_plus",
+    "mock_supported": false,
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -399,6 +423,30 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
+  "prepare_perp_order": {
+    "api_route": "/api/v1/agent/futures/prepare-order",
+    "feature_status_id": "futures.hyperliquid_guarded",
+    "availability": "available_with_tier_gate",
+    "tier": "scout_capacity_signature_gated",
+    "commercial_model": "default_overage",
+    "idempotent": true,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status",
+    "execution_domain": "futures",
+    "execution_modes": {
+      "USER_SIGNED": {
+        "status": "operational",
+        "user_confirmation_required": false,
+        "local_venue_signature_required": false
+      },
+      "BOUNDED_AUTONOMOUS": {
+        "status": "operational",
+        "user_confirmation_required": false,
+        "local_venue_signature_required": false,
+        "owner_signed_futures_policy_required": true,
+        "authenticated_session_required": true
+      }
+    }
+  },
   "execute_perp_order": {
     "api_route": "/api/v1/agent/futures/execute-order",
     "feature_status_id": "futures.hyperliquid_guarded",
@@ -406,7 +454,22 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "tier": "scout_capacity_signature_gated",
     "commercial_model": "default_overage",
     "idempotent": false,
-    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status",
+    "execution_domain": "futures",
+    "execution_modes": {
+      "USER_SIGNED": {
+        "status": "operational",
+        "user_confirmation_required": true,
+        "local_venue_signature_required": true
+      },
+      "BOUNDED_AUTONOMOUS": {
+        "status": "operational",
+        "user_confirmation_required": false,
+        "local_venue_signature_required": true,
+        "owner_signed_futures_policy_required": true,
+        "authenticated_session_required": true
+      }
+    }
   },
   "cancel_perp_order": {
     "api_route": "/api/v1/agent/futures/cancel-order",
@@ -415,7 +478,22 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "tier": "scout_capacity_signature_gated",
     "commercial_model": "default_overage",
     "idempotent": false,
-    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status",
+    "execution_domain": "futures",
+    "execution_modes": {
+      "USER_SIGNED": {
+        "status": "operational",
+        "user_confirmation_required": true,
+        "local_venue_signature_required": true
+      },
+      "BOUNDED_AUTONOMOUS": {
+        "status": "operational",
+        "user_confirmation_required": false,
+        "local_venue_signature_required": true,
+        "owner_signed_futures_policy_required": true,
+        "authenticated_session_required": true
+      }
+    }
   },
   "get_agent_performance": {
     "api_route": "/api/v1/agent/performance",
@@ -688,6 +766,94 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "availability": "available_when_deployment_prerequisites_are_met",
     "tier": "x402_or_subscription_with_authenticated_session",
     "idempotent": false,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
+  },
+  "get_execution_authority": {
+    "api_route": "/api/v1/agent/authority",
+    "feature_status_id": "autonomous_operator.authority",
+    "availability": "available_with_tier_gate",
+    "tier": "scout_plus",
+    "idempotent": true,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status",
+    "execution_domain_selector": {
+      "values": [
+        "spot",
+        "futures"
+      ],
+      "default": "spot",
+      "futures_bounded_status": "operational"
+    }
+  },
+  "request_execution_delegation": {
+    "api_route": "/api/v1/agent/authority",
+    "feature_status_id": "autonomous_operator.authority",
+    "availability": "available_with_tier_gate",
+    "tier": "scout_plus",
+    "idempotent": true,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status",
+    "execution_domain_selector": {
+      "values": [
+        "spot",
+        "futures"
+      ],
+      "default": "spot",
+      "futures_bounded_status": "operational"
+    }
+  },
+  "register_execution_delegation": {
+    "api_route": "/api/v1/agent/authority",
+    "feature_status_id": "autonomous_operator.authority",
+    "availability": "available_with_tier_gate",
+    "tier": "scout_plus",
+    "idempotent": false,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status",
+    "execution_domain_selector": {
+      "values": [
+        "spot",
+        "futures"
+      ],
+      "default": "spot",
+      "futures_bounded_status": "operational"
+    }
+  },
+  "revoke_execution_authority": {
+    "api_route": "/api/v1/agent/authority",
+    "feature_status_id": "autonomous_operator.authority",
+    "availability": "available_with_tier_gate",
+    "tier": "scout_plus",
+    "idempotent": true,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status",
+    "execution_domain_selector": {
+      "values": [
+        "spot",
+        "futures"
+      ],
+      "default": "spot",
+      "futures_bounded_status": "operational"
+    }
+  },
+  "prepare_autonomous_swap": {
+    "api_route": "/api/v1/agent/authority",
+    "feature_status_id": "autonomous_operator.authority",
+    "availability": "available_with_tier_gate",
+    "tier": "scout_plus",
+    "idempotent": false,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
+  },
+  "confirm_autonomous_swap": {
+    "api_route": "/api/v1/agent/authority",
+    "feature_status_id": "autonomous_operator.authority",
+    "availability": "available_with_tier_gate",
+    "tier": "scout_plus",
+    "idempotent": true,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
+  },
+  "release_autonomous_reservation": {
+    "api_route": "/api/v1/agent/authority",
+    "feature_status_id": "autonomous_operator.authority",
+    "availability": "available_with_tier_gate",
+    "tier": "scout_plus",
+    "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   }
 };

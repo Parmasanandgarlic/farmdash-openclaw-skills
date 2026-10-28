@@ -2,7 +2,7 @@
   "name": "@farmdash/mcp-server",
   "version": "5.0.0",
   "mcpName": "io.github.hububstudio/farmdash-agent-os",
-  "description": "FarmDash Agent OS MCP Server — 84 capability-labeled tools for DeFi intelligence, supervised workflows, signed transaction preparation, and explicitly gated execution paths",
+  "description": "FarmDash Agent OS MCP Server — 94 capability-labeled tools for DeFi intelligence, supervised workflows, signed transaction preparation, and explicitly gated execution paths",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -31,12 +31,12 @@
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "prepublishOnly": "npm run build && npm run smoke",
-    "smoke": "node scripts/smoke-introspection.mjs"
+    "smoke": "node scripts/smoke-introspection.mjs",
+    "verify:parity": "node scripts/verify-upstream-parity.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "@virtuals-protocol/acp-node-v2": "0.1.10",
-    "zod": "3.25.76"
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -59,5 +59,19 @@
     "yield-simulation",
     "portfolio-optimization"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "overrides": {
+    "axios": "^1.20.0",
+    "follow-redirects": "^1.16.1",
+    "fast-uri": "^3.1.6",
+    "proxy-addr": "^2.0.8",
+    "ip-address": "^10.2.1",
+    "body-parser": "^1.20.9",
+    "qs": "^6.15.4",
+    "stream-json": "^1.9.3",
+    "hono": "^4.12.35",
+    "ws": "^8.21.0",
+    "js-cookie": "^3.0.7",
+    "uuid": "^11.1.1"
+  }
 }
