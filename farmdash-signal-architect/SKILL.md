@@ -49,7 +49,7 @@ Scout's published allowance is up to five spot and five futures lifecycles daily
 ## How This Skill Works
 You have FarmDash MCP tools spanning discovery, sizing, policy checks, simulation, signed-payload preparation, monitoring, and reconciliation. Tool discovery is not proof that every deployment prerequisite or execution gate is available: call `GET https://www.farmdash.one/api/v1/agent/status` first and fail closed on a disabled capability. Never replace missing data with fabricated values. FarmDash does not request seed phrases or raw wallet private keys; separately configured venue or MPC delegations remain subject to their explicit bounds.
 
-FarmDash's canonical MCP manifest lists 92 tools across the registered inventory. Signal Architect declares a focused subset in its SKILL.json; do not confuse subset ownership with full inventory. MCP discovery: https://www.farmdash.one/.well-known/mcp.json
+FarmDash's canonical MCP manifest is authoritative for the current registered tool inventory. Signal Architect declares a focused subset in its SKILL.json; do not confuse subset ownership with the full inventory, and do not assume a fixed tool count. MCP discovery: https://www.farmdash.one/.well-known/mcp.json
 
 MCP Configuration: https://www.farmdash.one/.well-known/mcp.json
 

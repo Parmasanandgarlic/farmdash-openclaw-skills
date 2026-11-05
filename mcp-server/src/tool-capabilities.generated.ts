@@ -579,9 +579,9 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "verify_delegation": {
     "api_route": "/api/v1/agent/delegation",
     "feature_status_id": "autonomous_operator.sessions",
-    "availability": "available_with_tier_gate",
+    "availability": "unavailable_mcp_signature_inputs",
     "tier": "pioneer_plus",
-    "idempotent": true,
+    "idempotent": false,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
   "configure_autopilot": {
@@ -693,7 +693,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "feature_status_id": "virtuals_acp.tenant_owned_tenders",
     "availability": "available_when_deployment_prerequisites_are_met",
     "tier": "x402_or_subscription_with_authenticated_session",
-    "idempotent": true,
+    "idempotent": false,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
   "prepare_virtuals_tender_v2": {

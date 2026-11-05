@@ -15,7 +15,7 @@ npm run smoke --prefix mcp-server
 node mcp-server/dist/index.js
 ```
 
-For MCP clients, configure `node` with the absolute path to `mcp-server/dist/index.js`. `FARMDASH_API_KEY` is optional for Scout. The package metadata uses `@farmdash/mcp-server`, but **do not use an npm install command until registry publication is independently verified**. Public source + Docker are the current installable surfaces.
+For MCP clients, configure `node` with the absolute path to `mcp-server/dist/index.js`. `FARMDASH_API_KEY` is optional for Scout. The package metadata uses `@farmdash/mcp-server`, but **do not use an npm install command until registry publication is independently verified**. The public source checkout is the current installable surface; no published container image exists for this project.
 
 
 10 open agent skills for DeFi intelligence on [FarmDash](https://www.farmdash.one/agents) — zero-custody and fail-closed. Skills are read-only unless their documented workflow explicitly reaches a user-authorized preparation/execution boundary. FarmDash skills never ask for private keys or seed phrases.
