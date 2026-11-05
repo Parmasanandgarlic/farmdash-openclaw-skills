@@ -21,8 +21,13 @@ import { FuturesPolicySchema } from './futures-policy.js';
 import { createApiFetch, errorPayload } from './api-client.js';
 import { getInstallationId } from './installation-identity.js';
 import { getMcpToolCapability } from './tool-capabilities.generated.js';
+import { resolveProfile, isProfileTool, ROUTING_INSTRUCTIONS } from './discovery.js';
+
 import { MCP_EXECUTION_MODE_SELECTION } from './executionModeSelection.generated.js';
 import { getToolAnnotations } from './tool-contracts.js';
+
+// Resolve before server construction or any transport connection; empty is invalid.
+const discoveryProfile = resolveProfile(process.env.FARMDASH_MCP_PROFILE);
 
 /* Config */
 
@@ -115,6 +120,7 @@ const server = new McpServer({
   version: '5.0.0',
 }, {
   maxToolInputElements: 100,
+  instructions: ROUTING_INSTRUCTIONS,
 });
 
 const toolAnnotations = getToolAnnotations;
@@ -123,10 +129,13 @@ const toolAnnotations = getToolAnnotations;
 // annotations to every tool listing. These are hints, never authorization.
 const registerToolWithoutAnnotations = server.tool.bind(server) as (...args: any[]) => unknown;
 (server as unknown as { tool: (...args: any[]) => unknown }).tool = (name: string, ...args: any[]) => {
+  if (!isProfileTool(discoveryProfile, name)) return undefined;
   const callback = args.pop();
   const capability = getMcpToolCapability(name);
   const mockLabel = capability.mock_supported === undefined ? '' : `; mock_supported: ${capability.mock_supported}`;
   const capabilityLabel = `[Capability: ${capability.availability}; tier: ${capability.tier}${mockLabel}; API: ${capability.api_route}; authority: /api/v1/agent/status]`;
+
+
   // An empty raw shape serializes as an open object schema in tools/list
   // (no additionalProperties). Register paramless tools through registerTool
   // with the closed marker so they publish { properties: {}, additionalProperties: false }.
