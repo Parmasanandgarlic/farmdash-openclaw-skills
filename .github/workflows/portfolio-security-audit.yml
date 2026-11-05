@@ -1,0 +1,9 @@
+name: Portfolio Security Audit
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  audit:
+    uses: Parmasanandgarlic/awesome-agent-skills/.github/workflows/reusable-portfolio-security-audit.yml@74eefeca2454e99e82a7ff9b180c099e3baf7a4f # main as of 2026-09-09

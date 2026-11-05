@@ -1,0 +1,9 @@
+# Keep every mirrored byte exactly as published.
+#
+# This repository is a byte-exact mirror of canonical FarmDash production truth. Git's
+# autocrlf/EOL normalisation would rewrite line endings on checkout, so a consumer would
+# receive bytes that differ from the canonical source even though the stored blob matched.
+# `-text` disables all end-of-line conversion for every path, so what is committed is
+# exactly what is checked out, on every platform and regardless of a consumer's global
+# git configuration.
+* -text
