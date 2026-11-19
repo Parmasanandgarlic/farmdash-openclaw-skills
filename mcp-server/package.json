@@ -21,7 +21,7 @@
   "homepage": "https://www.farmdash.one/agents",
   "author": "FarmDash Pioneers (@Parmasanandgarlic)",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.14.0"
   },
   "publishConfig": {
     "access": "public"

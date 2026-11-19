@@ -252,25 +252,29 @@ server.registerResource('canonical-tokens', new ResourceTemplate('farmdash://tok
   };
 });
 
-/* Per-connection session view (Batch 21 §4c). The retained credentials live only
-   in this stdio process, are never written to disk and are never logged. Reading
-   them grants no authority: the backend still authenticates every request, and
-   no signing or delegation authority is created by session creation. */
+/* Process-scoped metadata only. Retained credentials are used by the API client
+   and must never be serialized in a resource response. */
 server.registerResource('retained-session', 'farmdash://session/current', {
-  title: 'Session credentials retained by this MCP process',
-  description: 'sessionId/agentAddress/sessionToken captured in memory from the most recent successful create_session or session_heartbeat in THIS process. Absent until a session is created. Reading this resource grants no wallet, signing or delegation authority; it only lets a client avoid re-pasting a credential it already supplied.',
+  title: 'Session metadata retained by this MCP process',
+  description: 'Metadata for the session retained by this stdio process, or null if no session has been retained. Never returns the session token. Reading this resource grants no wallet, signing or delegation authority.',
   mimeType: 'application/json',
 }, async (uri: URL) => {
   const retained = retainedSession();
+  const session = retained ? {
+    sessionId: retained.sessionId,
+    agentAddress: retained.agentAddress,
+    retainedAt: retained.retainedAt,
+    ...(retained.expiresAt !== undefined ? { expiresAt: retained.expiresAt } : {}),
+  } : null;
   return {
     contents: [{
       uri: uri.href,
       mimeType: 'application/json',
       text: JSON.stringify({
         ok: true,
-        retained: Boolean(retained),
-        session: retained ?? null,
-        guidance: 'Explicit tool arguments always win over these defaults. A retained session is scoped to this process and this agentSessionId; a different agentSessionId never inherits it. Session creation is not execution authority.',
+        retained: session !== null,
+        session,
+        guidance: 'This resource reports process-local metadata, not credentials. Session creation is not execution authority.',
       }, null, 2),
     }],
   };

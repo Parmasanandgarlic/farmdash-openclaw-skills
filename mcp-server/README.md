@@ -161,7 +161,7 @@ Commercial access buys API capacity only; it never creates Hyperliquid signing a
 
 ## Resources, prompts, and profiles
 
-`resources/list` exposes the served OpenAPI documents (`farmdash://openapi.yaml`, `farmdash://openapi/signal-architect`, and `farmdash://openapi/futures`), readiness (`farmdash://status`), executable chains (`farmdash://chains`), and session context (`farmdash://session/current`). The latter can contain a retained session credential; treat it as sensitive and do not log or share it. Use a dedicated stdio process for each trusted client context. `resources/templates/list` exposes `farmdash://tokens/{chainId}` for chain token context.
+`resources/list` exposes the served OpenAPI documents (`farmdash://openapi.yaml`, `farmdash://openapi/signal-architect`, and `farmdash://openapi/futures`), readiness (`farmdash://status`), executable chains (`farmdash://chains`), and session context (`farmdash://session/current`). The session resource returns process-local metadata only, never the session token. It grants no wallet, signing, or delegation authority. Use a dedicated stdio process for each trusted client context. `resources/templates/list` exposes `farmdash://tokens/{chainId}` for chain token context.
 
 `prompts/list` exposes client-invoked workflow guidance. Prompts do not execute tools or grant authority. `FARMDASH_MCP_PROFILE` optionally limits the startup tool catalog; omit it for the default full catalog. A profile is not an authorization boundary.
 
@@ -248,7 +248,7 @@ LI.FI and Relay are enabled/configured/firm_quote_ready. 0x is operator-paused, 
 ## Architecture
 
 - **Transport**: stdio (client spawns process, communicates via stdin/stdout)
-- **Runtime**: Node.js (ES2022, ESM)
+- **Runtime**: Node.js 22.14.0 or newer (ES2022, ESM); use a supported, security-patched release.
 - **Dependencies**: `@modelcontextprotocol/sdk`, `zod` (runtime validation)
 - **Error handling**: Dust Storm pattern — typed degraded failures; never label missing financial data as success
 - **Timeout**: 15s default per API call (25s for yield simulation)
