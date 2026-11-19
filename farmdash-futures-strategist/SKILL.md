@@ -256,6 +256,9 @@ Use only for FarmDash fee-event activity, fees, protocol diversity, and reputati
 #### 10. select_execution_continuation
 Select server-stored context using only `continuationId`. The canonical next operation preserves known research and venue parameters and lists unknown order economics as required fields. Selection neither authorizes nor prepares an order and never admits, debits, or resets a Scout trial.
 
+#### 11. reconcile_perp_order
+Reconcile one Hyperliquid order from direct venue evidence: the venue order status plus the user fills for that order id. Signs nothing and submits nothing, and it is idempotent at the wire, so replaying re-records the same evidence instead of double counting fills. Execution is never inferred from portfolio or balance deltas. Call it after any order whose final state is unknown and after `cancel_perp_order` reports `accepted`, which is an acknowledgement, not a cancellation.
+
 
 ### Current Request Contracts (v3.2)
 These fields are load-bearing because the API handlers validate them strictly:

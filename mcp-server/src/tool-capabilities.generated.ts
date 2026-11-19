@@ -302,7 +302,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/agents/quote",
     "feature_status_id": "swap.compatibility_evm",
     "availability": "available_with_tier_gate",
-    "tier": "scout_quote_signature_and_simulation_gated",
+    "tier": "scout_capacity_signature_gated",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -310,7 +310,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/v1/agent/quote-intent",
     "feature_status_id": "swap.compatibility_evm",
     "availability": "available_with_tier_gate",
-    "tier": "scout_quote_signature_and_simulation_gated",
+    "tier": "scout_capacity_signature_gated",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -318,7 +318,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/v1/simulate",
     "feature_status_id": "swap.compatibility_evm",
     "availability": "available_with_tier_gate",
-    "tier": "scout_quote_signature_and_simulation_gated",
+    "tier": "scout_capacity_signature_gated",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -326,8 +326,32 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/agents/swap",
     "feature_status_id": "swap.compatibility_evm",
     "availability": "available_with_tier_gate",
-    "tier": "scout_quote_signature_and_simulation_gated",
+    "tier": "scout_capacity_signature_gated",
     "idempotent": false,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
+  },
+  "get_solana_quote": {
+    "api_route": "/api/agents/solana-quote",
+    "feature_status_id": "solana.compatibility_swap",
+    "availability": "available",
+    "tier": "scout_capacity_signature_gated",
+    "idempotent": true,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
+  },
+  "prepare_solana_swap": {
+    "api_route": "/api/agents/solana-swap",
+    "feature_status_id": "solana.compatibility_swap",
+    "availability": "available",
+    "tier": "scout_capacity_signature_gated",
+    "idempotent": true,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
+  },
+  "confirm_solana_swap": {
+    "api_route": "/api/agents/solana-confirm",
+    "feature_status_id": "solana.compatibility_swap",
+    "availability": "available",
+    "tier": "scout_capacity_signature_gated",
+    "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
   "confirm_swap": {
@@ -494,6 +518,14 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
         "authenticated_session_required": true
       }
     }
+  },
+  "reconcile_perp_order": {
+    "api_route": "/api/v1/agent/futures/reconcile-order",
+    "feature_status_id": "futures.hyperliquid_guarded",
+    "availability": "available_with_tier_gate",
+    "tier": "mixed_runtime_policy",
+    "idempotent": true,
+    "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
   "get_agent_performance": {
     "api_route": "/api/v1/agent/performance",

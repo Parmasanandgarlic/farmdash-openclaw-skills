@@ -14,11 +14,11 @@
  *   FARMDASH_BASE_URL - Override API base (default: https://www.farmdash.one/api)
  */
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { FuturesPolicySchema } from './futures-policy.js';
-import { createApiFetch, errorPayload } from './api-client.js';
+import { createApiFetch, errorPayload, retainedSession } from './api-client.js';
 import { getInstallationId } from './installation-identity.js';
 import { getMcpToolCapability } from './tool-capabilities.generated.js';
 import { resolveProfile, isProfileTool, ROUTING_INSTRUCTIONS } from './discovery.js';
@@ -47,6 +47,10 @@ const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
 const TOKEN_CONTRACT_GUIDANCE = 'ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match.';
 const HEX_SIGNATURE = /^0x[a-fA-F0-9]{130}$/;
 const BASE_UNIT_AMOUNT = /^[0-9]+$/;
+// Base58 Solana account/mint addresses: rejects EVM hex shapes at the schema
+// boundary instead of forwarding them to the Jupiter routes.
+const SOLANA_BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+const SOLANA_SIGNATURE = /^[1-9A-HJ-NP-Za-km-z]{64,88}$/;
 const SIGNATURE_SCHEMA = z.object({
   r: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
   s: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
@@ -125,6 +129,154 @@ const server = new McpServer({
 
 const toolAnnotations = getToolAnnotations;
 
+/* ── Resources (Batch 21 §2c) ─────────────────────────────────────────────
+   Read-only agent context that does not burn tool-call quota. The OpenAPI
+   specs and the status payload are PROXIED from the served backend, so the
+   resource can never drift from the served document. The chain/token tables
+   below are the only embedded data; tests/mcpResourceContract.test.ts pins
+   them to their repo sources (src/config/executionCapabilities.ts
+   ExecutionChainId, lib/swap/token-decimals.ts NATIVE_SENTINEL and
+   KNOWN_DECIMALS) so drift fails CI.
+   farmdash://session/current reports the MCP process's retained session
+   metadata without returning credentials. farmdash://execution-truth is
+   not registered. */
+const SPEC_BASE_URL = BASE_URL.replace(/\/api$/, '');
+
+async function fetchPublicSpec(pathname: string): Promise<string> {
+  const response = await fetch(`${SPEC_BASE_URL}${pathname}`, {
+    headers: { Accept: 'text/yaml', 'User-Agent': 'farmdash-mcp-server/5.0.0' },
+  });
+  if (!response.ok) throw new Error(`FarmDash spec fetch failed: HTTP ${response.status}`);
+  return response.text();
+}
+
+server.registerResource('openapi-spec', 'farmdash://openapi.yaml', {
+  title: 'FarmDash OpenAPI specification (served copy)',
+  description: 'The served Agent API spec, proxied from GET /agents/openapi.yaml so the resource never drifts from the served document.',
+  mimeType: 'text/yaml',
+}, async (uri: URL) => ({
+  contents: [{ uri: uri.href, mimeType: 'text/yaml', text: await fetchPublicSpec('/agents/openapi.yaml') }],
+}));
+
+server.registerResource('signal-architect-openapi', 'farmdash://openapi/signal-architect', {
+  title: 'FarmDash Signal Architect OpenAPI specification (served copy)',
+  description: 'The served Signal Architect swap spec, proxied from GET /agents/swap/openapi.yaml.',
+  mimeType: 'text/yaml',
+}, async (uri: URL) => ({
+  contents: [{ uri: uri.href, mimeType: 'text/yaml', text: await fetchPublicSpec('/agents/swap/openapi.yaml') }],
+}));
+
+server.registerResource('futures-openapi', 'farmdash://openapi/futures', {
+  title: 'FarmDash Futures Strategist OpenAPI specification (served copy)',
+  description: 'The served Futures Strategist spec, proxied from GET /agents/futures/openapi.yaml.',
+  mimeType: 'text/yaml',
+}, async (uri: URL) => ({
+  contents: [{ uri: uri.href, mimeType: 'text/yaml', text: await fetchPublicSpec('/agents/futures/openapi.yaml') }],
+}));
+
+server.registerResource('agent-status', 'farmdash://status', {
+  title: 'FarmDash live readiness and capability status',
+  description: 'Live readiness, active providers, paused venues and tier inventory, proxied from GET /v1/agent/status.',
+  mimeType: 'application/json',
+}, async (uri: URL) => {
+  const data = await apiFetch('/v1/agent/status');
+  return { contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(data, null, 2) }] };
+});
+
+// Executable chains — pinned to src/config/executionCapabilities.ts
+// ExecutionChainId (1 | 10 | 137 | 8453 | 42161 | 59144 | 'solana-mainnet').
+const EXECUTABLE_CHAINS = [
+  { name: 'Ethereum', chainId: 1, alchemyNetwork: 'eth-mainnet' },
+  { name: 'Optimism', chainId: 10, alchemyNetwork: 'opt-mainnet' },
+  { name: 'Polygon', chainId: 137, alchemyNetwork: 'polygon-mainnet' },
+  { name: 'Base', chainId: 8453, alchemyNetwork: 'base-mainnet', note: 'x402 settlement chain' },
+  { name: 'Arbitrum', chainId: 42161, alchemyNetwork: 'arb-mainnet' },
+  { name: 'Linea', chainId: 59144, alchemyNetwork: 'linea-mainnet' },
+  { name: 'Solana', chainId: 'solana-mainnet', alchemyNetwork: null, note: 'EVM tooling does not apply; Solana wallet balances are unsupported (typed denial)' },
+];
+
+server.registerResource('executable-chains', 'farmdash://chains', {
+  title: 'Executable chains and native-asset sentinel',
+  description: 'Chain IDs the execution layer supports, with the native-asset sentinel rule: pass 0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee (NATIVE_SENTINEL) for a chain native gas token, never a WETH address.',
+  mimeType: 'application/json',
+}, async (uri: URL) => ({
+  contents: [{
+    uri: uri.href,
+    mimeType: 'application/json',
+    text: JSON.stringify({
+      chains: EXECUTABLE_CHAINS,
+      nativeAssetSentinel: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      sentinelRule: 'Use the sentinel address for the native chain token in swap inputs; the execution guard treats it as 18 decimals. Solana addresses are not supported by the EVM balances surface.',
+    }, null, 2),
+  }],
+}));
+
+// Well-known decimal fallbacks — pinned VERBATIM to
+// lib/swap/token-decimals.ts KNOWN_DECIMALS (address-keyed; the source makes
+// no chain attribution, so neither does this resource). Quote-time RPC
+// decimals are authoritative; these are the offline display fallback.
+const KNOWN_TOKEN_DECIMALS: Record<string, number> = {
+  '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 6,
+  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913': 6,
+  '0xdac17f958d2ee523a2206206994597c13d831ec7': 6,
+};
+
+server.registerResource('canonical-tokens', new ResourceTemplate('farmdash://tokens/{chainId}', { list: undefined }), {
+  title: 'Canonical token guidance for a chain',
+  description: 'The native-asset sentinel rule and the well-known decimal fallback table for one executable chain. The source table is address-keyed (lib/swap/token-decimals.ts KNOWN_DECIMALS); quote-time RPC decimals are authoritative and this resource never claims a chain attribution the source does not make.',
+  mimeType: 'application/json',
+}, async (uri: URL) => {
+  const chainId = uri.pathname.split('/').pop() ?? '';
+  const chain = EXECUTABLE_CHAINS.find((c) => String(c.chainId) === chainId);
+  if (!chain) {
+    return {
+      contents: [{
+        uri: uri.href,
+        mimeType: 'application/json',
+        text: JSON.stringify({ ok: false, error: 'unknown_chain', chainId, executableChains: EXECUTABLE_CHAINS.map((c) => String(c.chainId)) }, null, 2),
+      }],
+    };
+  }
+  return {
+    contents: [{
+      uri: uri.href,
+      mimeType: 'application/json',
+      text: JSON.stringify({
+        chainId: chain.chainId,
+        name: chain.name,
+        nativeAssetSentinel: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        knownDecimalFallbacks: KNOWN_TOKEN_DECIMALS,
+        guidance: 'Pass the sentinel address for the native gas token, never a WETH address. Decimals are fetched live via RPC at quote time; these fallbacks apply only when RPC is unreachable. The table is address-keyed; it is not chain-scoped.',
+      }, null, 2),
+    }],
+  };
+});
+
+/* Per-connection session view (Batch 21 §4c). The retained credentials live only
+   in this stdio process, are never written to disk and are never logged. Reading
+   them grants no authority: the backend still authenticates every request, and
+   no signing or delegation authority is created by session creation. */
+server.registerResource('retained-session', 'farmdash://session/current', {
+  title: 'Session credentials retained by this MCP process',
+  description: 'sessionId/agentAddress/sessionToken captured in memory from the most recent successful create_session or session_heartbeat in THIS process. Absent until a session is created. Reading this resource grants no wallet, signing or delegation authority; it only lets a client avoid re-pasting a credential it already supplied.',
+  mimeType: 'application/json',
+}, async (uri: URL) => {
+  const retained = retainedSession();
+  return {
+    contents: [{
+      uri: uri.href,
+      mimeType: 'application/json',
+      text: JSON.stringify({
+        ok: true,
+        retained: Boolean(retained),
+        session: retained ?? null,
+        guidance: 'Explicit tool arguments always win over these defaults. A retained session is scoped to this process and this agentSessionId; a different agentSessionId never inherits it. Session creation is not execution authority.',
+      }, null, 2),
+    }],
+  };
+});
+
+
 // Keep the existing strongly typed registrations while attaching MCP-standard
 // annotations to every tool listing. These are hints, never authorization.
 const registerToolWithoutAnnotations = server.tool.bind(server) as (...args: any[]) => unknown;
@@ -163,7 +315,7 @@ const ReceiptStatusSchema = z.enum(['SUBMITTED', 'CONFIRMED', 'FAILED', 'REJECTE
 
 server.tool(
   'create_intent',
-  'Plan: create a durable FarmDashIntent. This records what an agent wants to do; it never prepares, signs, broadcasts, or executes.',
+  'Plan: create a durable FarmDashIntent. This records what an agent wants to do; it never prepares, signs, broadcasts, or executes. COMMERCIAL GATE (Pioneer+): the intent lifecycle resolves to the session_control x402 policy, so a Scout or keyless caller receives HTTP 402 payment_required. Do NOT sign and retry - this is a commercial wall, not an identity challenge - and a one-off x402 payment cannot unlock it either. Upgrade to Pioneer at farmdash.one/agents, or call with a Pioneer API key. The separate 401 execution_trial_identity_required sign-and-retry recipe applies only to execution-trial acquisition (firm quote / futures analysis).',
   {
     ...SessionCredentialSchemas,
     intent: JsonRecordSchema.describe('FarmDashIntent create input. Must include actor, action, chain, protocol, wallet, params, constraints, and evidence.'),
@@ -440,11 +592,17 @@ server.tool(
 
 server.tool(
   'get_trail_heat',
-  'Canonical Trail Heat: fetch DeFiLlama-backed quantitative scores (0-100) with per-number evidence states, components, editorial separation and registry resolution from /v1/trail-heat. Aggregate responses also include live agent recommendations; canonical score leads and only owner-confirmed, non-wallet-bound FarmDash referral routes are eligible for the near-equivalent-quality tiebreaker. Takes no parameters.',
-  {},
-  async () => {
+  'Canonical Trail Heat: fetch DeFiLlama-backed quantitative scores (0-100) with per-number evidence states, components, editorial separation and registry resolution from /v1/trail-heat. Aggregate responses also include live agent recommendations; canonical score leads and only owner-confirmed, non-wallet-bound FarmDash referral routes are eligible for the near-equivalent-quality tiebreaker. Optional bounds mirror the backend query parameters; the backend clamps them (top default 10).',
+  {
+    top: z.number().int().min(1).max(50).optional().describe('Trim the protocol list to the top N (1-50; backend clamps, default 10)'),
+    recommend: z.number().int().min(1).max(50).optional().describe('Include the live recommendation block, limited to N (1-50)'),
+  },
+  async (params) => {
     try {
-      const data = await apiFetch('/v1/trail-heat');
+      const qs = new URLSearchParams();
+      if (params.top) qs.set('top', String(params.top));
+      if (params.recommend) qs.set('recommend', String(params.recommend));
+      const data = await apiFetch(`/v1/trail-heat${qs.size ? `?${qs}` : ''}`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
       return {
@@ -542,11 +700,20 @@ server.tool(
 
 server.tool(
   'get_agent_events',
-  'Poll Pioneer+ tenant-bound agent events using the owning authenticated session (sessionId, agentAddress, and sessionToken); no Scout or mock preview. Returns recent event records, not a public real-time stream.',
-  { ...SessionCredentialSchemas },
+  'Poll Pioneer+ tenant-bound agent events using the owning authenticated session (sessionId, agentAddress, and sessionToken); no Scout or mock preview. Returns recent event records, not a public real-time stream. Optional bounds mirror the backend query parameters.',
+  {
+    ...SessionCredentialSchemas,
+    limit: z.number().int().min(1).max(200).optional().describe('Max events to return (default 50, max 200)'),
+    since: z.string().optional().describe('ISO timestamp lower bound (default 24h ago)'),
+    types: z.string().optional().describe('Comma-separated event types, e.g. trail_heat_spike,new_protocol'),
+  },
   async (params) => {
     try {
-      const data = await apiFetch(appendSessionQuery('/v1/agent/events', params), { sessionToken: params.sessionToken });
+      const extra: Record<string, string> = {};
+      if (params.limit) extra.limit = String(params.limit);
+      if (params.since) extra.since = params.since;
+      if (params.types) extra.types = params.types;
+      const data = await apiFetch(appendSessionQuery('/v1/agent/events', params, extra), { sessionToken: params.sessionToken });
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
       return {
@@ -629,14 +796,20 @@ server.tool(
 
 server.tool(
   'get_wallet_balances',
-  'Get multi-chain token portfolio for an EVM wallet. Returns balances with live USD prices.',
-  { address: z.string().regex(EVM_ADDRESS), chains: z.string().optional() },
+  'Get multi-chain token portfolio for an EVM wallet. Returns balances with live USD prices. Optional minUsdValue and limit are MCP-side context-window bounds: they filter the returned page in this wrapper (the backend has no such query bound and caps server-side at 100 tokens).',
+  {
+    address: z.string().regex(EVM_ADDRESS),
+    chains: z.string().optional(),
+    minUsdValue: z.number().min(0).optional().describe('Drop tokens whose USD value is below this (MCP-side filter, not a backend query bound)'),
+    limit: z.number().int().min(1).optional().describe('Cap the token count after filtering (MCP-side, not a backend query bound)'),
+  },
   async (params) => {
     try {
       const qs = new URLSearchParams({ address: params.address });
       if (params.chains) qs.set('chains', params.chains);
       const data = await apiFetch(`/v1/agent/balances?${qs}`);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+      const data2 = applyBalancesBounds(data, params.minUsdValue, params.limit);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data2, null, 2) }] };
     } catch (err) {
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
@@ -645,6 +818,26 @@ server.tool(
     }
   },
 );
+
+// Context-window guard for dusty wallets: the backend returns up to 100 tokens
+// and offers no value/count query bound, so the wrapper filters the page here.
+function applyBalancesBounds(data: unknown, minUsdValue?: number, limit?: number) {
+  if (minUsdValue === undefined && limit === undefined) return data;
+  if (!data || typeof data !== 'object') return data;
+  const out = { ...(data as Record<string, unknown>) };
+  const portfolio = out.portfolio as { tokens?: unknown[] } | undefined;
+  if (portfolio && Array.isArray(portfolio.tokens)) {
+    let tokens = portfolio.tokens as Array<{ valueUsd?: number }>;
+    if (typeof minUsdValue === 'number' && minUsdValue > 0) {
+      tokens = tokens.filter((t) => (t.valueUsd ?? 0) >= minUsdValue);
+    }
+    if (typeof limit === 'number' && limit > 0) {
+      tokens = tokens.slice(0, limit);
+    }
+    out.portfolio = { ...portfolio, tokens };
+  }
+  return out;
+}
 
 server.tool(
   'get_portfolio_summary',
@@ -1001,6 +1194,90 @@ server.tool(
   },
 );
 
+/* 4b. Native Solana compatibility swap (Jupiter) */
+
+server.tool(
+  'get_solana_quote',
+  'Read-only Solana swap quote preview through Jupiter. PREVIEW ONLY: the response is explicitly non-authoritative pricing intelligence and cannot be executed through the EVM compatibility-swap path. FarmDash never signs, builds or broadcasts a transaction from this route. Pass Base58 mints (SOL uses So11111111111111111111111111111111111111112) and the amount in base units.',
+  {
+    inputMint: z.string().regex(SOLANA_BASE58).describe('Base58 SPL mint address being sold. Native SOL uses So11111111111111111111111111111111111111112.'),
+    outputMint: z.string().regex(SOLANA_BASE58).describe('Base58 SPL mint address being bought.'),
+    amount: z.string().regex(BASE_UNIT_AMOUNT).describe('Input amount in the input mint base units.'),
+    slippageBps: z.number().int().min(1).max(500).optional().describe('Slippage tolerance in basis points (default provider value when omitted).'),
+  },
+  async (params) => {
+    try {
+      const qs = new URLSearchParams({
+        inputMint: params.inputMint,
+        outputMint: params.outputMint,
+        amount: params.amount,
+      });
+      if (params.slippageBps !== undefined) qs.set('slippageBps', params.slippageBps.toString());
+      const data = await apiFetch(`/agents/solana-quote?${qs}`);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
+  'prepare_solana_swap',
+  'Prepare an unsigned Solana swap VersionedTransaction with authoritative RPC simulation. Zero custody: FarmDash returns the unsigned transaction and stops at READY_FOR_USER_SIGNATURE; the customer wallet signs and broadcasts it. Requires a stable idempotencyKey. An expired preparation returns non-retryable 410 and needs a NEW idempotency key; a 409 submitted/ambiguous outcome is not safe to resubmit and must be reconciled first.',
+  {
+    wallet: z.string().regex(SOLANA_BASE58).describe('Base58 Solana public key of the paying/owning wallet. Must not be an EVM address.'),
+    inputMint: z.string().regex(SOLANA_BASE58).describe('Base58 SPL mint address being sold.'),
+    outputMint: z.string().regex(SOLANA_BASE58).describe('Base58 SPL mint address being bought.'),
+    amount: z.string().regex(BASE_UNIT_AMOUNT).describe('Input amount in the input mint base units.'),
+    slippageBps: z.number().int().min(1).max(500).optional(),
+    minAmountOut: z.string().regex(BASE_UNIT_AMOUNT).optional().describe('Optional explicit minimum output in base units; overrides the slippage-derived floor when supplied.'),
+    idempotencyKey: z.string().min(1).max(128).describe('Stable replay key for this exact preparation. Reuse it only for a retryable failure of the SAME request.'),
+    continuationId: z.string().uuid().optional().describe('Optional server-issued execution continuation to bind this preparation to.'),
+    executionTrialProof: z.object({ issuedAt: z.number().int().positive(), signature: z.string().min(1) }).optional().describe('Locally signed commercial owner challenge; no transaction or delegation authority.'),
+  },
+  async (params) => {
+    try {
+      const data = await apiFetch('/agents/solana-swap', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
+server.tool(
+  'confirm_solana_swap',
+  'Confirm and reconcile a Solana swap the customer wallet has already broadcast. Verifies the server-authored preparation, wallet binding, inclusion, required signer, exact message digest and economic deltas. "confirmed" without finality is not settlement; replaying the same signature is idempotent. FarmDash never signs or broadcasts.',
+  {
+    preparationId: z.string().min(1).describe('preparationId returned by prepare_solana_swap.'),
+    wallet: z.string().regex(SOLANA_BASE58).describe('Base58 Solana public key that signed the preparation. Must match the prepared wallet.'),
+    txSignature: z.string().regex(SOLANA_SIGNATURE).describe('Base58 Solana transaction signature that exists only after the wallet broadcast.'),
+  },
+  async (params) => {
+    try {
+      const data = await apiFetch('/agents/solana-confirm', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
+        isError: true,
+      };
+    }
+  },
+);
+
 server.tool(
   'optimize_portfolio',
   'Get unranked catalog research candidates. Returns WAIT analysis-only: exact pool identity, wallet eligibility, policy, costs and stay-put comparison remain required. Campaign confirmation does not establish safety.',
@@ -1297,6 +1574,23 @@ server.tool(
       };
     }
   },
+);
+
+server.tool(
+  'reconcile_perp_order',
+  'Reconcile ONE Hyperliquid order from direct venue evidence (order status plus user fills) and record it durably. Signs nothing, submits nothing, and is idempotent: replaying it re-records the same evidence instead of double counting fills. Execution is never inferred from portfolio or balance deltas. Call this after any order whose final state is unknown, and after cancel_perp_order reports accepted.',
+  {
+    agentAddress: z.string().regex(EVM_ADDRESS).describe('Recovered/verified L1 signer address that owns the order context.'),
+    coin: z.string().regex(/^[A-Za-z0-9]{1,16}$/).describe('Hyperliquid market symbol, for example ETH.'),
+    orderId: z.number().int().positive().describe('Venue order id to reconcile. Reconcile one order id at a time.'),
+    accountAddress: z.string().regex(EVM_ADDRESS).optional().describe('Venue-verified equity owner (master/subaccount) when agentAddress is a delegated API wallet.'),
+    intentHash: z.string().regex(/^[a-f0-9]{64}$/).optional().describe('Optional lowercase 32-byte hex intent hash from the original preparation, when known.'),
+    controlActionId: z.string().uuid().optional().describe('Optional control-action id when reconciling a cancellation or protective order.'),
+  },
+  async (params) => apiToolResult(() => apiFetch('/v1/agent/futures/reconcile-order', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  })),
 );
 
 server.tool(
@@ -1617,9 +1911,11 @@ server.tool(
   },
   async (params) => {
     try {
+      const { sessionToken, ...patchParams } = params;
       const data = await apiFetch('/v1/agent/context', {
         method: 'POST',
-        body: JSON.stringify(params),
+        sessionToken,
+        body: JSON.stringify(patchParams),
       });
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
@@ -1668,7 +1964,7 @@ server.tool(
 
 server.tool(
   'verify_delegation',
-  'Verify Hyperliquid API wallet delegation for guarded venue-order workflows. Verification does not bypass live status, research, risk, or signature gates.',
+  'Verify Hyperliquid API wallet delegation for guarded venue-order workflows. Verification does not bypass live status, research, risk, or signature gates. GATED BY DESIGN: this MCP tool is hard-blocked because MCP cannot collect the owner signature inputs it needs - the call requires an EIP-712 DelegationBind signature over { ownerAddress, agentAddress, apiWalletAddress, nonce }, and the MCP schema carries only the three addresses. The HTTP route POST /api/v1/agent/delegation exists and accepts { agentAddress, apiWalletAddress, ownerAddress, signature, nonce } - use owner-signed delegation via HTTP instead. Tier: Pioneer+.',
   {
     agentAddress: z.string().regex(EVM_ADDRESS),
     apiWalletAddress: z.string().regex(EVM_ADDRESS),
@@ -1705,11 +2001,11 @@ server.tool(
     try {
       const data = await apiFetch('/v1/agent/autopilot', {
         method: 'POST',
+        sessionToken: params.sessionToken,
         body: JSON.stringify({
           action: 'configure',
           sessionId: params.sessionId,
           agentAddress: params.agentAddress,
-          sessionToken: params.sessionToken,
           config: {
             strategies: params.strategies,
             assets: params.assets,
@@ -2046,6 +2342,7 @@ server.tool(
     intentId: z.string().describe('Authoritative swap intent ID from get_swap_quote'),
     simulationId: z.string().describe('Authoritative preflight simulation ID from simulate_swap_intent'),
     agentSessionId: z.string().describe('Authenticated agent session ID'),
+    sessionToken: z.string().min(32).max(256).optional(),
     ownerAddress: z.string().regex(EVM_ADDRESS).describe('Wallet owner EVM address'),
     sessionPublicKey: z.string().describe('Agent local signer public address (must equal ownerAddress for EOA V1)'),
     grantId: z.string().optional().describe('Active delegation grant ID (optional; looked up automatically if omitted)'),
@@ -2059,10 +2356,11 @@ server.tool(
   },
   async (params) => {
     try {
-      const { action: swapAction, ...swapParams } = params;
+      const { action: swapAction, sessionToken, ...swapParams } = params;
       const data = await apiFetch('/v1/agent/authority', {
         method: 'POST',
         body: JSON.stringify({ action: 'prepare_autonomous_swap', swapAction, ...swapParams }),
+        sessionToken,
       });
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
@@ -2081,6 +2379,7 @@ server.tool(
     reservationId: z.string().describe('Active reservation ID from prepare_autonomous_swap'),
     txHash: z.string().describe('On-chain transaction hash for public RPC receipt verification'),
     agentSessionId: z.string().describe('Authenticated agent session ID'),
+    sessionToken: z.string().min(32).max(256).optional(),
     ownerAddress: z.string().regex(EVM_ADDRESS).optional().describe('Wallet owner EVM address'),
     grantId: z.string().optional().describe('Grant ID'),
     intentId: z.string().optional().describe('Intent ID'),
@@ -2089,9 +2388,11 @@ server.tool(
   },
   async (params) => {
     try {
+      const { sessionToken, ...confirmParams } = params;
       const data = await apiFetch('/v1/agent/authority', {
         method: 'POST',
-        body: JSON.stringify({ action: 'confirm_autonomous_swap', ...params }),
+        body: JSON.stringify({ action: 'confirm_autonomous_swap', ...confirmParams }),
+        sessionToken,
       });
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
@@ -2108,15 +2409,18 @@ server.tool(
   'Release an active autonomous budget reservation if signing or broadcast is aborted before on-chain submission.',
   {
     sessionId: z.string().describe('Authenticated agent session ID'),
+    sessionToken: z.string().min(32).max(256).optional(),
     reservationId: z.string().describe('Active budget reservation ID to release'),
     ownerAddress: z.string().regex(EVM_ADDRESS).describe('User wallet owner address'),
     reason: z.string().optional().describe('Reason for aborting or releasing reservation'),
   },
   async (params) => {
     try {
+      const { sessionToken, ...releaseParams } = params;
       const data = await apiFetch('/v1/agent/authority', {
         method: 'POST',
-        body: JSON.stringify({ action: 'release_autonomous_reservation', ...params }),
+        body: JSON.stringify({ action: 'release_autonomous_reservation', ...releaseParams }),
+        sessionToken,
       });
       return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
     } catch (err) {
@@ -2383,6 +2687,114 @@ server.tool(
     }
   },
 );
+
+/* ── Guided workflow prompts (Batch 21 §4c) ──────────────────────────────
+   Prompts are client-invoked runbooks. They carry no authority and execute no
+   tool: they only name the canonical order of operations and the gates that
+   each step must satisfy. Every financial action still requires its own
+   signature, simulation, session, policy and reconciliation evidence. */
+
+const PROMPT_MESSAGE = (text: string) => ({
+  messages: [{ role: 'user' as const, content: { type: 'text' as const, text } }],
+});
+
+server.registerPrompt('spot-swap-runbook', {
+  title: 'FarmDash spot swap runbook (zero custody)',
+  description: 'Deterministic EVM or Solana swap sequence with the simulation, signing and settlement gates named in order. Read-only guidance; grants no authority.',
+  argsSchema: {
+    chain: z.string().optional().describe('EVM chain id, or "solana" for the native Solana path.'),
+    fromToken: z.string().optional().describe('Input token symbol, address or Solana mint.'),
+    toToken: z.string().optional().describe('Output token symbol, address or Solana mint.'),
+    amount: z.string().optional().describe('Human amount for context only; tool calls require base units.'),
+  },
+}, (args) => {
+  const evm = (args.chain ?? '').toLowerCase() !== 'solana';
+  const context = [args.chain ? `chain=${args.chain}` : null, args.fromToken ? `from=${args.fromToken}` : null, args.toToken ? `to=${args.toToken}` : null, args.amount ? `amount=${args.amount}` : null].filter(Boolean).join(' ');
+  return PROMPT_MESSAGE([
+    `Help me execute one FarmDash spot swap${context ? ` (${context})` : ''}. Follow this exact order and stop at the first failed gate.`,
+    '',
+    '0. Read farmdash://status and farmdash://chains first. Do not infer readiness from tool availability.',
+    evm
+      ? '1. Research: get_swap_quote WITHOUT idempotencyKey returns a provider-neutral market estimate and makes zero provider calls. It is not executable.'
+      : '1. Research: get_solana_quote returns a Jupiter preview. It is explicitly non-authoritative and never executable through the EVM path.',
+    evm
+      ? '2. Firm quote: call get_swap_quote WITH idempotencyKey plus a real walletAddress/toAddress and slippage. Keep BOTH ids: top-level intentId (qi_* cache/idempotency identity) and simulationRequirements.intent_id (fd_intent_* simulation identity). Never swap them.'
+      : '2. Prepare: call prepare_solana_swap with a stable idempotencyKey and Base58 wallet/mints. It returns an unsigned VersionedTransaction and stops at READY_FOR_USER_SIGNATURE.',
+    evm
+      ? '3. Simulate: simulate_swap_execution with the fd_intent_* id. Preparation is blocked without a successful, unexpired simulation.'
+      : '3. Sign locally: my wallet signs the returned VersionedTransaction. FarmDash never signs and never holds keys.',
+    evm
+      ? '4. Sign locally: build the EIP-191 payload v1:FARMDASH_SWAP:{fromChainId}:{toChainId}:{fromToken}:{toToken}:{fromAmount}:{agentAddress}:{toAddress}:{nonce} with EVERY 0x-prefixed field lowercased, including token addresses. Nonce is Unix ms and must be within 60 seconds.'
+      : '4. Broadcast: submit the signed transaction from my own wallet. A submission is not settlement.',
+    evm
+      ? '5. Prepare: execute_swap with the signature, nonce, simulationId and intentId. It returns calldata only; FarmDash never broadcasts it.'
+      : '5. Confirm: call confirm_solana_swap with preparationId, wallet and the public txSignature. An expired preparation returns 410 and needs a NEW idempotency key; a 409 ambiguous outcome must be reconciled, never resubmitted blindly.',
+    evm
+      ? '6. Broadcast: my wallet submits the returned transaction. Then call confirm_swap with the owning session and the resulting tx hash. A caller-supplied hash alone is not confirmation.'
+      : '',
+    '',
+    'Report each step\'s typed result. If a step returns a typed failure, stop and report the code, message and request_id instead of retrying with different parameters. Never describe preparation as execution, or a tx hash as settlement.',
+  ].filter((line) => line !== '').join('\n'));
+});
+
+server.registerPrompt('perp-trade-runbook', {
+  title: 'FarmDash Hyperliquid perp order runbook',
+  description: 'Deterministic perp sequence: research gate, sizing, local EIP-712 signing, forwarding, and mandatory venue reconciliation. Read-only guidance; grants no authority.',
+  argsSchema: {
+    coin: z.string().optional().describe('Hyperliquid market symbol, for example ETH.'),
+    side: z.enum(['long', 'short']).optional(),
+  },
+}, (args) => PROMPT_MESSAGE([
+  `Help me place one guarded Hyperliquid perp order${args.coin ? ` on ${args.coin}` : ''}${args.side ? ` (${args.side})` : ''}. Follow this order and stop at the first failed gate.`,
+  '',
+  '0. Read farmdash://status. Commercial access is API capacity only; it never creates venue signing authority.',
+  '1. Research: analyze_futures_strategy sets a 60-second parameter-bound new-risk gate. Reduce-only orders are exempt from NEW risk but still require authority.',
+  '2. Account truth: get_futures_account. agentAddress is the API signer; accountAddress is the venue-verified equity owner. A userRole mismatch fails closed.',
+  '3. Sizing: calculate_position_size with equity, entry and stop. Server guardrails are hard: max 5x leverage, 2% risk per trade, 20% concentration, -3% daily loss, -15% circuit breaker.',
+  '4. Prepare: prepare_perp_order returns the exact action, EIP-712 typed data, nonce, expiry and intent hash. It never signs. market_ioc is a price-protected IOC limit with a live 100 bps adverse-price cap, not an unbounded market order.',
+  '5. Sign locally: my wallet signs the returned typed data. The signed action must disclose the FarmDash builder term { b: treasury, f: 1 }.',
+  '6. Submit: execute_perp_order with the signature, nonce, expiresAt and intentHash. The venue nonce authority is network + signer + nonce across account and vault contexts; replay control fails closed.',
+  '7. Reconcile (mandatory): call reconcile_perp_order with the venue orderId. Never infer execution from balance or portfolio deltas, and never resubmit an unknown outcome. For a resting order, cancel_perp_order reports `accepted`, which is an application acknowledgement and NOT a cancellation; reconcile every requested id afterward.',
+  '',
+  'Report full, partial and zero fills distinctly. If any step returns a typed failure or an ambiguous outcome, stop and report the code, message and request_id.',
+].join('\n')));
+
+server.registerPrompt('bounded-autonomy-setup', {
+  title: 'FarmDash bounded autonomy setup (opt-in only)',
+  description: 'Explains the one-time scoped delegation path and the exact gates, and requires explicit user consent before anything is requested. Read-only guidance; creates no grant.',
+  argsSchema: {
+    domain: z.enum(['spot', 'futures']).optional().describe('Execution domain the user wants to consider. Defaults to spot.'),
+  },
+}, (args) => PROMPT_MESSAGE([
+  `Explain and, only if I explicitly opt in, prepare a bounded ${args.domain ?? 'spot'} execution delegation. Do not create, request or register anything before I answer.`,
+  '',
+  '1. Read farmdash://status, then get_execution_authority for the active persisted session. If a valid bounded delegation already exists for THIS agentSessionId, report its policy bounds instead of asking me to sign another.',
+  '2. State the two options plainly: Standard FarmDash (USER_SIGNED, I approve and sign each action) is the default; Autonomous FarmDash (BOUNDED_AUTONOMOUS) needs one owner-signed scoped delegation. A different or new agentSessionId never inherits another session grant.',
+  '3. Name the signer model truth: EOA_V1_OWNER_LOCAL_SIGNER requires sessionPublicKey == ownerAddress, and the owner EOA signs in MY local runtime. FarmDash never receives or stores the private key. Separate delegated session-key signers belong to the not-yet-operational ERC-4337 path.',
+  '4. Ask me to choose, and wait. Never infer consent from an API key, subscription, x402 payment, session creation, prior usage, an optimization request or a generic "do this for me".',
+  '5. Only after I opt in: request_execution_delegation to build the exact EIP-712/ERC-8196 payload, bounded by chains, protocols/router contracts, assets, allowed actions, per-action value, cumulative budget, gas, slippage, validity and revocation.',
+  '6. I sign that payload locally, then register_execution_delegation with the signature. Revocation is revoke_execution_authority and must be offered up front.',
+  '',
+  'Be explicit that payment, API keys and sessions are never wallet authority, and that a delegation is scoped to one agentSessionId.',
+].join('\n')));
+
+server.registerPrompt('yield-rebalance-audit', {
+  title: 'FarmDash yield and idle-capital audit',
+  description: 'Research-only audit of idle capital and candidate yields with the evidence boundaries named. Analysis only; produces no transaction.',
+  argsSchema: {
+    wallet: z.string().optional().describe('EVM wallet address to audit.'),
+  },
+}, (args) => PROMPT_MESSAGE([
+  `Audit my idle capital and candidate yields${args.wallet ? ` for ${args.wallet}` : ''}. This is research only: do not prepare, sign or submit anything.`,
+  '',
+  '1. get_portfolio_summary and get_idle_capital for the wallet. These are paid reads, not session-authenticated, and they are not realized PnL.',
+  '2. compare_yields with explicit chains/assets/risk filters. Rows are bounded to 50; treat the list as candidates, not recommendations.',
+  '3. analyze_protocol_risk for each shortlisted protocol, and get_trail_heat for canonical DeFiLlama-backed scores. Catalog discovery_heuristic_score is editorial and is NOT canonical Trail Heat.',
+  '4. simulate_yield_strategy for a scenario comparison. Every output is WAIT / analysis-only until exact pool identity, wallet eligibility, policy, costs and a stay-put comparison are established.',
+  '5. State the freshness: Trail Heat freshness is disclosed per payload; a stale or unknown-observation score must be reported as such, never presented as live.',
+  '',
+  'End with a ranked shortlist, the evidence state per number, and an explicit statement that no position has been created.',
+].join('\n')));
 
 /* Start */
 

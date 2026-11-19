@@ -22,7 +22,7 @@ Use this map before choosing individual tools. It keeps autonomous behavior grou
 | Airdrop Rotation Desk | Detect when to enter, wait, rotate, or exit farming opportunities | `get_trail_heat`, `get_historical_trailheat`, `get_agent_events`, `simulate_points`, `get_swap_quote` | Treat "wait" as a valid action when edge is unclear |
 | Cross-Chain ROI Gate | Decide whether a bridge is worth its cost and execution risk | `get_chain_breakdown`, `get_wallet_balances`, `get_token_prices`, `get_swap_quote`, `optimize_portfolio` | Bridge only when net expected edge remains positive |
 | Perps Hedge Co-Pilot | Evaluate whether spot farming exposure needs a Hyperliquid hedge | `scan_funding_rates`, `scan_market_conditions`, `get_futures_account`, `analyze_futures_strategy`, `calculate_position_size` | Prefer `no_trade` when confidence, liquidity, or jurisdiction is unclear |
-| Operator Reputation Loop | Review execution quality and prove agent reliability | `get_swap_history`, `get_agent_performance`, `check_reputation`, `vouch_for_agent` | Reputation is evidence, not permission to copy trades blindly |
+| Operator Reputation Loop | Review execution quality and prove agent reliability | `get_agent_performance` (MCP tool); `check_reputation` and `vouch_for_agent` exist only as HTTP routes (`/api/agents/reputation`, `/api/agents/vouch`) — no MCP tool wraps them yet; there is no `get_swap_history` anywhere | Reputation is evidence, not permission to copy trades blindly |
 
 ## Sense -> Decide -> Act -> Learn Loop
 
@@ -204,7 +204,7 @@ Calibration rules:
 - Prefer `no_trade` or `analysis_only` when data freshness or execution quality degrades.
 - Promote protocols and strategies that continue to outperform after fees and bridge costs.
 
-If the current tool surface does not return a dedicated calibration object, use `get_agent_performance`, `get_swap_history`, quote deltas, and session logs as the evidence base.
+If the current tool surface does not return a dedicated calibration object, use `get_agent_performance`, quote deltas, and session logs as the evidence base. (`get_swap_history` is not a FarmDash tool on any surface — do not call it.)
 
 ## Social And Multi-Agent Notes
 

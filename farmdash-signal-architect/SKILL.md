@@ -586,6 +586,36 @@ Inputs:
 * `feeEventId`: required FarmDash fee-event identifier associated with the prepared swap
 * `txHash`: required on-chain transaction hash produced after the customer-controlled wallet broadcasts the prepared transaction
 
+#### get_solana_quote
+Preview a native Solana swap quote through Jupiter. This is non-authoritative pricing intelligence: it is never executable through the EVM compatibility-swap path, it returns no calldata to sign, and FarmDash neither signs nor broadcasts anything here. Re-quote after roughly 30 seconds or whenever the user changes size, slippage or wallet.
+
+Inputs:
+* `inputMint`: required Base58 SPL mint being sold
+* `outputMint`: required Base58 SPL mint being bought
+* `amount`: required input amount in base units of the input mint
+* `slippageBps`: optional integer slippage tolerance in basis points
+
+#### prepare_solana_swap
+Prepare an unsigned Solana swap VersionedTransaction with authoritative RPC simulation, and stop at `READY_FOR_USER_SIGNATURE`. Zero custody: the customer wallet signs and broadcasts, so preparation is not submission and a returned transaction is not settlement. Pass a stable `idempotencyKey`. An expired preparation returns non-retryable `410` and needs a NEW idempotency key; a `409` submitted or ambiguous outcome must be reconciled, never blindly resubmitted.
+
+Inputs:
+* `wallet`: required Base58 Solana public key that will sign and pay; it must not be an EVM address
+* `inputMint`: required Base58 SPL mint being sold
+* `outputMint`: required Base58 SPL mint being bought
+* `amount`: required input amount in base units of the input mint
+* `idempotencyKey`: required stable replay key for this exact preparation
+* `slippageBps`: optional integer slippage tolerance in basis points
+* `minAmountOut`: optional explicit minimum output in base units
+* `continuationId`: optional server-issued execution continuation to bind
+
+#### confirm_solana_swap
+Confirm and reconcile a Solana swap the customer wallet has already broadcast. FarmDash verifies the server-authored preparation, wallet binding, inclusion, the required signer, the exact message digest and the economic deltas before recording durable settlement. A `confirmed` status without finality is not settlement, and replaying the same signature is idempotent. This call never broadcasts anything.
+
+Inputs:
+* `preparationId`: required preparation identifier returned by `prepare_solana_swap`
+* `wallet`: required Base58 Solana public key that signed the preparation
+* `txSignature`: required Base58 transaction signature that exists only after the wallet broadcast
+
 #### 6. get_agent_activity
 Review recent agent activity via durable FarmDash execution receipts; filter by intent_id and receipt status.
 

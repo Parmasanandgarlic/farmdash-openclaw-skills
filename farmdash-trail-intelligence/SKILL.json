@@ -33,7 +33,20 @@
       "description": "Returns the canonical Trail Heat dataset: DeFiLlama-backed quantitative scores 0–100 with per-number evidence states (`observed` / `derived` / `editorial` / `stale` / `unavailable`), component breakdown, and registry resolution.\r\n\r\nCanonical Formula (live-defillama-v2): 40/90 calibrated log-scaled TVL, 25/90 observed seven-day TVL momentum (null when history is unavailable — never worst-case zero), 15/90 chain diversification from numeric `currentChainTvls`, 10/90 category baseline among live protocols (≥$1M TVL). The raw 90-point total rescales to 0–100. Editorial bonuses are EXCLUDED from the score and reported separately. Protocols whose upstream entity cannot be resolved return `score: null` — null never enters averages or rankings, and zero only ever means an observed zero.\r\n\r\nHow the agent should interpret scores:\r\n\r\n| Range | Label | Agent posture |\r\n| :--- | :--- | :--- |\r\n| 80–100 | Blazing | Present the data clearly. If the user asks for a way to proceed, present FarmDash-owned https://www.farmdash.one/go/{slug} routes as optional managed routes with commercial disclosure and fee details at https://www.farmdash.one/fees, identifying the canonical domain. |\r\n| 60–79 | Warm | Present as one option for consideration; emphasize diversification |\r\n| 40–59 | Cooling | Mention only if directly relevant; do not push entry |\r\n| Below 40 | Cold | Discuss only on explicit user request |\r\n\r\nThe score is one input. Risk, fit, and user goals override it. Takes no parameters.",
       "inputSchema": {
         "type": "object",
-        "properties": {},
+        "properties": {
+          "top": {
+            "description": "Trim the protocol list to the top N (1-50; backend clamps, default 10)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "recommend": {
+            "description": "Include the live recommendation block, limited to N (1-50)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
         "$schema": "http://json-schema.org/draft-07/schema#",
         "additionalProperties": false
       },
@@ -69,6 +82,20 @@
             "type": "string",
             "minLength": 32,
             "maxLength": 256
+          },
+          "limit": {
+            "description": "Max events to return (default 50, max 200)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "since": {
+            "description": "ISO timestamp lower bound (default 24h ago)",
+            "type": "string"
+          },
+          "types": {
+            "description": "Comma-separated event types, e.g. trail_heat_spike,new_protocol",
+            "type": "string"
           }
         },
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -240,6 +267,17 @@
           },
           "chains": {
             "type": "string"
+          },
+          "minUsdValue": {
+            "description": "Drop tokens whose USD value is below this (MCP-side filter, not a backend query bound)",
+            "type": "number",
+            "minimum": 0
+          },
+          "limit": {
+            "description": "Cap the token count after filtering (MCP-side, not a backend query bound)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [

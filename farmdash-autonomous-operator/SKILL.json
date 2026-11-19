@@ -1022,6 +1022,11 @@
             "type": "string",
             "description": "Authenticated agent session ID"
           },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          },
           "ownerAddress": {
             "type": "string",
             "pattern": "^0x[a-fA-F0-9]{40}$",
@@ -1099,6 +1104,11 @@
           "agentSessionId": {
             "type": "string",
             "description": "Authenticated agent session ID"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
           },
           "ownerAddress": {
             "description": "Wallet owner EVM address",
@@ -2382,6 +2392,11 @@
           "sessionId": {
             "type": "string",
             "description": "Authenticated agent session ID"
+          },
+          "sessionToken": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
           },
           "reservationId": {
             "type": "string",

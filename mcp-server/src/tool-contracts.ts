@@ -164,6 +164,13 @@ export const TOOL_CONTRACTS: Readonly<Record<string, ToolContract>> = {
     featureStatusId: 'agent_execution.intent_lifecycle',
     capabilityFamily: 'agent_execution',
     integrationRoles: ['intent'],
+    // The whole intent lifecycle is a Pioneer+ surface. The route resolves to
+    // the session_control x402 policy (src/config/commercial.ts:500 maps
+    // ['intent-create'] -> session_control; the policy is Pioneer tier with
+    // scoutFree false and oneOffAllowed false), so a Scout or keyless caller
+    // gets HTTP 402 payment_required. `session_bound` below describes the
+    // session-ownership binding, NOT the commercial tier — without this note
+    // the capability table gives an agent no way to know it must upgrade.
     availability: 'preparation_only',
     tier: 'session_bound',
     authority: ToolAuthority.FARMDASH_PREPARES,
@@ -1203,6 +1210,110 @@ export const TOOL_CONTRACTS: Readonly<Record<string, ToolContract>> = {
     commercialModel: 'PROVIDER_FEE',
   },
 
+  // === solana.compatibility_swap (3 tools) ===
+  get_solana_quote: {
+    toolName: 'get_solana_quote',
+    mcpRegistered: true,
+    readOnly: true,
+    destructive: false,
+    apiRoute: '/api/agents/solana-quote',
+    featureStatusId: 'solana.compatibility_swap',
+    capabilityFamily: 'swap',
+    integrationRoles: ['solana', 'quote', 'preview'],
+    availability: 'available',
+    tier: 'scout_preview_pioneer_full',
+    authority: ToolAuthority.FARMDASH_ANALYZES,
+    financialEffect: FinancialEffect.QUOTED_ONLY,
+    inputArtifacts: ['inputMint', 'outputMint', 'amount', 'slippageBps'],
+    outputArtifacts: ['jupiterPreviewQuote', 'priceImpactPct', 'continuation'],
+    prerequisites: [],
+    freshnessRequirements: 'live_jupiter_quote_preview_only',
+    userConfirmationRequirement: false,
+    walletSignatureRequirement: false,
+    submissionOwner: 'NONE',
+    idempotencySemantics: 'IDEMPOTENT',
+    nextTools: ['prepare_solana_swap'],
+    // A preview quote carries no executable material. Treating it as something the
+    // EVM compatibility swap could submit would silently invent a Solana executor
+    // FarmDash does not have.
+    blockedAlternatives: ['treat_preview_as_executable', 'execute_swap'],
+    evidenceClasses: [EvidenceClass.OBSERVED, EvidenceClass.PROVIDER_VERIFIED],
+    commercialModel: 'free_preview',
+  },
+  prepare_solana_swap: {
+    toolName: 'prepare_solana_swap',
+    mcpRegistered: true,
+    readOnly: false,
+    destructive: false,
+    apiRoute: '/api/agents/solana-swap',
+    featureStatusId: 'solana.compatibility_swap',
+    capabilityFamily: 'swap',
+    integrationRoles: ['solana', 'prepare', 'versioned_transaction'],
+    availability: 'available',
+    // Scout may prepare with a user-signed flow; the signature requirement itself is
+    // carried by the contract authority, so this resolves the same live
+    // default_overage capacity the EVM compatibility swap declares.
+    tier: 'scout_capacity_signature_gated',
+    // Zero custody: FarmDash returns an unsigned VersionedTransaction and stops at
+    // READY_FOR_USER_SIGNATURE. It never signs, never holds keys, and never
+    // broadcasts.
+    authority: ToolAuthority.FARMDASH_PREPARES,
+    financialEffect: FinancialEffect.PREPARATION_ONLY,
+    inputArtifacts: ['wallet', 'inputMint', 'outputMint', 'amount', 'slippageBps', 'minAmountOut', 'idempotencyKey'],
+    // No signature and no transaction signature exists yet: only the unsigned message
+    // plus the simulation evidence that justified its parameters.
+    outputArtifacts: ['preparationId', 'unsignedVersionedTransaction', 'transactionDigest', 'simulationEvidence'],
+    prerequisites: [],
+    freshnessRequirements: 'live_quote_30s_ttl_with_authoritative_rpc_simulation',
+    userConfirmationRequirement: false,
+    walletSignatureRequirement: false,
+    // The customer wallet signs AND broadcasts the returned transaction; FarmDash
+    // only prepares the message.
+    submissionOwner: 'USER',
+    idempotencySemantics: 'IDEMPOTENT',
+    nextTools: ['confirm_solana_swap'],
+    // An expired preparation returns a non-retryable 410 and needs a NEW idempotency
+    // key. A 409 submitted/ambiguous outcome is NOT safe to resubmit: confirm_solana_swap
+    // must reconcile it first.
+    blockedAlternatives: ['farmdash_broadcasts_transaction', 'retry_after_410_with_same_idempotency_key'],
+    evidenceClasses: [EvidenceClass.OBSERVED, EvidenceClass.PROVIDER_VERIFIED, EvidenceClass.DERIVED],
+    commercialModel: 'default_overage',
+  },
+  confirm_solana_swap: {
+    toolName: 'confirm_solana_swap',
+    mcpRegistered: true,
+    readOnly: false,
+    destructive: false,
+    apiRoute: '/api/agents/solana-confirm',
+    featureStatusId: 'solana.compatibility_swap',
+    capabilityFamily: 'swap',
+    integrationRoles: ['solana', 'reconciliation', 'settlement'],
+    availability: 'available',
+    // Settlement confirmation is exempt from tier rate limits on the route, so it is
+    // reachable by scout capacity without an upgrade gate.
+    tier: 'scout_plus',
+    // Durably records settlement evidence against the preparation; acquires no
+    // custody and moves no value of its own.
+    authority: ToolAuthority.FARMDASH_WRITES,
+    financialEffect: FinancialEffect.NONE,
+    inputArtifacts: ['preparationId', 'wallet', 'txSignature'],
+    outputArtifacts: ['settlementStatus', 'finalized', 'reconciled', 'actualInputDelta', 'actualOutputDelta', 'minimumOutputSatisfied'],
+    prerequisites: ['prepare_solana_swap'],
+    freshnessRequirements: 'canonical_solana_receipt_and_finality',
+    userConfirmationRequirement: false,
+    walletSignatureRequirement: false,
+    submissionOwner: 'NONE',
+    idempotencySemantics: 'IDEMPOTENT',
+    nextTools: [],
+    // Verifies inclusion, the required signer, the exact message digest, and the
+    // economic deltas. A 'confirmed' status without finality is NOT settlement,
+    // and a preparation may only be claimed by its own wallet.
+    blockedAlternatives: ['treat_signature_as_settlement', 'claim_another_wallet_preparation'],
+    // Replaying the same signature is idempotent: the recorded deltas do not accrue.
+    evidenceClasses: [EvidenceClass.ONCHAIN_VERIFIED, EvidenceClass.OBSERVED],
+    commercialModel: 'NONE',
+  },
+
   // === agent_planning (4 tools) ===
   optimize_portfolio: {
     toolName: 'optimize_portfolio',
@@ -1335,7 +1446,7 @@ export const TOOL_CONTRACTS: Readonly<Record<string, ToolContract>> = {
     commercialModel: 'NONE',
   },
 
-  // === futures.hyperliquid_guarded (7 tools) ===
+  // === futures.hyperliquid_guarded (8 tools) ===
   scan_funding_rates: {
     toolName: 'scan_funding_rates',
     mcpRegistered: true,
@@ -1585,6 +1696,42 @@ export const TOOL_CONTRACTS: Readonly<Record<string, ToolContract>> = {
     nextTools: [],
     blockedAlternatives: ['treat_accepted_as_cancelled', 'blind_resubmission_after_unknown'],
     evidenceClasses: [EvidenceClass.SIGNATURE_VERIFIED, EvidenceClass.PROVIDER_VERIFIED],
+    commercialModel: 'default_overage',
+  },
+  reconcile_perp_order: {
+    toolName: 'reconcile_perp_order',
+    mcpRegistered: true,
+    readOnly: false,
+    destructive: false,
+    apiRoute: '/api/v1/agent/futures/reconcile-order',
+    featureStatusId: 'futures.hyperliquid_guarded',
+    capabilityFamily: 'futures',
+    integrationRoles: ['perps', 'reconciliation', 'venue_evidence'],
+    availability: 'available_with_tier_gate',
+    tier: 'scout_capacity_signature_gated',
+    // Durable write of reconciliation evidence only. This endpoint signs nothing and
+    // submits nothing: it is read-only against the venue.
+    authority: ToolAuthority.FARMDASH_WRITES,
+    // Reconciling an order moves no value; no fee is settled here either.
+    financialEffect: FinancialEffect.NONE,
+    inputArtifacts: ['agentAddress', 'accountAddress', 'coin', 'orderId', 'intentHash', 'controlActionId'],
+    // Resolves ONE order from direct venue evidence (orderStatus + userFills) and
+    // records it durably. No signature and no FarmDash-side execution state. This is
+    // the canonical reconciliation step the cancel_perp_order contract names.
+    outputArtifacts: ['orderStatusEvidence', 'fillEvidence', 'reconciliationState'],
+    prerequisites: [],
+    freshnessRequirements: 'live_venue_order_status_and_user_fills',
+    userConfirmationRequirement: false,
+    // Takes no signature at all, so no futures execution-mode projection applies.
+    walletSignatureRequirement: false,
+    submissionOwner: 'NONE',
+    idempotencySemantics: 'IDEMPOTENT',
+    nextTools: [],
+    // Replaying re-records the same evidence instead of double counting fills.
+    // Execution is never inferred from portfolio or balance deltas, an unknown venue
+    // outcome is never resubmitted, and venue acceptance is not a fill.
+    blockedAlternatives: ['infer_execution_from_balance_delta', 'resubmit_on_unknown', 'treat_accepted_as_filled'],
+    evidenceClasses: [EvidenceClass.PROVIDER_VERIFIED, EvidenceClass.ONCHAIN_VERIFIED],
     commercialModel: 'default_overage',
   },
 
@@ -1862,6 +2009,18 @@ export const TOOL_CONTRACTS: Readonly<Record<string, ToolContract>> = {
     featureStatusId: 'autonomous_operator.sessions',
     capabilityFamily: 'autonomous_operator',
     integrationRoles: ['delegation', 'registration'],
+    // GATED BY DESIGN (1e6137602, "fix(mcp): reconcile canonical policy and
+    // authority metadata", merged via PR #268 fix/canonical-truth-convergence-
+    // 20261106). The MCP tool schema carries only the three addresses, but the
+    // call needs an owner EIP-712 DelegationBind signature over
+    // { ownerAddress, agentAddress, apiWalletAddress, nonce } plus a fresh
+    // nonce. MCP cannot collect a signature, so the MCP call is hard-blocked
+    // (resolveAvailability: callable=false, hardBlocked=true) while the HTTP
+    // route remains the working path — see blockedAlternatives below.
+    // Tier is Pioneer+ (NOT Syndicate): the sibling autonomous-operator tools
+    // (agent_onboard, create_session, session_heartbeat, configure_autopilot,
+    // autopilot_cycle) are all pioneer_plus, and the delegation route's own
+    // toll policy is session_control (Pioneer).
     availability: 'unavailable_mcp_signature_inputs',
     tier: 'pioneer_plus',
     authority: ToolAuthority.FARMDASH_WRITES,

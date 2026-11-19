@@ -2,7 +2,7 @@
 
 # FarmDash MCP Server (source distribution)
 
-FarmDash Agent OS MCP Server (v5.0.0) provides 94 capability-labeled DeFi research, risk, simulation, and zero-custody workflow tools via [Model Context Protocol](https://modelcontextprotocol.io). The authoritative canonical catalog is generated from registrations in `src/index-base.ts` and the committed runtime schema snapshot.
+FarmDash Agent OS MCP Server (v5.0.0) provides capability-labeled DeFi research, risk, simulation, and zero-custody workflow tools via [Model Context Protocol](https://modelcontextprotocol.io). The authoritative canonical catalog is generated from registrations in `src/index-base.ts` and the committed runtime schema snapshot.
 
 > **Current capability contract:** Read the generated table below and [canonical execution truth](https://www.farmdash.one/execution-truth.json), then check live `/api/v1/agent/status`. Operational implementation readiness is not funded production proof or authorization. USER_SIGNED requires customer-local signing; bounded execution additionally requires a domain-specific owner policy and agent-local signature, authenticated exact-principal binding, simulation, budget, replay and reconciliation checks. FarmDash never receives the customer key.
 
@@ -80,9 +80,9 @@ Leave `FARMDASH_API_KEY` unset for Scout. Eligible free routes have 30 requests 
 
 Two further optional variables exist for advanced integrations: `FARMDASH_SCOUT_GRANT` (an onboarding grant, normally attached in memory after `agent_onboard` returns one) and `FARMDASH_SKILL_ID` (OpenClaw skill attribution). Neither is needed for a normal client.
 
-## Tool Highlights (94 Total)
+## Tool Highlights
 
-This section groups principal canonical tools; it is not an inventory sum. Canonical registrations in `src/index-base.ts` and the committed schema snapshot define the 94-tool catalog. Inspect installed `tools/list` through tool discovery to retrieve the complete runtime catalog. `agent_onboard` reads live readiness before returning guidance; onboarding is not wallet authority or a required skill-registration step.
+This section groups principal canonical tools; it is not an inventory sum. Inspect `tools/list` for the installed profile's complete catalog. `agent_onboard` reads live readiness before returning guidance; onboarding is not wallet authority or a required skill-registration step.
 
 ### Protocol Risk Analyzer — NEW in v5.0
 
@@ -159,12 +159,11 @@ Commercial access buys API capacity only; it never creates Hyperliquid signing a
 | `record_virtuals_tender_funding_v2` | Authenticated session | Records hashes after the customer wallet submits reserved funding; cannot submit transactions. |
 | `evaluate_virtuals_tender` | Authenticated session | Evaluates a fully bound/funded V2 committee or resumes typed settlement observation. |
 
-## Resources
+## Resources, prompts, and profiles
 
-The server exposes two OpenAPI specifications as MCP resources:
+`resources/list` exposes the served OpenAPI documents (`farmdash://openapi.yaml`, `farmdash://openapi/signal-architect`, and `farmdash://openapi/futures`), readiness (`farmdash://status`), executable chains (`farmdash://chains`), and session context (`farmdash://session/current`). The latter can contain a retained session credential; treat it as sensitive and do not log or share it. Use a dedicated stdio process for each trusted client context. `resources/templates/list` exposes `farmdash://tokens/{chainId}` for chain token context.
 
-- `farmdash://openapi.yaml` — Signal Architect core spec
-- `farmdash://futures-openapi.yaml` — Futures Strategist spec
+`prompts/list` exposes client-invoked workflow guidance. Prompts do not execute tools or grant authority. `FARMDASH_MCP_PROFILE` optionally limits the startup tool catalog; omit it for the default full catalog. A profile is not an authorization boundary.
 
 ## Authentication
 

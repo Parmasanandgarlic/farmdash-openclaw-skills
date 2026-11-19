@@ -72,6 +72,7 @@ The Autonomous Operator is no longer a simple linear state machine. It now opera
 * Use Trail Marshal to plan a workflow based on the oriented context.
 * `create_intent`: Formalize the exact parameters of the action.
 * `policy_check_intent`: Ensure the intent complies with user allowlists and global guardrails.
+* **Intent lifecycle commercial gate (Pioneer+):** `create_intent` and the rest of the intent lifecycle (`policy_check_intent`, `simulate_intent`, `request_approval_payload`, `prepare_intent`, `execute_approved_intent`, receipts) resolve to the `session_control` x402 policy, which is Pioneer tier with `scoutFree: false` and `oneOffAllowed: false`. A Scout or keyless caller receives **HTTP 402 `payment_required`** (tier `scout`). Do **not** sign and retry — this is a commercial wall, not an identity challenge — and a one-off x402 payment cannot unlock it either. The remedy is to upgrade to Pioneer at farmdash.one/agents, or call with a Pioneer API key. The separate 401 `execution_trial_identity_required` sign-and-retry recipe applies only to the execution-trial acquisition flow (firm quote / futures analysis), never to intent creation.
 
 ### 4. Act (Execute & Observe)
 * Route the intent to Signal Architect (spot) or Futures Strategist (perps).

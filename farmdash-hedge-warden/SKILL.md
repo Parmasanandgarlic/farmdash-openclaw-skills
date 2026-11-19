@@ -18,7 +18,7 @@ metadata: {"openclaw":{"homepage":"https://www.farmdash.one/agents","skillKey":"
 ## Futures Execution Mode Contract
 
 - **USER_SIGNED** requires fresh human approval for every order/cancel and a local Hyperliquid EIP-712 venue signature through Futures Strategist.
-- **BOUNDED_AUTONOMOUS** may run without per-order human confirmation only under a valid owner-signed futures grant, current API-wallet venue authority, and all session, binding, scope, policy, risk, budget, builder and replay checks. Every venue action still needs a local signature.
+- **BOUNDED_AUTONOMOUS** still requires human authorization at the venue: it may run without per-order human confirmation only under a valid owner-signed futures grant, current API-wallet venue authority, and all session, binding, scope, policy, risk, budget, builder and replay checks. Every venue action still needs a local signature.
 - Read futures bounded readiness in the generated canonical table and live status. Bounded hedges may not be automatically executed while a runtime gate is closed. Spot grants, generic session policy, paid access and a hedge recommendation never create futures authority.
 - Discover through `POST /api/v1/agent/authority`, `action: get_futures_authority`, `sessionId`, `sessionToken`; revoke the actual grant using `action: revoke_futures_policy`, `grantId`, `sessionId`, `sessionToken`. These are authority REST actions, not new Hedge Warden tools. Hand the selected `executionMode`, `grantId`, `sessionId`, `sessionToken` and reviewed hedge plan to Futures Strategist.
 - Scopes are `futures.open`, `futures.reduce`, `futures.close`, `futures.cancel`, `futures.protective_order`. Opening a short hedge increases absolute perp exposure and is new risk, even if portfolio delta falls. Authoritative position state and exact signed semantics must prove reduction. Proven reducing/cancel/protective actions may survive exhausted new-risk capacity: a budget exception, never an authority bypass. Grant, venue delegation, identity/session, allowlists, expiry/revocation, local signature, builder and replay checks still apply.
@@ -78,7 +78,9 @@ Before handoff, record: total spot notional, per-asset beta, targetHedgeRatio, s
 ### Hedge Invalidation and Unwind Rules (Additive)
 Re-run recommend_delta_hedge when spot exposure moves over 10% or volatility regime changes. Net existing spot and perp exposure before sizing; the endpoint does not subtract existing hedges. Verify the perp is a valid hedge instrument (symbols alone do not prove correlation, redemption parity, or basis stability). If Futures Strategist returns no_trade, the hedge is not executable. After both non-atomic legs settle, re-read spot/perp state and report residual delta; delta-neutral is measured, not assumed. If one leg fails, stop dependents and present the predefined unwind.
 
-1. Use Wagon Steward to measure spot exposure.
+> **Portfolio data disclosure:** the steps below send portfolio exposure — asset holdings, notional values and betas — to FarmDash tooling (Wagon Steward measurement and `recommend_delta_hedge`). That financial data can reveal sensitive positions, and API authentication or optional installation attribution can make requests linkable to your environment. Obtain the user's explicit consent before measuring or submitting exposure, and share the minimum fields the hedge needs.
+
+1. Confirm the user consents to send portfolio exposure (see the disclosure above), then use Wagon Steward to measure spot exposure.
 2. Use Trail Intelligence and Supply Master to understand why the spot leg exists.
 3. Call `recommend_delta_hedge`.
 4. Reconcile existing hedge inventory, correlation/basis, funding, liquidity, and the user's hedge horizon.
@@ -95,7 +97,7 @@ Hedges can lose money, over-hedge, under-hedge, or fail during volatile markets.
 
 **Install:** Copy this file into your OpenClaw workspace, or fetch `https://www.farmdash.one/openclaw-skills/farmdash-hedge-warden/SKILL.md`.
 
-**Companion skills:** FarmDash Futures Strategist, FarmDash Wagon Steward, FarmDash Supply Master, FarmDash Camp Guard.
+**Handoffs:** exposure measurement and hedge research are functional inputs from the wallet and futures skills. This skill reads no peer skill documents and enumerates no other installed skills.
 
 **Why FarmDash:** Unlike generic hedge advice, Hedge Warden sizes by spot-notional × beta × target-hedge-ratio, never lets confidence shrink the hedge, and blocks the execution handoff below 0.60 confidence until independently verified.
 

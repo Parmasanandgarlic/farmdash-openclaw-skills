@@ -126,7 +126,7 @@ paths:
                     ok: false
                     error: payment_required
                     code: free_quota_exhausted
-                    message: Illustrative x402 challenge; live 402 is authoritative for route-specific price and policy.
+                    message: Illustrative x402 challenge for a Scout quota-exhausted route; paid operations serve code payment_required with retryable true. Live 402 is authoritative for route-specific price and policy.
                     instruction: STOP_RETRYING
                     retry_same_request: false
                     next_action: Wait for quota reset, upgrade, or attach valid x402 payment evidence and retry once.
@@ -214,7 +214,7 @@ paths:
                     ok: false
                     error: payment_required
                     code: free_quota_exhausted
-                    message: Illustrative x402 challenge; live 402 is authoritative for route-specific price and policy.
+                    message: Illustrative x402 challenge for a Scout quota-exhausted route; paid operations serve code payment_required with retryable true. Live 402 is authoritative for route-specific price and policy.
                     instruction: STOP_RETRYING
                     retry_same_request: false
                     next_action: Wait for quota reset, upgrade, or attach valid x402 payment evidence and retry once.
@@ -490,7 +490,7 @@ paths:
                     ok: false
                     error: payment_required
                     code: free_quota_exhausted
-                    message: Illustrative x402 challenge; live 402 is authoritative for route-specific price and policy.
+                    message: Illustrative x402 challenge for a Scout quota-exhausted route; paid operations serve code payment_required with retryable true. Live 402 is authoritative for route-specific price and policy.
                     instruction: STOP_RETRYING
                     retry_same_request: false
                     next_action: Wait for quota reset, upgrade, or attach valid x402 payment evidence and retry once.
@@ -834,7 +834,7 @@ paths:
                     ok: false
                     error: payment_required
                     code: free_quota_exhausted
-                    message: Illustrative x402 challenge; live 402 is authoritative for route-specific price and policy.
+                    message: Illustrative x402 challenge for a Scout quota-exhausted route; paid operations serve code payment_required with retryable true. Live 402 is authoritative for route-specific price and policy.
                     instruction: STOP_RETRYING
                     retry_same_request: false
                     next_action: Wait for quota reset, upgrade, or attach valid x402 payment evidence and retry once.
@@ -1105,7 +1105,7 @@ paths:
                     ok: false
                     error: payment_required
                     code: free_quota_exhausted
-                    message: Illustrative x402 challenge; live 402 is authoritative for route-specific price and policy.
+                    message: Illustrative x402 challenge for a Scout quota-exhausted route; paid operations serve code payment_required with retryable true. Live 402 is authoritative for route-specific price and policy.
                     instruction: STOP_RETRYING
                     retry_same_request: false
                     next_action: Wait for quota reset, upgrade, or attach valid x402 payment evidence and retry once.
@@ -1279,7 +1279,7 @@ paths:
                     ok: false
                     error: payment_required
                     code: free_quota_exhausted
-                    message: Illustrative x402 challenge; live 402 is authoritative for route-specific price and policy.
+                    message: Illustrative x402 challenge for a Scout quota-exhausted route; paid operations serve code payment_required with retryable true. Live 402 is authoritative for route-specific price and policy.
                     instruction: STOP_RETRYING
                     retry_same_request: false
                     next_action: Wait for quota reset, upgrade, or attach valid x402 payment evidence and retry once.
@@ -1394,7 +1394,7 @@ paths:
                     ok: false
                     error: payment_required
                     code: free_quota_exhausted
-                    message: Illustrative x402 challenge; live 402 is authoritative for route-specific price and policy.
+                    message: Illustrative x402 challenge for a Scout quota-exhausted route; paid operations serve code payment_required with retryable true. Live 402 is authoritative for route-specific price and policy.
                     instruction: STOP_RETRYING
                     retry_same_request: false
                     next_action: Wait for quota reset, upgrade, or attach valid x402 payment evidence and retry once.
@@ -1514,7 +1514,7 @@ paths:
                     ok: false
                     error: payment_required
                     code: free_quota_exhausted
-                    message: Illustrative x402 challenge; live 402 is authoritative for route-specific price and policy.
+                    message: Illustrative x402 challenge for a Scout quota-exhausted route; paid operations serve code payment_required with retryable true. Live 402 is authoritative for route-specific price and policy.
                     instruction: STOP_RETRYING
                     retry_same_request: false
                     next_action: Wait for quota reset, upgrade, or attach valid x402 payment evidence and retry once.

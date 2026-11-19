@@ -552,6 +552,56 @@
       },
       "outputHints": [],
       "category": "read"
+    },
+    {
+      "name": "reconcile_perp_order",
+      "description": "Reconcile ONE Hyperliquid order from direct venue evidence (order status plus user fills) and record it durably. Signs nothing and submits nothing; replaying re-records the same evidence instead of double counting fills. Execution is never inferred from portfolio or balance deltas. The canonical reconciliation step named by cancel_perp_order.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "agentAddress": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "Recovered/verified L1 signer address that owns the order context."
+          },
+          "coin": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{1,16}$",
+            "description": "Hyperliquid market symbol, for example ETH."
+          },
+          "orderId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Venue order id to reconcile. Reconcile one order id at a time."
+          },
+          "accountAddress": {
+            "description": "Venue-verified equity owner (master/subaccount) when agentAddress is a delegated API wallet.",
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "intentHash": {
+            "description": "Optional lowercase 32-byte hex intent hash from the original preparation, when known.",
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "controlActionId": {
+            "description": "Optional control-action id when reconciling a cancellation or protective order.",
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "agentAddress",
+          "coin",
+          "orderId"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
+      },
+      "outputHints": [],
+      "category": "read"
     }
   ],
   "operatingRules": [],

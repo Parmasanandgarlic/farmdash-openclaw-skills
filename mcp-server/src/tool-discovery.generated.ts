@@ -38,7 +38,9 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
       "workflows",
       "intent-lifecycle",
       "autonomy-observe",
-      "acp"
+      "acp",
+      "futures-trader",
+      "spot-trader"
     ]
   },
   "analyze_futures_strategy": {
@@ -69,7 +71,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "prerequisites": [],
     "next_lifecycle_tools": [],
     "profile_eligibility": [
-      "futures"
+      "futures",
+      "futures-trader"
     ],
     "authority_conditions": "The default USER_SIGNED research path grants no execution authority. Explicit bounded research requires an existing valid owner/account/signer/session/market-bound policy and authenticated session. Commercial capacity is separate."
   },
@@ -293,7 +296,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "prerequisites": [],
     "next_lifecycle_tools": [],
     "profile_eligibility": [
-      "futures"
+      "futures",
+      "futures-trader"
     ]
   },
   "cancel_perp_order": {
@@ -325,7 +329,9 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "prerequisites": [],
     "next_lifecycle_tools": [],
-    "profile_eligibility": [],
+    "profile_eligibility": [
+      "futures-trader"
+    ],
     "authority_conditions": {
       "default_mode": "USER_SIGNED",
       "execution_modes": {
@@ -508,6 +514,42 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
       "intent-lifecycle"
     ]
   },
+  "confirm_solana_swap": {
+    "name": "confirm_solana_swap",
+    "primary_domain": "solana",
+    "intent_classes": [
+      "solana",
+      "reconciliation",
+      "settlement"
+    ],
+    "lifecycle_stage": "reconciliation",
+    "authority_model": [
+      "none"
+    ],
+    "side_effect_class": "reconciliation",
+    "risk_class": "stateful",
+    "availability": "available",
+    "tier": "scout_capacity_signature_gated",
+    "skill_affinity": [
+      "farmdash-signal-architect"
+    ],
+    "search_intents": [
+      "solana",
+      "reconciliation",
+      "settlement"
+    ],
+    "negative_intents": [
+      "treat_signature_as_settlement",
+      "claim_another_wallet_preparation"
+    ],
+    "prerequisites": [
+      "prepare_solana_swap"
+    ],
+    "next_lifecycle_tools": [],
+    "profile_eligibility": [
+      "spot-trader"
+    ]
+  },
   "confirm_swap": {
     "name": "confirm_swap",
     "primary_domain": "swap_fee_settlement_confirmation",
@@ -538,7 +580,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "next_lifecycle_tools": [],
     "profile_eligibility": [
-      "spot"
+      "spot",
+      "spot-trader"
     ]
   },
   "create_intent": {
@@ -762,7 +805,9 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
       "analyze_futures_strategy"
     ],
     "next_lifecycle_tools": [],
-    "profile_eligibility": [],
+    "profile_eligibility": [
+      "futures-trader"
+    ],
     "authority_conditions": {
       "default_mode": "USER_SIGNED",
       "execution_modes": {
@@ -804,7 +849,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "side_effect_class": "financial_preparation",
     "risk_class": "financial",
     "availability": "available_with_tier_gate",
-    "tier": "scout_quote_signature_and_simulation_gated",
+    "tier": "scout_capacity_signature_gated",
     "skill_affinity": [
       "farmdash-signal-architect"
     ],
@@ -819,7 +864,9 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "next_lifecycle_tools": [
       "confirm_swap"
     ],
-    "profile_eligibility": []
+    "profile_eligibility": [
+      "spot-trader"
+    ]
   },
   "find_capital_route": {
     "name": "find_capital_route",
@@ -836,7 +883,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "side_effect_class": "read_only",
     "risk_class": "informational",
     "availability": "available_with_tier_gate",
-    "tier": "scout_quote_signature_and_simulation_gated",
+    "tier": "scout_capacity_signature_gated",
     "skill_affinity": [
       "farmdash-trail-intelligence"
     ],
@@ -851,7 +898,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
       "get_swap_quote"
     ],
     "profile_eligibility": [
-      "spot"
+      "spot",
+      "spot-trader"
     ]
   },
   "get_agent_activity": {
@@ -1103,7 +1151,9 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "profile_eligibility": [
       "spot",
       "futures",
-      "autonomy-observe"
+      "autonomy-observe",
+      "futures-trader",
+      "spot-trader"
     ]
   },
   "get_farming_context": {
@@ -1165,7 +1215,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "prerequisites": [],
     "next_lifecycle_tools": [],
     "profile_eligibility": [
-      "futures"
+      "futures",
+      "futures-trader"
     ]
   },
   "get_historical_trailheat": {
@@ -1442,6 +1493,42 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
       "intent-lifecycle"
     ]
   },
+  "get_solana_quote": {
+    "name": "get_solana_quote",
+    "primary_domain": "solana",
+    "intent_classes": [
+      "solana",
+      "quote",
+      "preview"
+    ],
+    "lifecycle_stage": "research",
+    "authority_model": [
+      "none"
+    ],
+    "side_effect_class": "read_only",
+    "risk_class": "informational",
+    "availability": "available",
+    "tier": "scout_capacity_signature_gated",
+    "skill_affinity": [
+      "farmdash-signal-architect"
+    ],
+    "search_intents": [
+      "solana",
+      "quote",
+      "preview"
+    ],
+    "negative_intents": [
+      "treat_preview_as_executable",
+      "execute_swap"
+    ],
+    "prerequisites": [],
+    "next_lifecycle_tools": [
+      "prepare_solana_swap"
+    ],
+    "profile_eligibility": [
+      "spot-trader"
+    ]
+  },
   "get_swap_quote": {
     "name": "get_swap_quote",
     "primary_domain": "swap",
@@ -1461,7 +1548,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "side_effect_class": "control_state",
     "risk_class": "stateful",
     "availability": "available_with_tier_gate",
-    "tier": "scout_quote_signature_and_simulation_gated",
+    "tier": "scout_capacity_signature_gated",
     "skill_affinity": [
       "farmdash-signal-architect"
     ],
@@ -1480,7 +1567,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
       "simulate_swap_execution"
     ],
     "profile_eligibility": [
-      "spot"
+      "spot",
+      "spot-trader"
     ],
     "authority_conditions": "The default USER_SIGNED quote path grants no wallet authority. The explicit bounded execution-trial branch requires an existing owner-signed grant and authenticated session; paying for a quote is not delegation."
   },
@@ -1511,7 +1599,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "next_lifecycle_tools": [],
     "profile_eligibility": [
       "research",
-      "portfolio"
+      "portfolio",
+      "spot-trader"
     ]
   },
   "get_trail_heat": {
@@ -1605,7 +1694,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "prerequisites": [],
     "next_lifecycle_tools": [],
     "profile_eligibility": [
-      "portfolio"
+      "portfolio",
+      "spot-trader"
     ]
   },
   "get_workflow_status": {
@@ -2062,7 +2152,9 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "next_lifecycle_tools": [
       "execute_perp_order"
     ],
-    "profile_eligibility": [],
+    "profile_eligibility": [
+      "futures-trader"
+    ],
     "authority_conditions": {
       "default_mode": "USER_SIGNED",
       "execution_modes": {
@@ -2085,6 +2177,42 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
       },
       "guidance": "Capability status is not wallet authority or a grant. Mode-specific signatures, confirmation, policy/session/venue prerequisites, allowed scope and replay protection remain required; supported status does not waive them. Preparation only returns signable data, never signs or submits; public preparation parameters do not establish bounded dispatch authority."
     }
+  },
+  "prepare_solana_swap": {
+    "name": "prepare_solana_swap",
+    "primary_domain": "solana",
+    "intent_classes": [
+      "solana",
+      "prepare",
+      "versioned_transaction"
+    ],
+    "lifecycle_stage": "preparation",
+    "authority_model": [
+      "preparation_only"
+    ],
+    "side_effect_class": "financial_preparation",
+    "risk_class": "financial",
+    "availability": "available",
+    "tier": "scout_capacity_signature_gated",
+    "skill_affinity": [
+      "farmdash-signal-architect"
+    ],
+    "search_intents": [
+      "solana",
+      "prepare",
+      "versioned transaction"
+    ],
+    "negative_intents": [
+      "farmdash_broadcasts_transaction",
+      "retry_after_410_with_same_idempotency_key"
+    ],
+    "prerequisites": [],
+    "next_lifecycle_tools": [
+      "confirm_solana_swap"
+    ],
+    "profile_eligibility": [
+      "spot-trader"
+    ]
   },
   "prepare_virtuals_tender_v2": {
     "name": "prepare_virtuals_tender_v2",
@@ -2178,6 +2306,41 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "next_lifecycle_tools": [],
     "profile_eligibility": [
       "futures"
+    ]
+  },
+  "reconcile_perp_order": {
+    "name": "reconcile_perp_order",
+    "primary_domain": "futures",
+    "intent_classes": [
+      "perps",
+      "reconciliation",
+      "venue_evidence"
+    ],
+    "lifecycle_stage": "reconciliation",
+    "authority_model": [
+      "none"
+    ],
+    "side_effect_class": "reconciliation",
+    "risk_class": "stateful",
+    "availability": "available_with_tier_gate",
+    "tier": "mixed_runtime_policy",
+    "skill_affinity": [
+      "farmdash-futures-strategist"
+    ],
+    "search_intents": [
+      "perps",
+      "reconciliation",
+      "venue evidence"
+    ],
+    "negative_intents": [
+      "infer_execution_from_balance_delta",
+      "resubmit_on_unknown",
+      "treat_accepted_as_filled"
+    ],
+    "prerequisites": [],
+    "next_lifecycle_tools": [],
+    "profile_eligibility": [
+      "futures-trader"
     ]
   },
   "record_virtuals_tender_funding_v2": {
@@ -2562,7 +2725,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "profile_eligibility": [
       "risk",
-      "spot"
+      "spot",
+      "spot-trader"
     ]
   },
   "run_workflow": {
@@ -2624,7 +2788,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "prerequisites": [],
     "next_lifecycle_tools": [],
     "profile_eligibility": [
-      "futures"
+      "futures",
+      "futures-trader"
     ]
   },
   "scan_market_conditions": {
@@ -2653,7 +2818,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "prerequisites": [],
     "next_lifecycle_tools": [],
     "profile_eligibility": [
-      "futures"
+      "futures",
+      "futures-trader"
     ]
   },
   "select_execution_continuation": {
@@ -2687,7 +2853,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "profile_eligibility": [
       "spot",
-      "workflows"
+      "workflows",
+      "spot-trader"
     ]
   },
   "select_virtuals_provider_plan_v2": {
@@ -2894,7 +3061,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "side_effect_class": "control_state",
     "risk_class": "stateful",
     "availability": "available_with_tier_gate",
-    "tier": "scout_quote_signature_and_simulation_gated",
+    "tier": "scout_capacity_signature_gated",
     "skill_affinity": [
       "farmdash-signal-architect"
     ],
@@ -2910,7 +3077,8 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
       "execute_swap"
     ],
     "profile_eligibility": [
-      "spot"
+      "spot",
+      "spot-trader"
     ]
   },
   "simulate_transaction_risk": {
@@ -3175,5 +3343,34 @@ export const MCP_PROFILES: Readonly<Record<string, readonly string[]>> = {
     "record_virtuals_tender_funding_v2",
     "reserve_virtuals_tender_funding_v2",
     "select_virtuals_provider_plan_v2"
+  ],
+  "futures-trader": [
+    "agent_onboard",
+    "analyze_futures_strategy",
+    "calculate_position_size",
+    "cancel_perp_order",
+    "execute_perp_order",
+    "get_execution_authority",
+    "get_futures_account",
+    "prepare_perp_order",
+    "reconcile_perp_order",
+    "scan_funding_rates",
+    "scan_market_conditions"
+  ],
+  "spot-trader": [
+    "agent_onboard",
+    "confirm_solana_swap",
+    "confirm_swap",
+    "execute_swap",
+    "find_capital_route",
+    "get_execution_authority",
+    "get_solana_quote",
+    "get_swap_quote",
+    "get_token_prices",
+    "get_wallet_balances",
+    "prepare_solana_swap",
+    "run_risk_sentinel",
+    "select_execution_continuation",
+    "simulate_swap_execution"
   ]
 };
