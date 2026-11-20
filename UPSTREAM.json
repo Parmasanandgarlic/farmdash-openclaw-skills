@@ -1,8 +1,8 @@
 {
   "$comment": "Provenance lock. Mirrored from canonical FarmDash production truth. Do not hand-edit mirrored files; re-run the sync from the canonical source instead.",
   "source_repository": "hububstudio/farmdashbeta",
-  "source_sha": "7be7234b9f34acad311e9a1ecf88884a93217ee6",
-  "sync_timestamp": "2026-11-19T20:21:28.793Z",
+  "source_sha": "874e2edf9af71f4a3d52f5c6aa1b62f43064b97b",
+  "sync_timestamp": "2026-11-20T03:39:43.295Z",
   "mcp_tool_count": 98,
   "mirrored_file_count": 35,
   "not_mirrored_reason": {
