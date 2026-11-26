@@ -41,7 +41,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "create_intent": {
     "api_route": "/api/v1/agent/intents/create",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -49,7 +49,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "policy_check_intent": {
     "api_route": "/api/v1/agent/intents/{intentId}/policy-check",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -57,7 +57,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "simulate_intent": {
     "api_route": "/api/v1/agent/intents/{intentId}/simulate",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -65,7 +65,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "request_approval_payload": {
     "api_route": "/api/v1/agent/intents/{intentId}/approval-payload",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -73,7 +73,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "request_human_approval": {
     "api_route": "/api/v1/agent/intents/{intentId}/approve",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -81,7 +81,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "submit_signed_approval": {
     "api_route": "/api/v1/agent/intents/{intentId}/approve",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": false,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -89,7 +89,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "get_approval_status": {
     "api_route": "/api/v1/agent/intents/{intentId}",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -97,7 +97,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "prepare_intent": {
     "api_route": "/api/v1/agent/intents/{intentId}/prepare",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -105,7 +105,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "execute_approved_intent": {
     "api_route": "/api/v1/agent/intents/{intentId}/execute",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": false,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -113,7 +113,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "confirm_execution": {
     "api_route": "/api/v1/agent/intents/{intentId}/execute",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -121,7 +121,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "get_receipt": {
     "api_route": "/api/v1/agent/receipts/{receiptId}",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -129,7 +129,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "get_agent_activity": {
     "api_route": "/api/v1/agent/receipts",
     "feature_status_id": "agent_execution.intent_lifecycle",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -612,7 +612,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
     "api_route": "/api/v1/agent/delegation",
     "feature_status_id": "autonomous_operator.sessions",
     "availability": "unavailable_mcp_signature_inputs",
-    "tier": "pioneer_plus",
+    "tier": "syndicate",
     "idempotent": false,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
   },
@@ -651,7 +651,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "grant_session_key": {
     "api_route": "/api/v1/agent/autopilot",
     "feature_status_id": "autonomous_operator.erc4337_submission",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "idempotent": false,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -659,7 +659,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "revoke_session_key": {
     "api_route": "/api/v1/agent/autopilot",
     "feature_status_id": "autonomous_operator.erc4337_submission",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "idempotent": false,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -667,7 +667,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "session_key_status": {
     "api_route": "/api/v1/agent/autopilot",
     "feature_status_id": "autonomous_operator.erc4337_submission",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -675,7 +675,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "get_cycle_status": {
     "api_route": "/api/v1/agent/autopilot",
     "feature_status_id": "autonomous_operator.erc4337_submission",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -683,7 +683,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "execute_cycle_actions": {
     "api_route": "/api/v1/agent/autopilot",
     "feature_status_id": "autonomous_operator.erc4337_submission",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -691,7 +691,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "create_mee_intent": {
     "api_route": "/api/v1/agent/mee",
     "feature_status_id": "agent_execution.mee_cross_chain",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -699,7 +699,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "simulate_mee_intent": {
     "api_route": "/api/v1/agent/mee",
     "feature_status_id": "agent_execution.mee_cross_chain",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -707,7 +707,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "submit_mee_intent": {
     "api_route": "/api/v1/agent/mee",
     "feature_status_id": "agent_execution.mee_cross_chain",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "idempotent": false,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"
@@ -715,7 +715,7 @@ export const MCP_TOOL_CAPABILITIES: Readonly<Record<string, McpToolCapability>> 
   "get_mee_intent_status": {
     "api_route": "/api/v1/agent/mee",
     "feature_status_id": "agent_execution.mee_cross_chain",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "idempotent": true,
     "status_endpoint": "https://www.farmdash.one/api/v1/agent/status"

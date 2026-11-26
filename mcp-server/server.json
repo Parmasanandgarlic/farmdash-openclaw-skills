@@ -9,30 +9,10 @@
     "subfolder": "mcp-server"
   },
   "version": "5.0.0",
-  "packages": [
+  "remotes": [
     {
-      "registryType": "npm",
-      "identifier": "@farmdash/mcp-server",
-      "version": "5.0.0",
-      "transport": {
-        "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "name": "FARMDASH_API_KEY",
-          "description": "Optional. Leave unset to run as a free Scout client (30 requests / 24h per IP plus bounded onboarding grants). Paid Pioneer/Syndicate capacity is issued by FarmDash.",
-          "isRequired": false,
-          "isSecret": true,
-          "format": "string"
-        },
-        {
-          "name": "FARMDASH_BASE_URL",
-          "description": "Optional. Overrides the FarmDash API base URL. The default points at the production API and normally does not need to be set.",
-          "isRequired": false,
-          "isSecret": false,
-          "format": "string"
-        }
-      ]
+      "type": "streamable-http",
+      "url": "https://www.farmdash.one/api/mcp"
     }
   ]
 }

@@ -219,6 +219,10 @@ const KNOWN_TOKEN_DECIMALS: Record<string, number> = {
   '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 6,
   '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913': 6,
   '0xdac17f958d2ee523a2206206994597c13d831ec7': 6,
+  '0xaf88d065e77c8cc2239327c5edb3a432268e5831': 6,
+  '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8': 6,
+  '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9': 6,
+  '0x82af49447d8a07e3bd95bd0d56f35241523fbab1': 18,
 };
 
 server.registerResource('canonical-tokens', new ResourceTemplate('farmdash://tokens/{chainId}', { list: undefined }), {
@@ -319,7 +323,7 @@ const ReceiptStatusSchema = z.enum(['SUBMITTED', 'CONFIRMED', 'FAILED', 'REJECTE
 
 server.tool(
   'create_intent',
-  'Plan: create a durable FarmDashIntent. This records what an agent wants to do; it never prepares, signs, broadcasts, or executes. COMMERCIAL GATE (Pioneer+): the intent lifecycle resolves to the session_control x402 policy, so a Scout or keyless caller receives HTTP 402 payment_required. Do NOT sign and retry - this is a commercial wall, not an identity challenge - and a one-off x402 payment cannot unlock it either. Upgrade to Pioneer at farmdash.one/agents, or call with a Pioneer API key. The separate 401 execution_trial_identity_required sign-and-retry recipe applies only to execution-trial acquisition (firm quote / futures analysis).',
+  'Plan: create a durable FarmDashIntent. This records what an agent wants to do; it never prepares, signs, broadcasts, or executes. COMMERCIAL GATE (Pioneer+ or 0.02 USDC x402): the intent lifecycle resolves to the session_control x402 policy (scoutFree: false, oneOffAllowed: true, 0.02 USDC on Base), so a Scout or keyless caller receives HTTP 402 payment_required with a payable x402 challenge. Do NOT sign an execution-trial challenge - this is a commercial wall, not a 401 identity challenge. Pay the route x402 challenge, upgrade to Pioneer at farmdash.one/agents, or call with a Pioneer API key. The separate 401 execution_trial_identity_required sign-and-retry recipe applies only to execution-trial acquisition (firm quote / futures analysis).',
   {
     ...SessionCredentialSchemas,
     intent: JsonRecordSchema.describe('FarmDashIntent create input. Must include actor, action, chain, protocol, wallet, params, constraints, and evidence.'),
@@ -637,8 +641,10 @@ server.tool(
 
 server.tool(
   'get_protocol_risk_factors',
-  'Get protocol risk indicators from the catalog: sybil risk label, status, category, chains, and discovery_heuristic_score (editorial heuristic, NOT live Trail Heat). Canonical quantitative scores via get_trail_heat.',
-  { protocolId: z.string().describe('Protocol ID to audit') },
+  'Read the catalog risk label, category, chains, status, and editorial discovery score for a protocol ID. Use analyze_protocol_risk for a source-backed assessment and get_trail_heat for canonical quantitative scores. The catalog provides background only.',
+  {
+    protocolId: z.string().describe('Exact FarmDash catalog protocol ID, such as hyperliquid.'),
+  },
   async (params) => {
     try {
       const qs = new URLSearchParams({ protocolId: params.protocolId });
@@ -655,14 +661,14 @@ server.tool(
 
 server.tool(
   'find_capital_route',
-  'Find the most efficient route between tokens/chains. Considers fees, slippage, and gas. Returns a provider-neutral market estimate (never executable, never attributed) — a wallet alone never triggers provider quoting. For execution, create a firm single-provider quote via the quote-intent API (LI.FI or Relay; 0x remains operator-paused), then simulate before preparing.',
+  'Read a provider-neutral EVM market estimate for an exact token pair, chains, and input amount. It makes no provider calls and establishes neither liquidity nor execution authority. Use get_swap_quote with idempotencyKey for a separate firm quote intent.',
   {
-    fromChainId: z.number().int(),
-    toChainId: z.number().int(),
+    fromChainId: z.number().int().describe('Numeric EVM source chain ID.'),
+    toChainId: z.number().int().describe('Numeric EVM destination chain ID. Use the source ID for a same-chain estimate.'),
     fromToken: z.string().min(1).max(128).describe('Resolver-supported symbol, native identifier, token address, or chain-qualified asset; discovery resolves canonical assets server-side.'),
     toToken: z.string().min(1).max(128).describe('Resolver-supported symbol, native identifier, token address, or chain-qualified asset; discovery resolves canonical assets server-side.'),
     fromAmount: z.string().regex(BASE_UNIT_AMOUNT).describe('Amount in token base units.'),
-    protocol: z.enum(['lifi', 'relay']).optional(),
+    protocol: z.enum(['lifi', 'relay']).optional().describe('Optional compatibility selector accepted by the preview route. The result remains provider-neutral.'),
   },
   async (params) => {
     try {
@@ -748,15 +754,15 @@ server.tool(
 
 server.tool(
   'simulate_points',
-  'Project FarmScore for a hypothetical configuration. Returns estimated points, gas, and speculative USD value.',
+  'Estimate hypothetical FarmScore from caller-supplied activity and protocol points with Pioneer-equivalent route access. Returns totalScore, breakdown, marginalLevers, and unknownProtocolsDefaulted. Projects no reward, allocation, or monetary return.',
   {
-    totalVolumeUsd: z.number().min(0),
-    txCount: z.number().int().min(0),
-    daysActive: z.number().int().min(0),
-    walletBalanceUsd: z.number().min(0),
-    uniqueContracts: z.number().int().min(0),
-    isCexFundingOnly: z.boolean(),
-    protocolPoints: z.record(z.string(), z.number()),
+    totalVolumeUsd: z.number().min(0).describe('Hypothetical total eligible volume in USD.'),
+    txCount: z.number().int().min(0).describe('Hypothetical total transaction count.'),
+    daysActive: z.number().int().min(0).describe('Number of distinct hypothetical active days.'),
+    walletBalanceUsd: z.number().min(0).describe('Hypothetical wallet balance in USD.'),
+    uniqueContracts: z.number().int().min(0).describe('Number of distinct hypothetical contracts used.'),
+    isCexFundingOnly: z.boolean().describe('True when the assumed wallet receives funding exclusively from centralized exchanges.'),
+    protocolPoints: z.record(z.string(), z.number()).describe('Hypothetical points by FarmDash protocol ID. Unknown IDs receive the default multiplier and are reported.'),
   },
   async (params) => {
     try {
@@ -800,10 +806,10 @@ server.tool(
 
 server.tool(
   'get_wallet_balances',
-  'Get multi-chain token portfolio for an EVM wallet. Returns balances with live USD prices. Optional minUsdValue and limit are MCP-side context-window bounds: they filter the returned page in this wrapper (the backend has no such query bound and caps server-side at 100 tokens).',
+  'Inspect token balances and available USD valuations for an EVM wallet. Scout returns a bounded preview. For full balances use Pioneer or Syndicate access or the route x402 terms. The backend caps full results at 100 tokens before local filters.',
   {
-    address: z.string().regex(EVM_ADDRESS),
-    chains: z.string().optional(),
+    address: z.string().regex(EVM_ADDRESS).describe('0x-prefixed EVM wallet address to look up.'),
+    chains: z.string().optional().describe('Comma-separated Alchemy network IDs, such as eth-mainnet,base-mainnet. Uses up to five valid networks. Omit for Ethereum, Arbitrum, Base, Optimism, and Linea.'),
     minUsdValue: z.number().min(0).optional().describe('Drop tokens whose USD value is below this (MCP-side filter, not a backend query bound)'),
     limit: z.number().int().min(1).optional().describe('Cap the token count after filtering (MCP-side, not a backend query bound)'),
   },
@@ -845,8 +851,8 @@ function applyBalancesBounds(data: unknown, minUsdValue?: number, limit?: number
 
 server.tool(
   'get_portfolio_summary',
-  'Get high-level portfolio metrics: total USD value, chain distribution, and capital efficiency score.',
-  { address: z.string().regex(EVM_ADDRESS) },
+  'Summarize an EVM wallet across Ethereum, Arbitrum, Base, Optimism, and Linea. Full access returns total USD value, chain distribution, and top tokens. Scout returns a bounded preview. Use get_wallet_balances for token-level inspection or get_idle_capital for stablecoins and native assets.',
+  { address: z.string().regex(EVM_ADDRESS).describe('0x-prefixed EVM wallet address to look up.') },
   async (params) => {
     try {
       const qs = new URLSearchParams({ address: params.address, summary: 'true' });
@@ -863,8 +869,8 @@ server.tool(
 
 server.tool(
   'get_position_health',
-  'Compatibility alias for agent activity/performance metrics. Current endpoint does not return DeFi position APR, PnL, impermanent loss, or rebalance health.',
-  { address: z.string().regex(EVM_ADDRESS) },
+  'Legacy alias for get_agent_performance. Returns FarmDash-recorded activity and fees for the supplied address, with a bounded Scout preview. Use get_agent_performance for new integrations. This tool cannot assess position APR, PnL, impermanent loss, or rebalance health.',
+  { address: z.string().regex(EVM_ADDRESS).describe('0x-prefixed EVM wallet address to look up.') },
   async (params) => {
     try {
       const qs = new URLSearchParams({ address: params.address, health: 'true' });
@@ -881,8 +887,8 @@ server.tool(
 
 server.tool(
   'get_idle_capital',
-  'Locate idle stablecoins or native assets across all supported chains.',
-  { address: z.string().regex(EVM_ADDRESS) },
+  'Find stablecoin and native-token balances across Ethereum, Arbitrum, Base, Optimism, and Linea. Full access returns idleAssets and idleCapitalUsd. Scout returns a bounded portfolio preview. These wallet balances do not establish deployable capital or available execution authority.',
+  { address: z.string().regex(EVM_ADDRESS).describe('0x-prefixed EVM wallet address to look up.') },
   async (params) => {
     try {
       const qs = new URLSearchParams({ address: params.address, summary: 'true', idleOnly: 'true' });
@@ -899,8 +905,12 @@ server.tool(
 
 server.tool(
   'get_token_prices',
-  'Get live USD prices by symbol or by network:address token pairs.',
-  { symbols: z.string().optional(), tokens: z.array(z.string().max(128)).max(50).optional() },
+  'Read available USD spot prices and check data_mode for partial or unavailable coverage. Provide symbols or tokens. If both are supplied, symbols take precedence. These prices are for research and do not establish an executable quote.',
+  {
+    symbols: z.string().optional().describe('Comma-separated token symbols, such as ETH,SOL,BTC. The price service uses the first 25 non-empty symbols.'),
+    tokens: z.array(z.string().max(128)).max(50).optional()
+      .describe('Token contracts as network:0x-address pairs, using the full 40-digit hex address. The service reads the first 25 non-empty pairs. Use when symbol lookup would be ambiguous.'),
+  },
   async (params) => {
     try {
       if (!params.symbols && (!params.tokens || params.tokens.length === 0)) {
@@ -927,8 +937,8 @@ server.tool(
 
 server.tool(
   'list_workflows',
-  'Get the JSON catalog of named DeFi workflow recipes. Returns goals, tiers, and step graphs.',
-  { filter: z.string().optional() },
+  'Browse the public DeFi workflow catalog before planning. Returns workflow IDs, required tiers, and ordered skill and tool steps.',
+  { filter: z.string().optional().describe('Case-insensitive substring to match against recipe IDs, names, descriptions, tiers, and steps. Omit to list all recipes.') },
   async (params) => {
     try {
       const qs = new URLSearchParams();
@@ -946,11 +956,13 @@ server.tool(
 
 server.tool(
   'plan_workflow',
-  'Build a Trail Marshal quality gate for a named workflow. Does not execute steps.',
+  'Compile a recipe against tool contracts and installed skills before creating a run. Requires Pioneer or Syndicate. Returns blockers, required confirmations, and next actions. Records a planning event without creating a run or executing steps.',
   {
-    workflowId: z.string(),
-    installedSkills: z.array(z.string().max(128)).max(50).optional(),
-    agentAddress: z.string().regex(EVM_ADDRESS).optional(),
+    workflowId: z.string().describe('Recipe ID returned by list_workflows.'),
+    installedSkills: z.array(z.string().max(128)).max(50).optional()
+      .describe('Up to 50 installed skill slugs from the recipe steps, such as signal-architect. Each slug is at most 128 characters. Omit if installation is unknown or pass [] if none are installed.'),
+    agentAddress: z.string().regex(EVM_ADDRESS).optional()
+      .describe('0x-prefixed EVM wallet address to associate with the planning event. Omit for an unattributed plan.'),
   },
   async (params) => {
     try {
@@ -970,13 +982,14 @@ server.tool(
 
 server.tool(
   'run_workflow',
-  'Create a guarded workflow run record for a session. Execution still requires each owning skill and explicit user confirmation.',
+  'Create a temporary dry-run record for a recipe and return run.runId for status lookup. Requires Pioneer or Syndicate and a valid session credential. Resolve compilation blockers before retrying. Each owning skill must perform its own authority checks and get explicit user confirmation before execution.',
   {
-    workflowId: z.string(),
-    sessionId: z.string(),
-    agentAddress: z.string().regex(EVM_ADDRESS),
-    sessionToken: z.string(),
-    installedSkills: z.array(z.string().max(128)).max(50).optional(),
+    workflowId: z.string().describe('Recipe ID returned by list_workflows.'),
+    sessionId: z.string().describe('ID returned by create_session for the wallet starting this run.'),
+    agentAddress: z.string().regex(EVM_ADDRESS).describe('0x-prefixed EVM wallet address that owns the session.'),
+    sessionToken: z.string().describe('Secret token returned by create_session for this exact session and wallet. Keep it out of logs and user-visible output.'),
+    installedSkills: z.array(z.string().max(128)).max(50).optional()
+      .describe('Up to 50 installed skill slugs from the recipe steps, such as signal-architect. Each slug is at most 128 characters. Omit if installation is unknown or pass [] if none are installed.'),
   },
   async (params) => {
     try {
@@ -996,8 +1009,8 @@ server.tool(
 
 server.tool(
   'get_workflow_status',
-  'Read the status of a Trail Marshal workflow run.',
-  { runId: z.string() },
+  'Check the current dry-run record after run_workflow. Requires Pioneer or Syndicate. Returns the stored plan and status without executing any step. A 404 means the temporary run is unavailable; use plan_workflow to reassess before creating a replacement.',
+  { runId: z.string().describe('UUID in run.runId returned by run_workflow. Keep this identifier private.') },
   async (params) => {
     try {
       const data = await apiFetch('/v1/agent/orchestrator', {
@@ -1123,10 +1136,10 @@ server.tool(
 
 server.tool(
   'simulate_swap_execution',
-  'Compatibility: run the legacy mandatory swap simulation. Lifecycle-native agents should use simulate_intent on a FarmDashIntent instead.',
+  'Simulate a legacy EVM swap using the firm quote response simulationRequirements.intent_id and its original wallet. Inspect the returned ok, simulation_id, and decision before continuing. The quote intent carries commercial admission for this simulation. It does not sign or submit. Use simulate_intent for a durable FarmDashIntent.',
   {
-    intentId: z.string().min(1),
-    walletAddress: z.string().regex(EVM_ADDRESS),
+    intentId: z.string().min(1).describe('fd_intent_* value from simulationRequirements.intent_id. The top-level qi_* quote ID is rejected.'),
+    walletAddress: z.string().regex(EVM_ADDRESS).describe('EVM wallet bound to the original firm quote.'),
   },
   async (params) => {
     try {
@@ -1284,12 +1297,12 @@ server.tool(
 
 server.tool(
   'optimize_portfolio',
-  'Get unranked catalog research candidates. Returns WAIT analysis-only: exact pool identity, wallet eligibility, policy, costs and stay-put comparison remain required. Campaign confirmation does not establish safety.',
+  'Find up to ten unranked catalog candidates to research. Requires paid access through Pioneer, Syndicate capacity, or the route x402 terms. Returns WAIT. Before acting, verify exact pools, wallet eligibility, policy, costs, and the stay-put comparison. Campaign status does not establish safety.',
   {
-    currentProtocols: z.array(z.string().max(128)).max(50),
-    riskPreference: z.enum(['conservative', 'balanced', 'aggressive']),
-    chains: z.array(z.string()).optional(),
-    budget: z.enum(['low', 'medium', 'high']).optional(),
+    currentProtocols: z.array(z.string().max(128)).max(50).describe('Up to 50 existing FarmDash protocol IDs to exclude. Use [] for no exclusions.'),
+    riskPreference: z.enum(['conservative', 'balanced', 'aggressive']).describe('Requested research risk preference. The result echoes this value without using it to rank candidates.'),
+    chains: z.array(z.string()).optional().describe('Exact FarmDash catalog chain names to include. The first 50 are considered. Omit or pass [] for all catalog chains.'),
+    budget: z.enum(['low', 'medium', 'high']).optional().describe('Optional qualitative budget. Defaults to medium and is echoed without restricting candidates or authorizing spend.'),
   },
   async (params) => {
     try {
@@ -1306,28 +1319,28 @@ server.tool(
 
 server.tool(
   'resolve_defi_intent',
-  'Compatibility: resolve a legacy typed DeFi intent. New state-changing actions should create a durable FarmDashIntent and use the policy/simulation/approval lifecycle.',
+  'Build unsigned compatibility steps for a typed DeFi action on supported EVM chains. Returns intent, execution steps, and supportedProtocols. The resolver may record estimated fee telemetry. API access follows route terms and gives no signing or broadcast authority. Use create_intent for the durable lifecycle.',
   {
-    action: z.enum(['swap', 'deposit', 'stake', 'provide_liquidity', 'withdraw', 'claim']),
-    protocolId: z.string(),
-    chainId: z.union([z.number().int().positive(), z.literal('solana-mainnet')]),
-    toChainId: z.union([z.number().int().positive(), z.literal('solana-mainnet')]).optional(),
-    tokenIn: z.string(),
-    amountIn: z.string().regex(BASE_UNIT_AMOUNT),
-    userAddress: z.string(),
-    tokenOut: z.string().optional(),
-    amountOut: z.string().regex(BASE_UNIT_AMOUNT).optional(),
-    slippage: z.number().min(0.01).max(5).optional(),
-    poolAddress: z.string().optional(),
-    deadline: z.number().optional(),
+    action: z.enum(['swap', 'deposit', 'stake', 'provide_liquidity', 'withdraw', 'claim']).describe('Requested financial operation. Availability depends on the protocol and chain combination.'),
+    protocolId: z.string().describe('Canonical protocol ID supported by this legacy resolver.'),
+    chainId: z.union([z.number().int().positive(), z.literal('solana-mainnet')]).describe('Source EVM chain ID: 1, 10, 137, 8453, 42161, or 59144. The route rejects Solana.'),
+    toChainId: z.union([z.number().int().positive(), z.literal('solana-mainnet')]).optional().describe('Optional destination EVM chain ID from the same supported set.'),
+    tokenIn: z.string().describe('Source token contract address or ETH for native Ethereum token.'),
+    amountIn: z.string().regex(BASE_UNIT_AMOUNT).describe('Nonzero integer string in source-token base units.'),
+    userAddress: z.string().describe('Public 0x-prefixed EVM address that would sign the steps locally.'),
+    tokenOut: z.string().optional().describe('Destination token contract address or ETH for native Ethereum token.'),
+    amountOut: z.string().regex(BASE_UNIT_AMOUNT).optional().describe('Nonzero integer string in destination-token base units.'),
+    slippage: z.number().min(0.01).max(5).optional().describe('Price tolerance in percentage points (0.5 means 0.5%).'),
+    poolAddress: z.string().optional().describe('Target EVM liquidity pool contract where applicable.'),
+    deadline: z.number().optional().describe('Unix timestamp in seconds or milliseconds.'),
     constraints: z.object({
-      minAmountOut: z.string().regex(BASE_UNIT_AMOUNT).optional(),
-      maxSlippageBps: z.number().int().positive().optional(),
-      maxGasUsd: z.number().positive().optional(),
-      expectedUpsideUsd: z.number().positive().optional(),
-      riskBufferUsd: z.number().positive().optional(),
-      positiveNetEdge: z.boolean().optional(),
-    }).optional(),
+      minAmountOut: z.string().regex(BASE_UNIT_AMOUNT).optional().describe('Minimum acceptable output as a nonzero token base-unit integer string.'),
+      maxSlippageBps: z.number().int().positive().optional().describe('Maximum allowed slippage in basis points.'),
+      maxGasUsd: z.number().positive().optional().describe('Maximum acceptable gas estimate in USD.'),
+      expectedUpsideUsd: z.number().positive().optional().describe('Expected gross upside in USD.'),
+      riskBufferUsd: z.number().positive().optional().describe('Additional modeled risk cost in USD.'),
+      positiveNetEdge: z.boolean().optional().describe('Require the estimated net edge to be positive when true.'),
+    }).optional().describe('Optional lower output bound, maximum costs, and required opportunity economics.'),
   },
   async (params) => {
     try {
@@ -1344,26 +1357,26 @@ server.tool(
 
 server.tool(
   'run_risk_sentinel',
-  'Run FarmDash Risk Sentinel on a route or manual health/net-edge inputs before execution.',
+  'Check swap-route or manual health and net-edge risk within route capacity. Supply both chain IDs, both tokens, and input amount for quoted mode, which requests a provider preview and returns riskReport and quotePreview. Otherwise the manual result contains health, netEdge, flags, and shouldHalt. A halt can publish an authorized risk alert. This action grants no trading authority.',
   {
-    fromChainId: z.number().int().positive().optional(),
-    toChainId: z.number().int().positive().optional(),
+    fromChainId: z.number().int().positive().optional().describe('Source EVM chain ID for quoted mode.'),
+    toChainId: z.number().int().positive().optional().describe('Destination EVM chain ID for quoted mode.'),
     fromToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE).optional(),
     toToken: z.string().regex(EVM_ADDRESS).describe(TOKEN_CONTRACT_GUIDANCE).optional(),
-    fromAmount: z.string().regex(BASE_UNIT_AMOUNT).optional(),
-    walletAddress: z.string().regex(EVM_ADDRESS).optional(),
-    toAddress: z.string().regex(EVM_ADDRESS).optional(),
-    protocol: z.enum(['lifi', 'relay']).optional(),
-    slippage: z.number().min(0.01).max(5).optional(),
-    expectedUpsideUsd: z.number().optional(),
-    protocolFeeUsd: z.number().optional(),
-    gasUsd: z.number().optional(),
-    bridgeFeeUsd: z.number().optional(),
-    riskBufferUsd: z.number().optional(),
-    enforcePositive: z.boolean().optional(),
-    healthFactor: z.number().optional(),
-    liquidationBufferPct: z.number().optional(),
-    safetyMode: z.enum(['strict', 'balanced']).optional(),
+    fromAmount: z.string().regex(BASE_UNIT_AMOUNT).optional().describe('Input token amount as an integer string in base units.'),
+    walletAddress: z.string().regex(EVM_ADDRESS).optional().describe('Optional EVM wallet for route context. Publishing halt alerts requires independent wallet authorization.'),
+    toAddress: z.string().regex(EVM_ADDRESS).optional().describe('Optional EVM destination recipient. Defaults to the supplied wallet if present.'),
+    protocol: z.enum(['lifi', 'relay']).optional().describe('Optional quoted-mode route provider, LI.FI or Relay.'),
+    slippage: z.number().min(0.01).max(5).optional().describe('Quoted-mode tolerance in percentage points (0.5 means 0.5%).'),
+    expectedUpsideUsd: z.number().optional().describe('Expected gross upside in USD for net-edge analysis.'),
+    protocolFeeUsd: z.number().optional().describe('Estimated protocol fees in USD for a manual assessment.'),
+    gasUsd: z.number().optional().describe('Estimated gas in USD for a manual assessment.'),
+    bridgeFeeUsd: z.number().optional().describe('Estimated bridge fee in USD for a manual assessment.'),
+    riskBufferUsd: z.number().optional().describe('Additional modeled risk cost in USD.'),
+    enforcePositive: z.boolean().optional().describe('Treat nonpositive or unknown net edge as a blocking risk when supported by the selected mode.'),
+    healthFactor: z.number().optional().describe('Current lending health factor as a ratio.'),
+    liquidationBufferPct: z.number().optional().describe('Estimated headroom before liquidation in percentage points.'),
+    safetyMode: z.enum(['strict', 'balanced']).optional().describe('Risk strictness mode for the quoted route assessment.'),
   },
   async (params) => {
     try {
@@ -1382,7 +1395,7 @@ server.tool(
 
 server.tool(
   'scan_funding_rates',
-  'Scan Hyperliquid perp funding rates across the venue. Takes no parameters.',
+  'Scan supported Hyperliquid perpetual markets for funding signals. Keyless Scout returns up to the top three arbOpportunities. Pioneer, Syndicate, or eligible per-call x402 adds the full opportunity list, highFunding, and timestamp. Rates are research evidence and do not establish executable arbitrage.',
   {},
   async () => {
     try {
@@ -1399,8 +1412,10 @@ server.tool(
 
 server.tool(
   'scan_market_conditions',
-  'Technical snapshot (EMA, RSI, MACD, etc.) for one perp asset.',
-  { coin: z.string() },
+  'Read timestamped Hyperliquid technical indicators and a strategyHint for one supported perpetual market. Scout is eligible within route limits. HIP-3 namespaced markets are unsupported. A strategy hint conveys no trading authority.',
+  {
+    coin: z.string().describe('Hyperliquid native perpetual symbol, such as ETH. Omit any perp-DEX namespace.'),
+  },
   async (params) => {
     try {
       const qs = new URLSearchParams({ coin: params.coin });
@@ -1417,10 +1432,10 @@ server.tool(
 
 server.tool(
   'get_futures_account',
-  'Inspect Hyperliquid equity, margin, positions, and drawdown state. agentAddress identifies the API signer; accountAddress identifies the master/subaccount that owns the equity (omit only for a direct signer). Hyperliquid userRole must verify delegation. Daily/weekly values are conservative venue-derived loss-pressure metrics, not full period returns; history ambiguity fails closed.',
+  'Read Hyperliquid equity, margin, positions, and drawdown state with Pioneer, Syndicate, or eligible route x402 access. Identify the API signer and equity owner separately for delegated wallets. Hyperliquid verifies the venue relationship and ambiguous history fails closed. Daily and weekly values measure loss-pressure, a subset of performance evidence.',
   {
-    agentAddress: z.string().regex(EVM_ADDRESS),
-    accountAddress: z.string().regex(EVM_ADDRESS).optional(),
+    agentAddress: z.string().regex(EVM_ADDRESS).describe('Public EVM address of the direct signer or delegated Hyperliquid API wallet.'),
+    accountAddress: z.string().regex(EVM_ADDRESS).optional().describe('Public EVM address of the master or subaccount owning the equity. Omit only for a direct signer.'),
   },
   async (params) => {
     try {
@@ -1439,16 +1454,21 @@ server.tool(
 
 server.tool(
   'analyze_futures_strategy',
-  'Primary research tool. Returns strategy object with confidence, regime, and simulation. For a delegated Hyperliquid API wallet, set agentAddress to the signer and accountAddress to the master/subaccount whose equity must size the trade; the venue relationship is verified and fails closed.',
+  'Analyze a supported Hyperliquid market against venue-verified account state. Returns strategy, simulation, and researchGate. Use an execution-ready gate within 60 seconds for new-risk preparation. Access follows Pioneer, Syndicate, or route-specific x402 and eligible trial terms. Bounded mode requires an active owner-signed grant. The call does not sign or submit orders.',
   {
-    coin: z.string(),
-    agentAddress: z.string().regex(EVM_ADDRESS),
-    accountAddress: z.string().regex(EVM_ADDRESS).optional(),
-    riskMultiplier: z.number().min(0.1).max(1).optional(),
-    idempotencyKey: z.string().regex(/^[\x21-\x7e]{1,128}$/).optional(),
-    executionTrialProof: z.object({ issuedAt: z.number().int().positive(), signature: z.string().min(1) }).optional(),
-    executionMode: z.enum(['USER_SIGNED', 'BOUNDED_AUTONOMOUS']).optional(),
-    grantId: z.string().optional(), sessionId: z.string().optional(), sessionToken: z.string().optional(),
+    coin: z.string().describe('Hyperliquid native perpetual symbol, such as ETH. Namespaced HIP-3 symbols are unsupported.'),
+    agentAddress: z.string().regex(EVM_ADDRESS).describe('Public EVM address of the direct signer or delegated Hyperliquid API wallet.'),
+    accountAddress: z.string().regex(EVM_ADDRESS).optional().describe('Public EVM address of the master or subaccount owning the equity. Omit only for a direct signer.'),
+    riskMultiplier: z.number().min(0.1).max(1).optional().describe('Scale the allowed risk from 0.1 to 1. Defaults to 1.'),
+    idempotencyKey: z.string().regex(/^[\x21-\x7e]{1,128}$/).optional().describe('Compatibility wrapper field. Trial admission uses the route executionTrialId or Idempotency-Key header and may reject an MCP-only request.'),
+    executionTrialProof: z.object({
+      issuedAt: z.number().int().positive().describe('Unix milliseconds included in the commercial owner challenge.'),
+      signature: z.string().min(1).describe('Signature over the commercial owner challenge. Never provide venue or wallet keys.'),
+    }).optional().describe('Locally signed owner challenge for eligible commercial trial admission. Does not convey venue authority.'),
+    executionMode: z.enum(['USER_SIGNED', 'BOUNDED_AUTONOMOUS']).optional().describe('USER_SIGNED by default. BOUNDED_AUTONOMOUS requires an active market-bound owner grant and venue relationship.'),
+    grantId: z.string().optional().describe('Active owner-signed futures grant that permits this session, account, signer, and market.'),
+    sessionId: z.string().optional().describe('Active FarmDash session ID bound to the futures grant.'),
+    sessionToken: z.string().optional().describe('Private token for the matching FarmDash session in bounded mode.'),
   },
   async (params) => {
     try {
@@ -1465,14 +1485,14 @@ server.tool(
 
 server.tool(
   'calculate_position_size',
-  'Translate risk constraints into size and leverage for a perp setup.',
+  'Calculate hypothetical Hyperliquid sizing, margin, leverage, and diagnostics from supplied equity and prices. The service caps leverage at 5x and risk at 2% of equity. Requires Pioneer, Syndicate, or eligible futures-strategy x402 subject to route terms. Sizing does not place an order or determine actual liquidation.',
   {
-    equity: z.number().positive(),
-    entryPrice: z.number().positive(),
-    stopPrice: z.number().positive(),
-    riskPercent: z.number().positive().optional(),
-    targetPrice: z.number().positive().optional(),
-    riskMultiplier: z.number().min(0.1).max(1).optional(),
+    equity: z.number().positive().describe('Total account equity in USD.'),
+    entryPrice: z.number().positive().describe('Proposed entry price in USD per unit.'),
+    stopPrice: z.number().positive().describe('Stop price in USD per unit, different from entry. Below entry implies long, above implies short.'),
+    riskPercent: z.number().positive().optional().describe('Fraction of equity to risk. Use 0.01 for 1%. Defaults to the 2% cap before applying riskMultiplier.'),
+    targetPrice: z.number().positive().optional().describe('Optional target price in USD per unit used for reward/risk diagnostics.'),
+    riskMultiplier: z.number().min(0.1).max(1).optional().describe('Scale the requested fraction from 0.1 to 1. Defaults to 1.'),
   },
   async (params) => {
     try {
@@ -1515,7 +1535,7 @@ server.tool(
 
 server.tool(
   'execute_perp_order',
-  'USER_SIGNED requires fresh human approval. BOUNDED_AUTONOMOUS requires a valid owner-signed futures policy, authenticated session, and a local API-wallet signature on every action; rollout remains preparation_only. Compatibility: submit a pre-signed EIP-712 Hyperliquid order after a 60-second parameter-bound research gate. `market_ioc` is a signed, price-protected IOC limit order with a live 100 bps adverse-price cap, never an unbounded market order; its outcome distinguishes full, partial, and zero fill, and an IOC resting response is unknown/inconsistent. For delegated API wallets, set accountAddress to the venue-verified equity owner used during analysis. FarmDash recovers the exact L1 signer, rejects an agentAddress mismatch, and preflights the owner maxBuilderFee. The signed action must disclose builder f=1 (0.1 bp/0.001% of filled notional), and expiresAt is venue-signed as expiresAfter. Venue nonce authority is network + signer + nonce across account/vault contexts; durable replay control fails closed before submission.',
+  'USER_SIGNED requires fresh human approval. BOUNDED_AUTONOMOUS requires a valid owner-signed futures policy, authenticated session, and a local API-wallet signature on every action (operational with zero custody). Compatibility: submit a pre-signed EIP-712 Hyperliquid order after a 60-second parameter-bound research gate. `market_ioc` is a signed, price-protected IOC limit order with a live 100 bps adverse-price cap, never an unbounded market order; its outcome distinguishes full, partial, and zero fill, and an IOC resting response is unknown/inconsistent. For delegated API wallets, set accountAddress to the venue-verified equity owner used during analysis. FarmDash recovers the exact L1 signer, rejects an agentAddress mismatch, and preflights the owner maxBuilderFee. The signed action must disclose builder f=1 (0.1 bp/0.001% of filled notional), and expiresAt is venue-signed as expiresAfter. Venue nonce authority is network + signer + nonce across account/vault contexts; durable replay control fails closed before submission.',
   {
     agentAddress: z.string().regex(EVM_ADDRESS),
     accountAddress: z.string().regex(EVM_ADDRESS).optional(),
@@ -1599,8 +1619,8 @@ server.tool(
 
 server.tool(
   'get_agent_performance',
-  'Review FarmDash fee-event activity, fees, protocol diversity, and reputation. This endpoint does not return fills, trade outcomes, realized PnL, win rate, or slippage.',
-  { agentAddress: z.string().regex(EVM_ADDRESS) },
+  'Review FarmDash-recorded fee activity, protocol diversity, and reputation for an EVM address. Scout returns a bounded preview. Full results use the address associated with the paid credential when bound. This report does not establish fills, realized PnL, win rate, or slippage.',
+  { agentAddress: z.string().regex(EVM_ADDRESS).describe('0x-prefixed EVM address whose FarmDash fee activity to inspect.') },
   async (params) => {
     try {
       const qs = new URLSearchParams({ address: params.agentAddress });
@@ -1619,17 +1639,17 @@ server.tool(
 
 server.tool(
   'audit_allowance_risk',
-  'Audit token approvals for unlimited, unknown, or high-dollar allowance risk.',
+  'Review caller-supplied ERC-20 allowances for unlimited, unverified, insufficient, or disproportionate approvals. Returns verdict, flags, and requiresUserConfirmation within route capacity. It does not revoke approvals or read live allowances. A halt can publish an authorized risk alert.',
   {
-    walletAddress: z.string().regex(EVM_ADDRESS).optional(),
+    walletAddress: z.string().regex(EVM_ADDRESS).optional().describe('Optional public EVM wallet for context. Halt alerts require separate wallet authorization.'),
     allowances: z.array(z.object({
-      token: z.string().optional(),
-      spender: z.string().optional(),
-      allowance: z.string().optional(),
-      requiredAmount: z.string().optional(),
-      amountUsd: z.number().optional(),
+      token: z.string().optional().describe('ERC-20 token contract address.'),
+      spender: z.string().optional().describe('EVM address entitled to spend the allowance.'),
+      allowance: z.string().optional().describe('Observed allowance as an integer string in token base units.'),
+      requiredAmount: z.string().optional().describe('Positive intended spend as an integer string in the same base units.'),
+      amountUsd: z.number().optional().describe('Estimated USD value of the approval exposure.'),
       spenderVerified: z.boolean().optional().describe('True only after independent verification against the protocol canonical deployment.'),
-    })).optional(),
+    })).optional().describe('Approval observations supplied by the caller. Populate each row with token, spender, allowance, and requiredAmount for a usable review.'),
   },
   async (params) => {
     try {
@@ -1649,21 +1669,21 @@ server.tool(
 
 server.tool(
   'simulate_transaction_risk',
-  'Apply Camp Guard transaction policy checks to an unsigned transaction. This is not an RPC simulation.',
+  'Check unsigned EVM calldata, target, native value, and chain against Camp Guard policy within route capacity. Provide independently captured expectedTransaction to detect substitution. Returns verdict, flags, and simulation.status=not_run. Run RPC simulation in the signing environment before broadcast. A halt can publish an authorized risk alert.',
   {
-    walletAddress: z.string().regex(EVM_ADDRESS).optional(),
+    walletAddress: z.string().regex(EVM_ADDRESS).optional().describe('Optional public EVM wallet for context. Halt alerts require separate wallet authorization.'),
     transaction: z.object({
-      to: z.string(),
-      data: z.string(),
-      value: z.string().optional(),
-      chainId: z.number().int().positive().optional(),
-    }),
+      to: z.string().describe('Target EVM contract or recipient.'),
+      data: z.string().describe('0x-prefixed calldata. Use 0x for a plain native transfer.'),
+      value: z.string().optional().describe('Native value in base units, encoded as a decimal integer or 0x-prefixed hexadecimal string.'),
+      chainId: z.number().int().positive().optional().describe('Numeric EVM network ID. Supply it for meaningful chain validation.'),
+    }).describe('Unsigned EVM payload proposed for local signing.'),
     expectedTransaction: z.object({
-      to: z.string().regex(EVM_ADDRESS),
-      chainId: z.number().int().positive(),
-      value: z.string().regex(/^[0-9]+$/).optional(),
-      dataHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
-    }).optional(),
+      to: z.string().regex(EVM_ADDRESS).describe('Target EVM contract or recipient.'),
+      chainId: z.number().int().positive().describe('Numeric EVM network ID. Supply it for meaningful chain validation.'),
+      value: z.string().regex(/^(?:[0-9]+|0x[0-9a-fA-F]+)$/).optional().describe('Native value in base units, encoded as a decimal integer or 0x-prefixed hexadecimal string.'),
+      dataHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/).describe('SHA-256 of lowercase UTF-8 transaction.data (0x...) or of its decoded calldata bytes, formatted as 0x + 64 hex chars.'),
+    }).optional().describe('Independent expected values captured before preparation. Do not derive them from the transaction under review.'),
   },
   async (params) => {
     try {
@@ -1748,11 +1768,13 @@ server.tool(
 
 server.tool(
   'ledger_realized_pnl',
-  'Summarize recorded spot and futures agent activity over a date range.',
+  'Read recorded FarmDash spot and futures activity and costs for an authorized EVM agent. Requires Pioneer-equivalent route access plus a wallet-bound API key or matching active session. Returns a summary, up to 20 recent events per lane, and warnings. Contains no realized P&L. Only confirmed settlement counts as confirmed.',
   {
-    agentAddress: z.string().regex(EVM_ADDRESS),
-    start: z.string().optional(),
-    end: z.string().optional(),
+    agentAddress: z.string().regex(EVM_ADDRESS).describe('0x-prefixed EVM agent address bound to the API key or matching session.'),
+    start: z.string().optional().describe('Inclusive ISO 8601 range start. Defaults to 30 days before now.'),
+    end: z.string().optional().describe('Inclusive ISO 8601 range end. Defaults to now.'),
+    sessionId: z.string().min(1).optional().describe('Active FarmDash session ID when authenticating without a wallet-bound API key.'),
+    sessionToken: z.string().min(1).optional().describe('Active FarmDash session token proving ownership of agentAddress when authenticating without a wallet-bound API key.'),
   },
   async (params) => {
     try {
@@ -1772,11 +1794,13 @@ server.tool(
 
 server.tool(
   'ledger_tax_export',
-  'Export recorded spot execution records as CSV for downstream accounting review.',
+  'Export recorded spot execution rows as CSV with row count and accounting warnings. Requires Pioneer-equivalent route access plus a wallet-bound API key or matching active session. Futures tax lots require venue fills outside this export.',
   {
-    agentAddress: z.string().regex(EVM_ADDRESS),
-    start: z.string().optional(),
-    end: z.string().optional(),
+    agentAddress: z.string().regex(EVM_ADDRESS).describe('0x-prefixed EVM agent address bound to the API key or matching session.'),
+    start: z.string().optional().describe('Inclusive ISO 8601 range start. Defaults to 30 days before now.'),
+    end: z.string().optional().describe('Inclusive ISO 8601 range end. Defaults to now.'),
+    sessionId: z.string().min(1).optional().describe('Active FarmDash session ID when authenticating without a wallet-bound API key.'),
+    sessionToken: z.string().min(1).optional().describe('Active FarmDash session token proving ownership of agentAddress when authenticating without a wallet-bound API key.'),
   },
   async (params) => {
     try {
@@ -1827,7 +1851,7 @@ server.tool(
 
 server.tool(
   'create_session',
-  'Create a persistent agent session. Normal callers must include a fresh EIP-712 or EIP-191 session signature. Returns a one-time sessionToken.',
+  'Create a persistent agent session. Normal callers must include a fresh EIP-712 or EIP-191 session signature. Returns a one-time sessionToken. Tier: Pioneer+ (Scout callers receive HTTP 402 payment_required).',
   {
     agentAddress: z.string().regex(EVM_ADDRESS),
     agentName: z.string().optional(),
@@ -1968,22 +1992,38 @@ server.tool(
 
 server.tool(
   'verify_delegation',
-  'Verify Hyperliquid API wallet delegation for guarded venue-order workflows. Verification does not bypass live status, research, risk, or signature gates. GATED BY DESIGN: this MCP tool is hard-blocked because MCP cannot collect the owner signature inputs it needs - the call requires an EIP-712 DelegationBind signature over { ownerAddress, agentAddress, apiWalletAddress, nonce }, and the MCP schema carries only the three addresses. The HTTP route POST /api/v1/agent/delegation exists and accepts { agentAddress, apiWalletAddress, ownerAddress, signature, nonce } - use owner-signed delegation via HTTP instead. Tier: Pioneer+.',
+  'Verify Hyperliquid API wallet delegation for guarded venue-order workflows. Verification does not bypass live status, research, risk, or signature gates. GATED BY DESIGN: this MCP tool is hard-blocked because MCP cannot collect the owner signature inputs it needs - the call requires an EIP-712 DelegationBind signature over { ownerAddress, agentAddress, apiWalletAddress, nonce }, and the MCP schema carries only the three addresses. The HTTP route POST /api/v1/agent/delegation exists and accepts { agentAddress, apiWalletAddress, ownerAddress, signature, nonce } - use owner-signed delegation via HTTP instead. Tier: Syndicate.',
   {
     agentAddress: z.string().regex(EVM_ADDRESS),
     apiWalletAddress: z.string().regex(EVM_ADDRESS),
     ownerAddress: z.string().regex(EVM_ADDRESS),
   },
   async (params) => {
-    try {
-      const data = await apiFetch('/v1/agent/delegation', { method: 'POST', body: JSON.stringify(params) });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
-    } catch (err) {
-      return {
-        content: [{ type: 'text' as const, text: JSON.stringify(errorPayload(err), null, 2) }],
-        isError: true,
-      };
-    }
+    return {
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({
+          ok: false,
+          error: 'unavailable_mcp_signature_inputs',
+          code: 'unavailable_mcp_signature_inputs',
+          retryable: false,
+          message: 'verify_delegation is hard-blocked in MCP because this schema cannot collect the owner EIP-712 DelegationBind signature and fresh nonce required by POST /api/v1/agent/delegation. Use owner-signed delegation via HTTP instead (Syndicate tier required).',
+          alternative: {
+            method: 'POST',
+            endpoint: '/api/v1/agent/delegation',
+            api_route: '/v1/agent/delegation',
+            required_tier: 'syndicate',
+            required_fields: ['agentAddress', 'apiWalletAddress', 'ownerAddress', 'signature', 'nonce'],
+            supplied_addresses: {
+              agentAddress: params.agentAddress,
+              apiWalletAddress: params.apiWalletAddress,
+              ownerAddress: params.ownerAddress,
+            },
+          },
+        }, null, 2),
+      }],
+      isError: true,
+    };
   },
 );
 
@@ -2588,10 +2628,10 @@ server.tool(
 
 server.tool(
   'analyze_protocol_risk',
-  'Deep risk analysis for a DeFi protocol. Pulls live signals from DeFiLlama (TVL, momentum, chain diversification, historical trends) and combines with Trail Heat scoring to produce a composite risk grade (low/moderate/elevated/high/critical) with actionable signals.',
+  'Assess a catalog protocol with DeFiLlama TVL, concentration, momentum, diversification, and optional historical trends. Requires Pioneer or equivalent route access. Returns riskGrade, riskScore, signals, and evidence-labeled onChainData. An unresolved upstream identity returns unknown risk with catalog evidence only. Unavailable observations remain null.',
   {
-    protocolId: z.string().describe('Protocol ID (e.g. "hyperliquid", "etherfi")'),
-    includeHistorical: z.boolean().optional().describe('Include 30-day historical TVL trend analysis (default: true)'),
+    protocolId: z.string().describe('Exact FarmDash catalog protocol ID, such as hyperliquid or etherfi.'),
+    includeHistorical: z.boolean().optional().describe('Include the 30-day TVL trend when available. Defaults to true.'),
   },
   async (params) => {
     try {
@@ -2805,7 +2845,7 @@ server.registerPrompt('yield-rebalance-audit', {
 const ACP_UINT256_MAX = (1n << 256n) - 1n;
 const AcpPositiveUint256Schema = z.string()
   .regex(/^[1-9]\d{0,77}$/)
-  .refine((value) => BigInt(value) <= ACP_UINT256_MAX, 'ACP value exceeds uint256.');
+  .refine((value) => /^[1-9]\d{0,77}$/.test(value) && BigInt(value) <= ACP_UINT256_MAX, 'ACP value exceeds uint256.');
 const AcpTenderIdSchema = z.string().regex(/^fdat_[A-Za-z0-9_-]{8,59}$/);
 const AcpProviderSetSchema = z.object({
   solidity_auditor: z.string().regex(EVM_ADDRESS),

@@ -31,7 +31,11 @@ const SWAP_PROVIDER_GUARDED_TOOLS = new Set([
   if (SWAP_PROVIDER_GUARDED_TOOLS.has(name)) {
     const schema = args.find((arg) => arg && typeof arg === 'object' && !Array.isArray(arg) && 'protocol' in arg);
     if (schema) {
-      schema.protocol = z.enum(['lifi', 'relay']).optional();
+      const guardedProtocol = z.enum(['lifi', 'relay']).optional();
+      const protocolDescription = schema.protocol?.description;
+      schema.protocol = typeof protocolDescription === 'string'
+        ? guardedProtocol.describe(protocolDescription)
+        : guardedProtocol;
     }
   }
 

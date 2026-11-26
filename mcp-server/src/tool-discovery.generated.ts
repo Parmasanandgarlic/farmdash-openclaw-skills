@@ -494,7 +494,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "reconciliation",
     "risk_class": "stateful",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -596,7 +596,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "planning_state",
     "risk_class": "stateful",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -629,7 +629,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "financial_preparation",
     "risk_class": "financial",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -724,7 +724,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "financial_submission",
     "risk_class": "financial",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -758,7 +758,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "control_state",
     "risk_class": "stateful",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -915,7 +915,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "read_only",
     "risk_class": "informational",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator",
@@ -1009,7 +1009,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "read_only",
     "risk_class": "informational",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -1072,7 +1072,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "read_only",
     "risk_class": "informational",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -1292,7 +1292,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "read_only",
     "risk_class": "informational",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -1474,7 +1474,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "read_only",
     "risk_class": "informational",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -1744,7 +1744,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "control_state",
     "risk_class": "authority",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -1839,7 +1839,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "lifecycle_stage": "observation",
     "authority_model": [
-      "none"
+      "authenticated_session"
     ],
     "side_effect_class": "read_only",
     "risk_class": "informational",
@@ -2032,7 +2032,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "control_state",
     "risk_class": "stateful",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -2098,7 +2098,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "financial_preparation",
     "risk_class": "financial",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -2454,7 +2454,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "read_only",
     "risk_class": "informational",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -2519,7 +2519,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "control_state",
     "risk_class": "authority",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -2677,7 +2677,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "control_state",
     "risk_class": "authority",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -2936,7 +2936,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "read_only",
     "risk_class": "informational",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -2968,7 +2968,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "control_state",
     "risk_class": "stateful",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -3002,7 +3002,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "control_state",
     "risk_class": "stateful",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -3152,7 +3152,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "financial_submission",
     "risk_class": "financial",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "syndicate",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -3182,7 +3182,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     ],
     "side_effect_class": "control_state",
     "risk_class": "authority",
-    "availability": "preparation_only",
+    "availability": "available_with_tier_gate",
     "tier": "session_bound",
     "skill_affinity": [
       "farmdash-autonomous-operator"
@@ -3218,7 +3218,7 @@ export const MCP_TOOL_DISCOVERY: Readonly<Record<string, DiscoveryTool>> = {
     "side_effect_class": "control_state",
     "risk_class": "authority",
     "availability": "unavailable_mcp_signature_inputs",
-    "tier": "pioneer_plus",
+    "tier": "syndicate",
     "skill_affinity": [
       "farmdash-autonomous-operator"
     ],

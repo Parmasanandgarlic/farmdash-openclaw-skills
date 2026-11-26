@@ -25,16 +25,16 @@ export const CAPABILITY_TRUTH = {
     "prerequisite": "Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority."
   },
   "ERC4337_SERVER_SUBMISSION": {
-    "status": "preparation_only",
-    "prerequisite": "Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration."
+    "status": "operational",
+    "prerequisite": "Authenticated session, tenant-bound active ERC-4337 session-key grant, ABI-verified execute/executeBatch calldata within allowedProtocols/budget/gas bounds, and configured bundler RPC (BUNDLER_RPC_URL/PIMLICO_API_KEY/ALCHEMY_4337_RPC_URL)."
   },
   "GENERIC_SERVER_INTENT_EXECUTION": {
-    "status": "preparation_only",
-    "prerequisite": "Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier."
+    "status": "operational",
+    "prerequisite": "Curated executable adapter prepared_payload + payload_digest, policy/simulation/approval gates, exact cryptographic signed-transaction binding, and canonical on-chain receipt verification."
   },
   "MEE": {
-    "status": "preparation_only",
-    "prerequisite": "Production coordinator and authoritative source/destination receipt verifier."
+    "status": "operational",
+    "prerequisite": "Owner EIP-712 MEE signature, configured HTTPS MEE_COORDINATOR_URL, and authoritative dual-chain on-chain receipt verification."
   },
   "ACP": {
     "status": "deployment_prerequisite",

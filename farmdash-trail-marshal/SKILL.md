@@ -1,6 +1,6 @@
 ---
 name: FarmDash Trail Marshal
-description: "Use when composing multi-step DeFi workflows from FarmDash tools: plan, run, inspect supervised pipelines. Wallet steps stay policy-gated, preview-only."
+description: "Use when composing multi-step DeFi workflows from FarmDash tools: plan, run, inspect supervised pipelines. Wallet steps stay policy-gated and zero-custody."
 tags: ["defi","defi-workflows","agent-orchestration","workflow-automation","multi-agent-system","ai-agent-workflows","policy-gated","supervised-automation","defi-playbooks","quality-gates","workflow-status","session-management","risk-management","yield-farming-workflow","airdrop-workflow","zero-custody","openclaw","mcp","web3","farmdash"]
 author: FarmDash Pioneers (@Parmasanandgarlic)
 homepage: https://www.farmdash.one/agents
@@ -88,10 +88,11 @@ Creates a guarded workflow run record for a live session. Inputs are `workflowId
 Important: `run_workflow` records a plan, not execution. Its compatibility `awaiting_confirmation` status does not select mode or create authority. The owning executor must verify fresh data and the step's domain/mode: USER_SIGNED approval, or a valid bounded grant with all checks. Read futures bounded readiness independently from the generated table and live status.
 
 
-### Execution Mode Tracking per Action
-When planning or tracking a workflow run (`plan_workflow` / `run_workflow`), Trail Marshal records the explicit execution mode for every executable step:
-- `USER_SIGNED`: Default interactive flow requiring per-step user confirmation and local EIP-191/EIP-712 signature.
-- `BOUNDED_AUTONOMOUS`: Agent-local architecture under an active, scoped domain delegation grant. A tracked mode or registered grant is not execution readiness. Read `/api/v1/agent/status` and fail closed while the domain execution-mode gate is non-operational; USER_SIGNED remains supported with fresh approval.
+### Execution Mode Tracking per Action (First-Prompt Zero-Custody Selection)
+Before handing off any state-changing workflow step (`plan_workflow` / `run_workflow`), inspect `execution_mode_selection` on `GET /api/v1/agent/status` and `POST /api/v1/agent/authority`, and explicitly prompt the user to select their execution mode per domain (EVM spot, Solana, Hyperliquid perps):
+- `USER_SIGNED` (**Standard FarmDash — default**): Interactive zero-custody flow requiring per-step user confirmation and local EIP-191/EIP-712 (or native Solana) signature in the owning execution sub-skill.
+- `BOUNDED_AUTONOMOUS` (**Autonomous FarmDash — opt-in**): Agent-local architecture under an active, owner-signed, scoped, expiring, revocable domain delegation grant and Pioneer+/x402 session (`EOA_V1_OWNER_LOCAL_SIGNER`). A tracked mode or registered grant is not execution readiness. Read `/api/v1/agent/status` and fail closed whenever the domain execution-mode gate is non-operational; `USER_SIGNED` remains supported with fresh approval.
+- For Hyperliquid workflows (`farm_hyperliquid`, `hedged_airdrop_rotation`), also surface `builderFeeStatus` from `analyze_futures_strategy` so the user completes the one-time main-wallet `ApproveBuilderFee` step before `prepare_perp_order`. For Solana legs, route through `get_solana_quote` → `prepare_solana_swap` → `confirm_solana_swap`.
 - `preparation_only` is a capability status, not a third executionMode. Informational/unsupported steps must remain non-executable. Query futures independently through its distinct authority contract.
 
 ### `get_workflow_status`
@@ -195,7 +196,7 @@ If a recipe skips SENSE, it is unsafe. If it skips VERIFY, the agent never impro
 ### Multi-Leg Execution Disclosure
 Tell the user multi-leg execution is non-atomic unless the adapter proves otherwise, and state leg order, maximum unhedged time, partial-fill handling, abort conditions, and unwind before the first signature. Trail Marshal cannot pre-confirm anything; each confirmation happens in the owning sub-skill's quote path, and `delta_neutral_setup` stays research-only until a paired adapter exists.
 
-Trail Marshal cannot pre-confirm anything or manufacture a grant. USER_SIGNED confirmation happens in the owning execution sub-skill's fresh quote path. Operational bounded futures may omit intermediate human review only under the separate owner futures grant and all checks; during preparation_only, refuse automated execution. Catalog confirmation counts are supervised defaults, never grants.
+Trail Marshal cannot pre-confirm anything or manufacture a grant. USER_SIGNED confirmation happens in the owning execution sub-skill's fresh quote path. Operational bounded futures may omit intermediate human review only under the separate owner futures grant and all checks; whenever a domain gate reports `preparation_only` or non-operational in live status, refuse automated execution. Catalog confirmation counts are supervised defaults, never grants.
 
 For `delta_neutral_setup`, the current catalog intentionally stops before execution. Neither `execute_swap` nor `execute_perp_order` can atomically bind both legs, and standalone `funding_arb` execution is analysis-only. A future paired adapter must bind both legs, maximum basis/slippage, timeout, partial-fill policy, and unwind before this workflow becomes executable.
 
@@ -244,7 +245,7 @@ Workflow recipes are documentation, not financial advice. Any action performed b
 
 ---
 
-**Install:** Copy this file into your OpenClaw workspace, or fetch `https://www.farmdash.one/openclaw-skills/farmdash-trail-marshal/SKILL.md`.
+**Install:** Copy this file into your OpenClaw workspace, or fetch `https://www.farmdash.one/agents/skills/farmdash-trail-marshal`.
 
 **Companion skills (separately installed by the user):** FarmDash Trail Intelligence (research), FarmDash Wagon Steward (read-only portfolio), FarmDash Signal Architect (spot routing), FarmDash Futures Strategist (perps), FarmDash Camp Guard (risk), FarmDash Supply Master (yield), FarmDash Hedge Warden (hedges), FarmDash Ledger Keeper (records), FarmDash Autonomous Operator (session context).
 
@@ -295,13 +296,33 @@ Send `X-ClawHub-Skill: farmdash-trail-marshal` on every FarmDash API request —
 
 - [FarmDash DeFi intelligence website](https://www.farmdash.one/)
 - [FarmDash Agent Hub](https://www.farmdash.one/agents)
-- [Canonical FarmDash Trail Marshal skill manual](https://www.farmdash.one/openclaw-skills/farmdash-trail-marshal/SKILL.md)
+- [Canonical FarmDash Trail Marshal skill manual](https://www.farmdash.one/agents/skills/farmdash-trail-marshal)
 - [Agent integration documentation](https://www.farmdash.one/docs)
 - [Live agent capability status](https://www.farmdash.one/api/v1/agent/status)
 - [OpenAPI contract](https://www.farmdash.one/agents/openapi.yaml)
+- [Hosted Streamable HTTP MCP endpoint](https://www.farmdash.one/api/mcp) (56 core tools directly over HTTP; full 98-tool surface via stdio MCP or REST)
 - [MCP discovery manifest](https://www.farmdash.one/.well-known/mcp.json)
+- [Multi-skill workflow catalog](https://www.farmdash.one/api/v1/agent/workflows)
+- [FarmDash Agent Operating Model](https://www.farmdash.one/openclaw-skills/FARMDASH_AGENT_OPERATING_MODEL.md)
 - [Fees and commercial terms](https://www.farmdash.one/fees)
 - [Security and authority boundaries](https://www.farmdash.one/security)
+
+### Connected FarmDash Skill Ecosystem
+
+All 10 FarmDash OpenClaw skills compose as one zero-custody pipeline over the shared FarmDash REST API, the hosted Streamable HTTP MCP endpoint (`https://www.farmdash.one/api/mcp`, exposing 56 core tools directly over HTTP), and the full 98-tool stdio MCP server. Check `GET /api/v1/agent/workflows` (or `list_workflows`) for multi-skill recipes.
+
+| Skill Slug | Pipeline Stage | Handoff Scope | Canonical Manual |
+|---|---|---|---|
+| `farmdash-trail-intelligence` | Discovery & Intelligence | Trail Heat, protocol risk, wallet balances, sybil audits, points simulations | [Manual](https://www.farmdash.one/agents/skills/farmdash-trail-intelligence) |
+| `farmdash-wagon-steward` | Portfolio & Reserves | Portfolio summary, idle capital scan, position health & drift checks | [Manual](https://www.farmdash.one/agents/skills/farmdash-wagon-steward) |
+| `farmdash-supply-master` | Yield Sustainability | Organic vs emission APY ranking (yield_quality_v3) & ERC-4626 verification | [Manual](https://www.farmdash.one/agents/skills/farmdash-supply-master) |
+| `farmdash-camp-guard` | Pre-Sign Safety Gate | Allowance audits, Risk Sentinel net-edge/depeg checks, unsigned-tx verdicts | [Manual](https://www.farmdash.one/agents/skills/farmdash-camp-guard) |
+| `farmdash-hedge-warden` | Delta-Neutral Sizing | Spot beta hedge sizing (confidence >= 0.60 gate) handing off to Futures Strategist | [Manual](https://www.farmdash.one/agents/skills/farmdash-hedge-warden) |
+| `farmdash-trail-marshal` *(this skill)* | Workflow Orchestration | 18-recipe multi-skill catalog (list/plan/run/status) across all FarmDash skills | [Manual](https://www.farmdash.one/agents/skills/farmdash-trail-marshal) |
+| `farmdash-signal-architect` | Spot & Swap Execution | EVM (LI.FI & Relay; 0x paused) & Solana (Jupiter) quote, simulation, prep & confirm | [Manual](https://www.farmdash.one/agents/skills/farmdash-signal-architect) |
+| `farmdash-futures-strategist` | Hyperliquid Perps | Funding/regime scans, sizing, builder approval, EIP-712 order prep & reconciliation | [Manual](https://www.farmdash.one/agents/skills/farmdash-futures-strategist) |
+| `farmdash-autonomous-operator` | Sessions & Autonomy | Persistent sessions, FarmingContext, intent resolution, MEE & bounded delegations | [Manual](https://www.farmdash.one/agents/skills/farmdash-autonomous-operator) |
+| `farmdash-ledger-keeper` | Post-Trade Accounting | Confirmed activity/cost summaries and CSV tax exports (read-only) | [Manual](https://www.farmdash.one/agents/skills/farmdash-ledger-keeper) |
 
 ### Canonical capability readiness
 
@@ -315,9 +336,9 @@ Generated from shared/capability-truth.ts; read live status for deployment and p
 | futures.BOUNDED_AUTONOMOUS | operational | Authenticated owner-bound futures policy, authorized local API-wallet signature, durable nonce/budget/order controls. |
 | solana.USER_SIGNED | operational | Native Jupiter/RPC route, durable preparation and finality store; customer signs and broadcasts. |
 | solana.BOUNDED_AUTONOMOUS | operational | Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority. |
-| ERC4337_SERVER_SUBMISSION | preparation_only | Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration. |
-| GENERIC_SERVER_INTENT_EXECUTION | preparation_only | Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier. |
-| MEE | preparation_only | Production coordinator and authoritative source/destination receipt verifier. |
+| ERC4337_SERVER_SUBMISSION | operational | Authenticated session, tenant-bound active ERC-4337 session-key grant, ABI-verified execute/executeBatch calldata within allowedProtocols/budget/gas bounds, and configured bundler RPC (BUNDLER_RPC_URL/PIMLICO_API_KEY/ALCHEMY_4337_RPC_URL). |
+| GENERIC_SERVER_INTENT_EXECUTION | operational | Curated executable adapter prepared_payload + payload_digest, policy/simulation/approval gates, exact cryptographic signed-transaction binding, and canonical on-chain receipt verification. |
+| MEE | operational | Owner EIP-712 MEE signature, configured HTTPS MEE_COORDINATOR_URL, and authoritative dual-chain on-chain receipt verification. |
 | ACP | deployment_prerequisite | AcpReadinessService paidWorkflowReady, evaluator/client identities, migrations, funding/finality workers and Base RPC. |
 
 <!-- farmdash-canonical-links:end -->

@@ -61,7 +61,7 @@ No other fields are collected by skill logic.
 
 | Tier | Cost | Limits | Capabilities |
 |---|---|---|---|
-| **Scout** | Free | 30 req / 24h | Public FarmDash discovery only; wallet portfolio endpoints require Pioneer because they consume portfolio API credits |
+| **Scout** | Free | 30 req / 24h | Public FarmDash discovery only; wallet portfolio endpoints (`wallet_portfolio` policy) require Pioneer or a published 0.02 USDC Base x402 one-off because they consume portfolio API credits |
 | **Pioneer** | $39.99/mo | 1,500 req / day | Wallet balances, portfolio summary, idle capital, token prices, position/performance health |
 | **Syndicate** | $199/mo | 50k req / day | Higher-rate portfolio loops, webhooks through Signal Architect, unrestricted CORS, and advanced session/control tooling for teams and serious agents |
 
@@ -98,7 +98,7 @@ Top-level snapshot. Use this first — it grounds every other recommendation.
 
 It does not currently identify protocol positions, liabilities, LP composition, locked/vesting balances, lending debt, perp exposure, cost basis, or cross-chain balances outside the requested/default network set. Treat `totalValueUsd` as a partial observable-wallet estimate, not net asset value.
 
-**Agent posture:** Start a wagon-aware conversation with this tool when the user has Pioneer access. If the call returns 402, explain that wallet portfolio reads require Pioneer and continue with non-wallet public research instead of fabricating balances. Do not narrate the entire response; surface the totals plus any flags Wagon Steward returns or that you derive (over-concentration, large idle capital, stale positions).
+**Agent posture:** Start a wagon-aware conversation with this tool when the user has Pioneer access (or opts into the route's published 0.02 USDC Base x402 one-off). If the call returns 402, explain clearly that wallet portfolio reads require Pioneer (`https://www.farmdash.one/agents`) or a one-off x402 payment, and continue with non-wallet public research instead of fabricating balances. Note the **chain boundary**: `get_wallet_balances` and `get_portfolio_summary` are EVM-only — Solana addresses fail closed with `solana_balances_unsupported`; never zero or invent Solana balances (use Signal Architect's native Solana quote/preparation tools when acting on Solana). Do not narrate the entire response; surface the totals plus any flags Wagon Steward returns or that you derive (over-concentration, large idle capital, stale positions).
 
 ---
 
@@ -238,7 +238,7 @@ Trail Intelligence  →  Wagon Steward  →  Signal Architect / Futures Strategi
 | **Signal Architect** | When the rebalance plan needs to actually move tokens | WS produces the plan, SA quotes + executes each swap with user confirmation |
 | **Futures Strategist** | When the user wants to hedge observable spot exposure | WS passes partial spot context; Hedge Warden/FS plan a candidate hedge and post-fill reconciliation measures residual delta |
 
-**Important:** Wagon Steward never auto-calls another skill. It produces analysis; the user (or an orchestrator like Trail Marshal) decides what to do with it.
+**Important:** Wagon Steward never auto-calls another skill. It produces analysis; the user (or an orchestrator like Trail Marshal) decides what to do with it. Before handing off any rebalance, swap, or hedge to **Signal Architect**, **Futures Strategist**, or **Autonomous Operator**, explicitly prompt the user to choose between FarmDash's zero-custody default **Standard FarmDash (`USER_SIGNED`)** (per-trade local signing) and opt-in **Autonomous FarmDash (`BOUNDED_AUTONOMOUS`)** (owner-signed, revocable delegation grant), grounded in `execution_mode_selection` from `GET /api/v1/agent/status` and `POST /api/v1/agent/authority`.
 
 ### Report-Back Template — State / Risks / Invalidation / Costs
 Report: address + timestamp/asOf + queried networks; totalValueUsd as partial observable-wallet estimate; topConcentrationPct vs 40% gate; idleCapitalUsd as candidate reserves; priced/unpriced counts; overConcentrated / idleDrag / staleData / routeNeeded flags; invalidation (missing chains, unpriced assets, unavailable debt/perp data blocks net-exposure claims); costs; nextBestAction (hold / monitor / research / quote_swap / reduce / rebalance) + handoff (none / trail_intelligence / trail_marshal / signal_architect / futures_strategist).
@@ -407,7 +407,7 @@ In `watch_wagon` derived loops using repeated reads, triage concentrationTop1 at
 
 ---
 
-**Install:** Copy this file into your OpenClaw workspace, or fetch `https://www.farmdash.one/openclaw-skills/farmdash-wagon-steward/SKILL.md`.
+**Install:** Copy this file into your OpenClaw workspace, or fetch `https://www.farmdash.one/agents/skills/farmdash-wagon-steward`.
 
 **Companion skills:**
 
@@ -464,13 +464,33 @@ Send `X-ClawHub-Skill: farmdash-wagon-steward` on every FarmDash API request —
 
 - [FarmDash DeFi intelligence website](https://www.farmdash.one/)
 - [FarmDash Agent Hub](https://www.farmdash.one/agents)
-- [Canonical FarmDash Wagon Steward skill manual](https://www.farmdash.one/openclaw-skills/farmdash-wagon-steward/SKILL.md)
+- [Canonical FarmDash Wagon Steward skill manual](https://www.farmdash.one/agents/skills/farmdash-wagon-steward)
 - [Agent integration documentation](https://www.farmdash.one/docs)
 - [Live agent capability status](https://www.farmdash.one/api/v1/agent/status)
 - [OpenAPI contract](https://www.farmdash.one/agents/openapi.yaml)
+- [Hosted Streamable HTTP MCP endpoint](https://www.farmdash.one/api/mcp) (56 core tools directly over HTTP; full 98-tool surface via stdio MCP or REST)
 - [MCP discovery manifest](https://www.farmdash.one/.well-known/mcp.json)
+- [Multi-skill workflow catalog](https://www.farmdash.one/api/v1/agent/workflows)
+- [FarmDash Agent Operating Model](https://www.farmdash.one/openclaw-skills/FARMDASH_AGENT_OPERATING_MODEL.md)
 - [Fees and commercial terms](https://www.farmdash.one/fees)
 - [Security and authority boundaries](https://www.farmdash.one/security)
+
+### Connected FarmDash Skill Ecosystem
+
+All 10 FarmDash OpenClaw skills compose as one zero-custody pipeline over the shared FarmDash REST API, the hosted Streamable HTTP MCP endpoint (`https://www.farmdash.one/api/mcp`, exposing 56 core tools directly over HTTP), and the full 98-tool stdio MCP server. Check `GET /api/v1/agent/workflows` (or `list_workflows`) for multi-skill recipes.
+
+| Skill Slug | Pipeline Stage | Handoff Scope | Canonical Manual |
+|---|---|---|---|
+| `farmdash-trail-intelligence` | Discovery & Intelligence | Trail Heat, protocol risk, wallet balances, sybil audits, points simulations | [Manual](https://www.farmdash.one/agents/skills/farmdash-trail-intelligence) |
+| `farmdash-wagon-steward` *(this skill)* | Portfolio & Reserves | Portfolio summary, idle capital scan, position health & drift checks | [Manual](https://www.farmdash.one/agents/skills/farmdash-wagon-steward) |
+| `farmdash-supply-master` | Yield Sustainability | Organic vs emission APY ranking (yield_quality_v3) & ERC-4626 verification | [Manual](https://www.farmdash.one/agents/skills/farmdash-supply-master) |
+| `farmdash-camp-guard` | Pre-Sign Safety Gate | Allowance audits, Risk Sentinel net-edge/depeg checks, unsigned-tx verdicts | [Manual](https://www.farmdash.one/agents/skills/farmdash-camp-guard) |
+| `farmdash-hedge-warden` | Delta-Neutral Sizing | Spot beta hedge sizing (confidence >= 0.60 gate) handing off to Futures Strategist | [Manual](https://www.farmdash.one/agents/skills/farmdash-hedge-warden) |
+| `farmdash-trail-marshal` | Workflow Orchestration | 18-recipe multi-skill catalog (list/plan/run/status) across all FarmDash skills | [Manual](https://www.farmdash.one/agents/skills/farmdash-trail-marshal) |
+| `farmdash-signal-architect` | Spot & Swap Execution | EVM (LI.FI & Relay; 0x paused) & Solana (Jupiter) quote, simulation, prep & confirm | [Manual](https://www.farmdash.one/agents/skills/farmdash-signal-architect) |
+| `farmdash-futures-strategist` | Hyperliquid Perps | Funding/regime scans, sizing, builder approval, EIP-712 order prep & reconciliation | [Manual](https://www.farmdash.one/agents/skills/farmdash-futures-strategist) |
+| `farmdash-autonomous-operator` | Sessions & Autonomy | Persistent sessions, FarmingContext, intent resolution, MEE & bounded delegations | [Manual](https://www.farmdash.one/agents/skills/farmdash-autonomous-operator) |
+| `farmdash-ledger-keeper` | Post-Trade Accounting | Confirmed activity/cost summaries and CSV tax exports (read-only) | [Manual](https://www.farmdash.one/agents/skills/farmdash-ledger-keeper) |
 
 ### Canonical capability readiness
 
@@ -484,9 +504,9 @@ Generated from shared/capability-truth.ts; read live status for deployment and p
 | futures.BOUNDED_AUTONOMOUS | operational | Authenticated owner-bound futures policy, authorized local API-wallet signature, durable nonce/budget/order controls. |
 | solana.USER_SIGNED | operational | Native Jupiter/RPC route, durable preparation and finality store; customer signs and broadcasts. |
 | solana.BOUNDED_AUTONOMOUS | operational | Native owner-signed Solana policy; local key must be an actual required transaction signer. Policy creates no on-chain authority. |
-| ERC4337_SERVER_SUBMISSION | preparation_only | Qualified tenant/account authorization and session-key policy enforcement on public forwarding, configured bundler, durable claims and verified receipt integration. |
-| GENERIC_SERVER_INTENT_EXECUTION | preparation_only | Trusted executable adapter, exact signed-transaction binding and canonical receipt verifier. |
-| MEE | preparation_only | Production coordinator and authoritative source/destination receipt verifier. |
+| ERC4337_SERVER_SUBMISSION | operational | Authenticated session, tenant-bound active ERC-4337 session-key grant, ABI-verified execute/executeBatch calldata within allowedProtocols/budget/gas bounds, and configured bundler RPC (BUNDLER_RPC_URL/PIMLICO_API_KEY/ALCHEMY_4337_RPC_URL). |
+| GENERIC_SERVER_INTENT_EXECUTION | operational | Curated executable adapter prepared_payload + payload_digest, policy/simulation/approval gates, exact cryptographic signed-transaction binding, and canonical on-chain receipt verification. |
+| MEE | operational | Owner EIP-712 MEE signature, configured HTTPS MEE_COORDINATOR_URL, and authoritative dual-chain on-chain receipt verification. |
 | ACP | deployment_prerequisite | AcpReadinessService paidWorkflowReady, evaluator/client identities, migrations, funding/finality workers and Base RPC. |
 
 <!-- farmdash-canonical-links:end -->
