@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '26.13.1'
           cache: npm
           cache-dependency-path: mcp-server/package-lock.json
       # Fails the build if any mirrored file diverges from the canonical SHA256 recorded in
@@ -47,3 +47,7 @@ jobs:
         run: npm run build --prefix mcp-server
       - name: Smoke (introspection)
         run: npm run smoke --prefix mcp-server
+      - name: Build and verify the MCP Docker runtime
+        run: |
+          docker build --tag farmdash-mcp-ci .
+          test "$(docker run --rm --network none --entrypoint node farmdash-mcp-ci --version)" = "v26.13.1"

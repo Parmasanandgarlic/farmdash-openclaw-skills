@@ -248,7 +248,7 @@ LI.FI and Relay are enabled/configured/firm_quote_ready. 0x is operator-paused, 
 ## Architecture
 
 - **Transport**: stdio (client spawns process, communicates via stdin/stdout)
-- **Runtime**: Node.js 22.14.0 or newer (ES2022, ESM); use a supported, security-patched release.
+- **Runtime**: Node.js 26.13.1 or a later Node 26 patch (ESM).
 - **Dependencies**: `@modelcontextprotocol/sdk`, `zod` (runtime validation)
 - **Error handling**: Dust Storm pattern — typed degraded failures; never label missing financial data as success
 - **Timeout**: 15s default per API call (25s for yield simulation)
