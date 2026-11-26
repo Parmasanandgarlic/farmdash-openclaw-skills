@@ -87,7 +87,7 @@ jobs:
           const get = async (path, headers = {}) => fetch(host + path, {
             redirect: 'manual',
             signal: AbortSignal.timeout(20000),
-            headers: { 'user-agent': 'FarmDash Release QA automated_test', ...headers },
+            headers: { 'user-agent': 'FarmDash Release QA automated_test', 'x-farmdash-test-probe': 'automated_test', 'x-farmdash-run-id': runId, ...headers },
           });
           const sha256 = body => createHash('sha256').update(body).digest('hex');
           const ownership = await get('/api/mcp/.well-known/glama.json', { accept: 'application/json' });
