@@ -1,8 +1,8 @@
 {
   "$comment": "Published allowlisted mirror of the verified canonical FarmDash release.",
   "source_repository": "hububstudio/farmdashbeta",
-  "source_sha": "2f65b5a94d0d88c80686a7a81749e3dbc4fc0505",
-  "sync_timestamp": "2026-11-26T21:03:53.104Z",
+  "source_sha": "d3efe5319c527285f0cf7f258705e18eb903fb52",
+  "sync_timestamp": "2026-11-26T21:59:29.749Z",
   "mcp_tool_count": 98,
   "mirrored_file_count": 35,
   "not_mirrored_reason": {
@@ -137,7 +137,7 @@
       "source": "mcp-server/src/index-base.ts"
     },
     "mcp-server/src/index.ts": {
-      "sha256": "4e38ba3c8f72595e3c843aa65fe1fb70724608c58b0e129adae091094822bd4e",
+      "sha256": "1726cb66f0a6b3072393ad3138de8359d8a7c3d0eb1763e548cf3f06b97cb6f5",
       "source": "mcp-server/src/index.ts"
     },
     "mcp-server/src/installation-identity.ts": {
@@ -158,6 +158,6 @@
     }
   },
   "source_repo": "hububstudio/farmdashbeta",
-  "source_commit": "2f65b5a94d0d88c80686a7a81749e3dbc4fc0505",
-  "synced_at_utc": "2026-11-26T21:03:53Z"
+  "source_commit": "d3efe5319c527285f0cf7f258705e18eb903fb52",
+  "synced_at_utc": "2026-11-26T21:59:29Z"
 }
