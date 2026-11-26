@@ -11,14 +11,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 8dd2afa8081e7171b4e65abd2064ae8a443f5327
+          ref: c26dee1fb7529d5d66a6254c5dea76dee6a95845
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Verify source and build the image
         run: |
-          test "$(git rev-parse HEAD)" = "8dd2afa8081e7171b4e65abd2064ae8a443f5327"
+          test "$(git rev-parse HEAD)" = "c26dee1fb7529d5d66a6254c5dea76dee6a95845"
           node mcp-server/scripts/verify-upstream-parity.mjs
           docker build --pull --no-cache --progress=plain -t farmdash-release-smoke .
           docker image inspect -f '{{.Id}} {{.Os}} {{.Architecture}}' farmdash-release-smoke
@@ -33,7 +33,7 @@ jobs:
           import { StdioClientTransport } from './mcp-server/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js';
 
           const mirror = JSON.parse(readFileSync('UPSTREAM.json', 'utf8'));
-          assert.equal(mirror.source_sha, 'c6597efd9f7058e7fc9aa6163d51e7f2e7e6ec61');
+          assert.equal(mirror.source_sha, '1a2a4e875e1a32bbd91d1dcef1cd6e577e6265d7');
           const transport = new StdioClientTransport({
             command: 'docker',
             args: [
@@ -72,4 +72,87 @@ jobs:
           } finally {
             await client.close();
           }
+          NODE
+      - name: Verify public release and Glama proof over HTTPS
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { createHash, randomUUID, randomBytes } from 'node:crypto';
+          import { readFileSync } from 'node:fs';
+
+          const host = 'https://www.farmdash.one';
+          const runId = 'release-attribution-' + randomUUID();
+          const installationId = randomUUID();
+          const lock = JSON.parse(readFileSync('UPSTREAM.json', 'utf8'));
+          const get = async (path, headers = {}) => fetch(host + path, {
+            redirect: 'manual',
+            signal: AbortSignal.timeout(20000),
+            headers: { 'user-agent': 'FarmDash Release QA automated_test', ...headers },
+          });
+          const sha256 = body => createHash('sha256').update(body).digest('hex');
+          const ownership = await get('/api/mcp/.well-known/glama.json', { accept: 'application/json' });
+          assert.equal(ownership.status, 200);
+          assert.equal(ownership.headers.get('location'), null);
+          assert.match(ownership.headers.get('content-type'), /^application\/json/);
+          assert.equal(sha256(await ownership.text()), '93cba9ae474feae1b83b45060a0dd2e92e77f57b9a4a1755daaf7fe2ae5b2489');
+          const skills = Object.keys(lock.mirrored).filter(name => /^farmdash-\S+\/SKILL\.(json|md)$/.test(name));
+          const normalized = text => text.replaceAll('\r\n', '\n');
+          for (let offset = 0; offset < skills.length; offset += 4) {
+            await Promise.all(skills.slice(offset, offset + 4).map(async name => {
+              const res = await get('/openclaw-skills/' + name);
+              assert.equal(res.status, 200, name);
+              assert.equal(sha256(normalized(await res.text())), sha256(normalized(readFileSync(name, 'utf8'))), name);
+            }));
+          }
+          const [homepage, openapi, redirect, report] = await Promise.all([
+            get('/'), get('/agents/openapi.yaml'), get('/go/paradex'), get('/api/v1/reports/trail-heat-full'),
+          ]);
+          assert.equal(homepage.status, 200);
+          assert.equal(openapi.status, 200);
+          const openApiVersion = (await openapi.text()).match(/^  version: (.+)$/m)?.[1];
+          assert.equal(redirect.headers.get('location'), 'https://app.paradex.trade/r/farmdashone');
+          assert.equal(report.status, 402);
+          const challenge = JSON.parse(Buffer.from(report.headers.get('payment-required'), 'base64').toString());
+          assert.equal(challenge.farmdash.policyKey, 'report_trail_heat_full');
+          assert.equal(challenge.accepts[0].amount, '100000');
+
+          let session;
+          async function mcp(id, method, params) {
+            const protocol = '2025-03-26';
+            const res = await fetch(host + '/api/mcp?profile=research', {
+              method:'POST', redirect:'manual', signal:AbortSignal.timeout(25000),
+              headers: {
+                accept:'application/json, text/event-stream', 'content-type':'application/json',
+                'mcp-protocol-version':protocol, 'user-agent':'FarmDash Release QA automated_test',
+                'x-farmdash-test-probe':'automated_test', 'x-farmdash-run-id':runId,
+                'x-farmdash-test-case-id':'release-hosted-scout-attribution', 'x-farmdash-installation-id':installationId,
+                'x-farmdash-client':'mcp', ...(session ? {'mcp-session-id':session} : {}),
+              },
+              body: JSON.stringify({ jsonrpc:'2.0', id, method, params }),
+            });
+            assert.equal(res.status, 200, method);
+            session ||= res.headers.get('mcp-session-id');
+            const text = await res.text();
+            return text.startsWith('{') ? JSON.parse(text).result
+              : JSON.parse(text.split('\n').find(line => line.startsWith('data:')).slice(5)).result;
+          }
+          const initialized = await mcp(1, 'initialize', {
+            protocolVersion:'2025-03-26', capabilities:{}, clientInfo:{name:'farmdash-release-qa',version:'1.0'},
+          });
+          assert.equal(initialized.protocolVersion, '2025-03-26');
+          const listed = await mcp(2, 'tools/list', {});
+          const paused = await mcp(3, 'tools/call', {name:'get_discovery_heuristic_report', arguments:{}});
+          assert.equal(JSON.parse(paused.content[0].text).response.code, 'report_purchases_paused');
+          assert.equal(paused.structuredContent, undefined);
+          const scout = await mcp(4, 'tools/call', {
+            name:'get_portfolio_summary', arguments:{ address:'0x' + randomBytes(20).toString('hex'), chains:'eth-mainnet' },
+          });
+          const scoutResult = JSON.parse(scout.content[0].text);
+          console.log('FARMDASH_PUBLIC_SMOKE', JSON.stringify({
+            observedAt:new Date().toISOString(), canonical:lock.source_sha, glamaProofVerified:true,
+            skillFilesMatched:skills.length, openApiVersion, researchTools:listed.tools.length,
+            mcpServerVersion:initialized.serverInfo?.version, legacyReportUSDC:'0.10',
+            pausedPurchase:true, scoutAccess:scoutResult.access ?? null, scoutPreview:scoutResult.is_preview === true,
+            scoutDiagnostic:scoutResult.response?.code ?? scoutResult.code ?? null, runId,
+          }));
           NODE
