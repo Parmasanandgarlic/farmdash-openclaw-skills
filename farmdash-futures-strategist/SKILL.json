@@ -46,7 +46,8 @@
         "type": "object",
         "properties": {
           "coin": {
-            "type": "string"
+            "type": "string",
+            "description": "Hyperliquid native perpetual symbol, such as ETH. Omit any perp-DEX namespace."
           }
         },
         "required": [
@@ -66,9 +67,11 @@
         "properties": {
           "agentAddress": {
             "type": "string",
-            "pattern": "^0x[a-fA-F0-9]{40}$"
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "Public EVM address of the direct signer or delegated Hyperliquid API wallet."
           },
           "accountAddress": {
+            "description": "Public EVM address of the master or subaccount owning the equity. Omit only for a direct signer.",
             "type": "string",
             "pattern": "^0x[a-fA-F0-9]{40}$"
           }
@@ -89,36 +92,44 @@
         "type": "object",
         "properties": {
           "coin": {
-            "type": "string"
+            "type": "string",
+            "description": "Hyperliquid native perpetual symbol, such as ETH. Namespaced HIP-3 symbols are unsupported."
           },
           "agentAddress": {
             "type": "string",
-            "pattern": "^0x[a-fA-F0-9]{40}$"
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "Public EVM address of the direct signer or delegated Hyperliquid API wallet."
           },
           "accountAddress": {
+            "description": "Public EVM address of the master or subaccount owning the equity. Omit only for a direct signer.",
             "type": "string",
             "pattern": "^0x[a-fA-F0-9]{40}$"
           },
           "riskMultiplier": {
+            "description": "Scale the allowed risk from 0.1 to 1. Defaults to 1.",
             "type": "number",
             "minimum": 0.1,
             "maximum": 1
           },
           "idempotencyKey": {
+            "description": "Compatibility wrapper field. Trial admission uses the route executionTrialId or Idempotency-Key header and may reject an MCP-only request.",
             "type": "string",
             "pattern": "^[\\x21-\\x7e]{1,128}$"
           },
           "executionTrialProof": {
+            "description": "Locally signed owner challenge for eligible commercial trial admission. Does not convey venue authority.",
             "type": "object",
             "properties": {
               "issuedAt": {
                 "type": "integer",
                 "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
+                "maximum": 9007199254740991,
+                "description": "Unix milliseconds included in the commercial owner challenge."
               },
               "signature": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "description": "Signature over the commercial owner challenge. Never provide venue or wallet keys."
               }
             },
             "required": [
@@ -127,6 +138,7 @@
             ]
           },
           "executionMode": {
+            "description": "USER_SIGNED by default. BOUNDED_AUTONOMOUS requires an active market-bound owner grant and venue relationship.",
             "type": "string",
             "enum": [
               "USER_SIGNED",
@@ -134,12 +146,15 @@
             ]
           },
           "grantId": {
+            "description": "Active owner-signed futures grant that permits this session, account, signer, and market.",
             "type": "string"
           },
           "sessionId": {
+            "description": "Active FarmDash session ID bound to the futures grant.",
             "type": "string"
           },
           "sessionToken": {
+            "description": "Private token for the matching FarmDash session in bounded mode.",
             "type": "string"
           }
         },
@@ -161,25 +176,31 @@
         "properties": {
           "equity": {
             "type": "number",
-            "exclusiveMinimum": 0
+            "exclusiveMinimum": 0,
+            "description": "Total account equity in USD."
           },
           "entryPrice": {
             "type": "number",
-            "exclusiveMinimum": 0
+            "exclusiveMinimum": 0,
+            "description": "Proposed entry price in USD per unit."
           },
           "stopPrice": {
             "type": "number",
-            "exclusiveMinimum": 0
+            "exclusiveMinimum": 0,
+            "description": "Stop price in USD per unit, different from entry. Below entry implies long, above implies short."
           },
           "riskPercent": {
+            "description": "Fraction of equity to risk. Use 0.01 for 1%. Defaults to the 2% cap before applying riskMultiplier.",
             "type": "number",
             "exclusiveMinimum": 0
           },
           "targetPrice": {
+            "description": "Optional target price in USD per unit used for reward/risk diagnostics.",
             "type": "number",
             "exclusiveMinimum": 0
           },
           "riskMultiplier": {
+            "description": "Scale the requested fraction from 0.1 to 1. Defaults to 1.",
             "type": "number",
             "minimum": 0.1,
             "maximum": 1
@@ -520,7 +541,8 @@
         "properties": {
           "agentAddress": {
             "type": "string",
-            "pattern": "^0x[a-fA-F0-9]{40}$"
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "0x-prefixed EVM address whose FarmDash fee activity to inspect."
           }
         },
         "required": [

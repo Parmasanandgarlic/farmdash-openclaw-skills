@@ -35,27 +35,34 @@
         "type": "object",
         "properties": {
           "walletAddress": {
+            "description": "Optional public EVM wallet for context. Halt alerts require separate wallet authorization.",
             "type": "string",
             "pattern": "^0x[a-fA-F0-9]{40}$"
           },
           "allowances": {
+            "description": "Approval observations supplied by the caller. Populate each row with token, spender, allowance, and requiredAmount for a usable review.",
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
                 "token": {
+                  "description": "ERC-20 token contract address.",
                   "type": "string"
                 },
                 "spender": {
+                  "description": "EVM address entitled to spend the allowance.",
                   "type": "string"
                 },
                 "allowance": {
+                  "description": "Observed allowance as an integer string in token base units.",
                   "type": "string"
                 },
                 "requiredAmount": {
+                  "description": "Positive intended spend as an integer string in the same base units.",
                   "type": "string"
                 },
                 "amountUsd": {
+                  "description": "Estimated USD value of the approval exposure.",
                   "type": "number"
                 },
                 "spenderVerified": {
@@ -83,6 +90,7 @@
         "type": "object",
         "properties": {
           "walletAddress": {
+            "description": "Optional public EVM wallet for context. Halt alerts require separate wallet authorization.",
             "type": "string",
             "pattern": "^0x[a-fA-F0-9]{40}$"
           },
@@ -90,15 +98,19 @@
             "type": "object",
             "properties": {
               "to": {
-                "type": "string"
+                "type": "string",
+                "description": "Target EVM contract or recipient."
               },
               "data": {
-                "type": "string"
+                "type": "string",
+                "description": "0x-prefixed calldata. Use 0x for a plain native transfer."
               },
               "value": {
+                "description": "Native value in base units, encoded as a decimal integer or 0x-prefixed hexadecimal string.",
                 "type": "string"
               },
               "chainId": {
+                "description": "Numeric EVM network ID. Supply it for meaningful chain validation.",
                 "type": "integer",
                 "exclusiveMinimum": 0,
                 "maximum": 9007199254740991
@@ -107,21 +119,26 @@
             "required": [
               "to",
               "data"
-            ]
+            ],
+            "description": "Unsigned EVM payload proposed for local signing."
           },
           "expectedTransaction": {
+            "description": "Independent expected values captured before preparation. Do not derive them from the transaction under review.",
             "type": "object",
             "properties": {
               "to": {
                 "type": "string",
-                "pattern": "^0x[a-fA-F0-9]{40}$"
+                "pattern": "^0x[a-fA-F0-9]{40}$",
+                "description": "Target EVM contract or recipient."
               },
               "chainId": {
                 "type": "integer",
                 "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
+                "maximum": 9007199254740991,
+                "description": "Numeric EVM network ID. Supply it for meaningful chain validation."
               },
               "value": {
+                "description": "Native value in base units, encoded as a decimal integer or 0x-prefixed hexadecimal string.",
                 "type": "string",
                 "pattern": "^(?:[0-9]+|0x[0-9a-fA-F]+)$"
               },
@@ -159,11 +176,13 @@
         "type": "object",
         "properties": {
           "fromChainId": {
+            "description": "Source EVM chain ID for quoted mode.",
             "type": "integer",
             "exclusiveMinimum": 0,
             "maximum": 9007199254740991
           },
           "toChainId": {
+            "description": "Destination EVM chain ID for quoted mode.",
             "type": "integer",
             "exclusiveMinimum": 0,
             "maximum": 9007199254740991
@@ -179,18 +198,22 @@
             "description": "ERC-20 token contract address deployed on the corresponding chain. Do not pass a wallet/EOA; the token address and chain ID must match."
           },
           "fromAmount": {
+            "description": "Input token amount as an integer string in base units.",
             "type": "string",
             "pattern": "^[0-9]+$"
           },
           "walletAddress": {
+            "description": "Optional EVM wallet for route context. Publishing halt alerts requires independent wallet authorization.",
             "type": "string",
             "pattern": "^0x[a-fA-F0-9]{40}$"
           },
           "toAddress": {
+            "description": "Optional EVM destination recipient. Defaults to the supplied wallet if present.",
             "type": "string",
             "pattern": "^0x[a-fA-F0-9]{40}$"
           },
           "protocol": {
+            "description": "Optional quoted-mode route provider, LI.FI or Relay.",
             "type": "string",
             "enum": [
               "lifi",
@@ -198,35 +221,45 @@
             ]
           },
           "slippage": {
+            "description": "Quoted-mode tolerance in percentage points (0.5 means 0.5%).",
             "type": "number",
             "minimum": 0.01,
             "maximum": 5
           },
           "expectedUpsideUsd": {
+            "description": "Expected gross upside in USD for net-edge analysis.",
             "type": "number"
           },
           "protocolFeeUsd": {
+            "description": "Estimated protocol fees in USD for a manual assessment.",
             "type": "number"
           },
           "gasUsd": {
+            "description": "Estimated gas in USD for a manual assessment.",
             "type": "number"
           },
           "bridgeFeeUsd": {
+            "description": "Estimated bridge fee in USD for a manual assessment.",
             "type": "number"
           },
           "riskBufferUsd": {
+            "description": "Additional modeled risk cost in USD.",
             "type": "number"
           },
           "enforcePositive": {
+            "description": "Treat nonpositive or unknown net edge as a blocking risk when supported by the selected mode.",
             "type": "boolean"
           },
           "healthFactor": {
+            "description": "Current lending health factor as a ratio.",
             "type": "number"
           },
           "liquidationBufferPct": {
+            "description": "Estimated headroom before liquidation in percentage points.",
             "type": "number"
           },
           "safetyMode": {
+            "description": "Risk strictness mode for the quoted route assessment.",
             "type": "string",
             "enum": [
               "strict",

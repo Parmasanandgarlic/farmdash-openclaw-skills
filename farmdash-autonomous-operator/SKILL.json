@@ -1207,10 +1207,12 @@
               "provide_liquidity",
               "withdraw",
               "claim"
-            ]
+            ],
+            "description": "Requested financial operation. Availability depends on the protocol and chain combination."
           },
           "protocolId": {
-            "type": "string"
+            "type": "string",
+            "description": "Canonical protocol ID supported by this legacy resolver."
           },
           "chainId": {
             "anyOf": [
@@ -1223,9 +1225,11 @@
                 "type": "string",
                 "const": "solana-mainnet"
               }
-            ]
+            ],
+            "description": "Source EVM chain ID: 1, 10, 137, 8453, 42161, or 59144. The route rejects Solana."
           },
           "toChainId": {
+            "description": "Optional destination EVM chain ID from the same supported set.",
             "anyOf": [
               {
                 "type": "integer",
@@ -1239,58 +1243,73 @@
             ]
           },
           "tokenIn": {
-            "type": "string"
+            "type": "string",
+            "description": "Source token contract address or ETH for native Ethereum token."
           },
           "amountIn": {
             "type": "string",
-            "pattern": "^[0-9]+$"
+            "pattern": "^[0-9]+$",
+            "description": "Nonzero integer string in source-token base units."
           },
           "userAddress": {
-            "type": "string"
+            "type": "string",
+            "description": "Public 0x-prefixed EVM address that would sign the steps locally."
           },
           "tokenOut": {
+            "description": "Destination token contract address or ETH for native Ethereum token.",
             "type": "string"
           },
           "amountOut": {
+            "description": "Nonzero integer string in destination-token base units.",
             "type": "string",
             "pattern": "^[0-9]+$"
           },
           "slippage": {
+            "description": "Price tolerance in percentage points (0.5 means 0.5%).",
             "type": "number",
             "minimum": 0.01,
             "maximum": 5
           },
           "poolAddress": {
+            "description": "Target EVM liquidity pool contract where applicable.",
             "type": "string"
           },
           "deadline": {
+            "description": "Unix timestamp in seconds or milliseconds.",
             "type": "number"
           },
           "constraints": {
+            "description": "Optional lower output bound, maximum costs, and required opportunity economics.",
             "type": "object",
             "properties": {
               "minAmountOut": {
+                "description": "Minimum acceptable output as a nonzero token base-unit integer string.",
                 "type": "string",
                 "pattern": "^[0-9]+$"
               },
               "maxSlippageBps": {
+                "description": "Maximum allowed slippage in basis points.",
                 "type": "integer",
                 "exclusiveMinimum": 0,
                 "maximum": 9007199254740991
               },
               "maxGasUsd": {
+                "description": "Maximum acceptable gas estimate in USD.",
                 "type": "number",
                 "exclusiveMinimum": 0
               },
               "expectedUpsideUsd": {
+                "description": "Expected gross upside in USD.",
                 "type": "number",
                 "exclusiveMinimum": 0
               },
               "riskBufferUsd": {
+                "description": "Additional modeled risk cost in USD.",
                 "type": "number",
                 "exclusiveMinimum": 0
               },
               "positiveNetEdge": {
+                "description": "Require the estimated net edge to be positive when true.",
                 "type": "boolean"
               }
             }

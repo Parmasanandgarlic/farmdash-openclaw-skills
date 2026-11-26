@@ -137,29 +137,35 @@
         "properties": {
           "totalVolumeUsd": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Hypothetical total eligible volume in USD."
           },
           "txCount": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Hypothetical total transaction count."
           },
           "daysActive": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Number of distinct hypothetical active days."
           },
           "walletBalanceUsd": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Hypothetical wallet balance in USD."
           },
           "uniqueContracts": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Number of distinct hypothetical contracts used."
           },
           "isCexFundingOnly": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "True when the assumed wallet receives funding exclusively from centralized exchanges."
           },
           "protocolPoints": {
             "type": "object",
@@ -168,7 +174,8 @@
             },
             "additionalProperties": {
               "type": "number"
-            }
+            },
+            "description": "Hypothetical points by FarmDash protocol ID. Unknown IDs receive the default multiplier and are reported."
           }
         },
         "required": [
@@ -198,7 +205,8 @@
             "items": {
               "type": "string",
               "maxLength": 128
-            }
+            },
+            "description": "Up to 50 existing FarmDash protocol IDs to exclude. Use [] for no exclusions."
           },
           "riskPreference": {
             "type": "string",
@@ -206,15 +214,18 @@
               "conservative",
               "balanced",
               "aggressive"
-            ]
+            ],
+            "description": "Requested research risk preference. The result echoes this value without using it to rank candidates."
           },
           "chains": {
+            "description": "Exact FarmDash catalog chain names to include. The first 50 are considered. Omit or pass [] for all catalog chains.",
             "type": "array",
             "items": {
               "type": "string"
             }
           },
           "budget": {
+            "description": "Optional qualitative budget. Defaults to medium and is echoed without restricting candidates or authorizing spend.",
             "type": "string",
             "enum": [
               "low",
@@ -263,9 +274,11 @@
         "properties": {
           "address": {
             "type": "string",
-            "pattern": "^0x[a-fA-F0-9]{40}$"
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "0x-prefixed EVM wallet address to look up."
           },
           "chains": {
+            "description": "Comma-separated Alchemy network IDs, such as eth-mainnet,base-mainnet. Uses up to five valid networks. Omit for Ethereum, Arbitrum, Base, Optimism, and Linea.",
             "type": "string"
           },
           "minUsdValue": {
@@ -296,9 +309,11 @@
         "type": "object",
         "properties": {
           "symbols": {
+            "description": "Comma-separated token symbols, such as ETH,SOL,BTC. The price service uses the first 25 non-empty symbols.",
             "type": "string"
           },
           "tokens": {
+            "description": "Token contracts as network:0x-address pairs, using the full 40-digit hex address. The service reads the first 25 non-empty pairs. Use when symbol lookup would be ambiguous.",
             "maxItems": 50,
             "type": "array",
             "items": {
@@ -341,7 +356,7 @@
         "properties": {
           "protocolId": {
             "type": "string",
-            "description": "Protocol ID to audit"
+            "description": "Exact FarmDash catalog protocol ID, such as hyperliquid."
           }
         },
         "required": [
@@ -362,12 +377,14 @@
           "fromChainId": {
             "type": "integer",
             "minimum": -9007199254740991,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Numeric EVM source chain ID."
           },
           "toChainId": {
             "type": "integer",
             "minimum": -9007199254740991,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Numeric EVM destination chain ID. Use the source ID for a same-chain estimate."
           },
           "fromToken": {
             "type": "string",
@@ -387,6 +404,7 @@
             "description": "Amount in token base units."
           },
           "protocol": {
+            "description": "Optional compatibility selector accepted by the preview route. The result remains provider-neutral.",
             "type": "string",
             "enum": [
               "lifi",
@@ -415,10 +433,10 @@
         "properties": {
           "protocolId": {
             "type": "string",
-            "description": "Protocol ID (e.g. \"hyperliquid\", \"etherfi\")"
+            "description": "Exact FarmDash catalog protocol ID, such as hyperliquid or etherfi."
           },
           "includeHistorical": {
-            "description": "Include 30-day historical TVL trend analysis (default: true)",
+            "description": "Include the 30-day TVL trend when available. Defaults to true.",
             "type": "boolean"
           }
         },

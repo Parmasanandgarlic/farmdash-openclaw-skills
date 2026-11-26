@@ -743,11 +743,13 @@
         "properties": {
           "intentId": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "fd_intent_* value from simulationRequirements.intent_id. The top-level qi_* quote ID is rejected."
           },
           "walletAddress": {
             "type": "string",
-            "pattern": "^0x[a-fA-F0-9]{40}$"
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "EVM wallet bound to the original firm quote."
           }
         },
         "required": [
@@ -1106,29 +1108,35 @@
         "properties": {
           "totalVolumeUsd": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Hypothetical total eligible volume in USD."
           },
           "txCount": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Hypothetical total transaction count."
           },
           "daysActive": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Number of distinct hypothetical active days."
           },
           "walletBalanceUsd": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Hypothetical wallet balance in USD."
           },
           "uniqueContracts": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Number of distinct hypothetical contracts used."
           },
           "isCexFundingOnly": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "True when the assumed wallet receives funding exclusively from centralized exchanges."
           },
           "protocolPoints": {
             "type": "object",
@@ -1137,7 +1145,8 @@
             },
             "additionalProperties": {
               "type": "number"
-            }
+            },
+            "description": "Hypothetical points by FarmDash protocol ID. Unknown IDs receive the default multiplier and are reported."
           }
         },
         "required": [
@@ -1167,7 +1176,8 @@
             "items": {
               "type": "string",
               "maxLength": 128
-            }
+            },
+            "description": "Up to 50 existing FarmDash protocol IDs to exclude. Use [] for no exclusions."
           },
           "riskPreference": {
             "type": "string",
@@ -1175,15 +1185,18 @@
               "conservative",
               "balanced",
               "aggressive"
-            ]
+            ],
+            "description": "Requested research risk preference. The result echoes this value without using it to rank candidates."
           },
           "chains": {
+            "description": "Exact FarmDash catalog chain names to include. The first 50 are considered. Omit or pass [] for all catalog chains.",
             "type": "array",
             "items": {
               "type": "string"
             }
           },
           "budget": {
+            "description": "Optional qualitative budget. Defaults to medium and is echoed without restricting candidates or authorizing spend.",
             "type": "string",
             "enum": [
               "low",

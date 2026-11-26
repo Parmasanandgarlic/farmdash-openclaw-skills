@@ -36,12 +36,15 @@
         "properties": {
           "agentAddress": {
             "type": "string",
-            "pattern": "^0x[a-fA-F0-9]{40}$"
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "0x-prefixed EVM agent address bound to the API key or matching session."
           },
           "start": {
+            "description": "Inclusive ISO 8601 range start. Defaults to 30 days before now.",
             "type": "string"
           },
           "end": {
+            "description": "Inclusive ISO 8601 range end. Defaults to now.",
             "type": "string"
           },
           "sessionId": {
@@ -80,12 +83,15 @@
         "properties": {
           "agentAddress": {
             "type": "string",
-            "pattern": "^0x[a-fA-F0-9]{40}$"
+            "pattern": "^0x[a-fA-F0-9]{40}$",
+            "description": "0x-prefixed EVM agent address bound to the API key or matching session."
           },
           "start": {
+            "description": "Inclusive ISO 8601 range start. Defaults to 30 days before now.",
             "type": "string"
           },
           "end": {
+            "description": "Inclusive ISO 8601 range end. Defaults to now.",
             "type": "string"
           },
           "sessionId": {

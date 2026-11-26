@@ -1,8 +1,8 @@
 {
   "$comment": "Published allowlisted mirror of the verified canonical FarmDash release.",
   "source_repository": "hububstudio/farmdashbeta",
-  "source_sha": "c6597efd9f7058e7fc9aa6163d51e7f2e7e6ec61",
-  "sync_timestamp": "2026-11-26T05:39:03.593Z",
+  "source_sha": "1a2a4e875e1a32bbd91d1dcef1cd6e577e6265d7",
+  "sync_timestamp": "2026-11-26T06:01:34.939Z",
   "mcp_tool_count": 98,
   "mirrored_file_count": 35,
   "not_mirrored_reason": {
@@ -21,7 +21,7 @@
       "source": "public/openclaw-skills/FARMDASH_AGENT_OPERATING_MODEL.md"
     },
     "farmdash-autonomous-operator/SKILL.json": {
-      "sha256": "7db599556e50a41e06519fec14ceaf5915c63947746c61d0c65d3819db45ce35",
+      "sha256": "facee19167e339a2a0b9a96ff48ec0bdbf50463784fdb35203091fd5ce854599",
       "source": "public/openclaw-skills/farmdash-autonomous-operator/SKILL.json"
     },
     "farmdash-autonomous-operator/SKILL.md": {
@@ -29,7 +29,7 @@
       "source": "public/openclaw-skills/farmdash-autonomous-operator/SKILL.md"
     },
     "farmdash-camp-guard/SKILL.json": {
-      "sha256": "f52a04bcac4c3ad95223debb90b8dd8dd632d2e586b1015307b03afa9e4a83bd",
+      "sha256": "9561532ba6eafa2b77fb060b73f3c51bc19d6b468bc9d6a517b79583c8df575d",
       "source": "public/openclaw-skills/farmdash-camp-guard/SKILL.json"
     },
     "farmdash-camp-guard/SKILL.md": {
@@ -37,7 +37,7 @@
       "source": "public/openclaw-skills/farmdash-camp-guard/SKILL.md"
     },
     "farmdash-futures-strategist/SKILL.json": {
-      "sha256": "a589c5c52c5558dc4043dbbeb5870cbe36bdc900a45223c9b7f4125e2191cd12",
+      "sha256": "10ff0dc8267b569de8562f4278a9fa80f39fa630bd1feff21f000616ebb84572",
       "source": "public/openclaw-skills/farmdash-futures-strategist/SKILL.json"
     },
     "farmdash-futures-strategist/SKILL.md": {
@@ -57,7 +57,7 @@
       "source": "public/openclaw-skills/farmdash-hedge-warden/SKILL.md"
     },
     "farmdash-ledger-keeper/SKILL.json": {
-      "sha256": "e87e7e84c4ecf29c7374615d1a795d126b7dcbfba2cdee04bf2ad47c87647f70",
+      "sha256": "c6702b177f447844e07eb2db3dc56db0404fc6a36cbe46d95f9c4a7716ec8655",
       "source": "public/openclaw-skills/farmdash-ledger-keeper/SKILL.json"
     },
     "farmdash-ledger-keeper/SKILL.md": {
@@ -65,7 +65,7 @@
       "source": "public/openclaw-skills/farmdash-ledger-keeper/SKILL.md"
     },
     "farmdash-signal-architect/SKILL.json": {
-      "sha256": "1ebbe89f4022d33a46edbef888e8819c8dbefbc67b4c1d1e16806ebc65dd8b2b",
+      "sha256": "4d3004e897eb0999001519edebfc786794597a07c4805d601652cc4649b2f5ef",
       "source": "public/openclaw-skills/farmdash-signal-architect/SKILL.json"
     },
     "farmdash-signal-architect/SKILL.md": {
@@ -85,7 +85,7 @@
       "source": "public/openclaw-skills/farmdash-supply-master/SKILL.md"
     },
     "farmdash-trail-intelligence/SKILL.json": {
-      "sha256": "0d05e3c3bddaac6118be2e0e136359b263c29713e0aefb17363570093eb78db8",
+      "sha256": "6f54f2324acb74d5a417de7d63986feb87f040b25cf81498a725c824dd93c97e",
       "source": "public/openclaw-skills/farmdash-trail-intelligence/SKILL.json"
     },
     "farmdash-trail-intelligence/SKILL.md": {
@@ -93,7 +93,7 @@
       "source": "public/openclaw-skills/farmdash-trail-intelligence/SKILL.md"
     },
     "farmdash-trail-marshal/SKILL.json": {
-      "sha256": "b5191391c3cb650cb26064b911b2a225f733d2ce3b6a93988f4cf168588e49a7",
+      "sha256": "7cb6b7f0294bf837f3609601a7386d1107304fbeaa0878d6e37f5206c624fe3b",
       "source": "public/openclaw-skills/farmdash-trail-marshal/SKILL.json"
     },
     "farmdash-trail-marshal/SKILL.md": {
@@ -101,7 +101,7 @@
       "source": "public/openclaw-skills/farmdash-trail-marshal/SKILL.md"
     },
     "farmdash-wagon-steward/SKILL.json": {
-      "sha256": "2c9ff075afe649600c6e1c0a7b7ec92f361c123e688080c0422f69e032edbcd1",
+      "sha256": "fb74b8cc95f4461b8bed74f19a54dc9a35e79617c3cd537d7bcedd07a2fc4bb1",
       "source": "public/openclaw-skills/farmdash-wagon-steward/SKILL.json"
     },
     "farmdash-wagon-steward/SKILL.md": {
