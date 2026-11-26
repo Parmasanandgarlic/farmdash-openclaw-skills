@@ -1,0 +1,75 @@
+name: Verify published FarmDash Dockerfile
+on:
+  push:
+    branches: [codex/docker-qualify-8dd2afa]
+permissions:
+  contents: read
+jobs:
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 8dd2afa8081e7171b4e65abd2064ae8a443f5327
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source and build the image
+        run: |
+          test "$(git rev-parse HEAD)" = "8dd2afa8081e7171b4e65abd2064ae8a443f5327"
+          node mcp-server/scripts/verify-upstream-parity.mjs
+          docker build --pull --no-cache --progress=plain -t farmdash-release-smoke .
+          docker image inspect -f '{{.Id}} {{.Os}} {{.Architecture}}' farmdash-release-smoke
+      - name: Verify the image serves the canonical tool definitions
+        run: |
+          npm ci --prefix mcp-server --no-audit --fund=false
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto';
+          import { readFileSync } from 'node:fs';
+          import { Client } from './mcp-server/node_modules/@modelcontextprotocol/sdk/dist/esm/client/index.js';
+          import { StdioClientTransport } from './mcp-server/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js';
+
+          const mirror = JSON.parse(readFileSync('UPSTREAM.json', 'utf8'));
+          assert.equal(mirror.source_sha, 'c6597efd9f7058e7fc9aa6163d51e7f2e7e6ec61');
+          const transport = new StdioClientTransport({
+            command: 'docker',
+            args: [
+              'run', '--rm', '--interactive', '--pull=never', '--network=none',
+              '--cap-drop=ALL', '--security-opt=no-new-privileges',
+              '--env', 'FARMDASH_MCP_PROFILE=full',
+              '--env', 'FARMDASH_BASE_URL=http://127.0.0.1:9/api',
+              '--env', 'FARMDASH_INSTALLATION_ID=7d6f310b-6274-4266-b377-e1282b51039a',
+              'farmdash-release-smoke',
+            ],
+          });
+          const client = new Client({ name: 'farmdash-docker-qualification', version: '1.0' });
+          const tools = new Map();
+          const cursors = new Set();
+          try {
+            await client.connect(transport, { timeout: 15000 });
+            let cursor;
+            do {
+              const page = await client.listTools({ cursor }, { timeout: 15000 });
+              for (const { name, ...definition } of page.tools) {
+                assert.ok(!tools.has(name), 'Duplicated tool');
+                tools.set(name, definition);
+              }
+              cursor = page.nextCursor;
+              if (cursor) {
+                assert.ok(!cursors.has(cursor), 'Repeated page cursor');
+                cursors.add(cursor);
+              }
+            } while (cursor);
+
+            assert.equal(tools.size, mirror.mcp_tool_count);
+            const entries = [...tools.keys()].sort().map(name => [name, tools.get(name)]);
+            const sha256 = createHash('sha256').update(JSON.stringify(entries)).digest('hex');
+            assert.equal(sha256, 'c50b411b9d29d014b85eb450ae3f7474873794fb98e546862dce79796ce0db67');
+            console.log(JSON.stringify({ canonical: mirror.source_sha, tools: tools.size, sha256 }));
+          } finally {
+            await client.close();
+          }
+          NODE
