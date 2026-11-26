@@ -1,8 +1,8 @@
 {
   "$comment": "Published allowlisted mirror of the verified canonical FarmDash release.",
   "source_repository": "hububstudio/farmdashbeta",
-  "source_sha": "90b049d429efb88f318890d09a5dfe8b7c00c61e",
-  "sync_timestamp": "2026-11-26T19:33:07.120Z",
+  "source_sha": "953afa7f19a33b36d8a37b3e1dca50b10c83f178",
+  "sync_timestamp": "2026-11-26T20:00:20.859Z",
   "mcp_tool_count": 98,
   "mirrored_file_count": 35,
   "not_mirrored_reason": {
